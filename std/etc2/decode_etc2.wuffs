@@ -41,16 +41,13 @@ pub struct decoder? implements base.image_decoder(
         width  : base.u32[..= 0xFFFF],
         height : base.u32[..= 0xFFFF],
 
-        remaining_blocks : base.u32[..= 0x1000_0000],
-
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
         srgb : base.bool,
 
-        // buffer_index is measured in blocks.
-        buffer_index : base.u32[..= 64],
+        num_buffered_blocks : base.u32[..= 64],
 
         dst_x : base.u32,
         dst_y : base.u32,
@@ -58,6 +55,8 @@ pub struct decoder? implements base.image_decoder(
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
+        colors : array[64] base.u64,
+
         // buffer holds 64 blocks. Each block is 4×4 pixels, 64 bytes.
         buffer : array[4096] base.u8,
 )
@@ -195,7 +194,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status : base.status
+    var remaining : base.u32[..= 0x1000_0000]
+    var status    : base.status
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -219,13 +219,16 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     this.dst_y = 0
     this.buffer[.. 4096].bulk_memset!(byte_value: 0xFF)
 
-    this.remaining_blocks = ((this.width + 3) / 4) * ((this.height + 3) / 4)
-    while this.remaining_blocks > 0 {
-        this.from_src_to_buffer?(src: args.src)
-        if this.remaining_blocks < this.buffer_index {
+    remaining = ((this.width + 3) / 4) * ((this.height + 3) / 4)
+    while remaining > 0 {
+        this.num_buffered_blocks = remaining.min(no_more_than: 64)
+        if remaining < this.num_buffered_blocks {
             return base."#too much data"
         }
-        this.remaining_blocks -= this.buffer_index
+        remaining -= this.num_buffered_blocks
+
+        this.from_src_to_colors?(src: args.src)
+        this.from_colors_to_buffer!()
         status = this.from_buffer_to_dst!(dst: args.dst)
         if not status.is_ok() {
             return status
@@ -235,57 +238,65 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     this.call_sequence = 0x60
 }
 
-pri func decoder.from_src_to_buffer?(src: base.io_reader) {
-    var bi   : base.u32[..= 64]
-    var bj   : base.u32[..= 64]
-    var c64  : base.u64
-    var r0   : base.u32
-    var r1   : base.u32
-    var g0   : base.u32
-    var g1   : base.u32
-    var b0   : base.u32
-    var b1   : base.u32
-    var flip : base.bool
+pri func decoder.from_src_to_colors?(src: base.io_reader) {
+    var bi : base.u32[..= 64]
 
-    bj = this.remaining_blocks.min(no_more_than: 64)
-    while bi < bj {
-        assert bi < 64 via "a < b: a < c; c <= b"(c: bj)
-        c64 = args.src.read_u64be?()
+    while bi < this.num_buffered_blocks {
+        assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
+        this.colors[bi] = args.src.read_u64be?()
+        bi += 1
+    }
+}
 
-        if (c64 & 0x2_0000_0000) == 0 {
-            // The high 32 bits of c64:
+pri func decoder.from_colors_to_buffer!() {
+    var bi    : base.u32[..= 64]
+    var color : base.u64
+    var r0    : base.u32
+    var r1    : base.u32
+    var g0    : base.u32
+    var g1    : base.u32
+    var b0    : base.u32
+    var b1    : base.u32
+    var flip  : base.bool
+
+    while bi < this.num_buffered_blocks {
+        assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
+        color = this.colors[bi]
+
+        if (color & 0x2_0000_0000) == 0 {
+            // The high 32 bits of color:
             //
             // 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32  dec
             // 3F 3E 3D 3C 3B 3A 39 38 37 36 35 34 33 32 31 30 2F 2E 2D 2C 2B 2A 29 28 27 26 25 24 23 22 21 20  hex
             // R0 r0 r0 r0 R1 r1 r1 r1 G0 g0 g0 g0 G1 g1 g1 g1 B0 b0 b0 b0 B1 b1 b1 b1 W0 w0 w0 W1 w1 w1 00 Fl
 
-            r0 = (0x0F & (c64 >> 0x3C)) as base.u32
+            r0 = (0x0F & (color >> 0x3C)) as base.u32
             r0 = (r0 << 4) | r0
-            r1 = (0x0F & (c64 >> 0x38)) as base.u32
+            r1 = (0x0F & (color >> 0x38)) as base.u32
             r1 = (r1 << 4) | r1
 
-            g0 = (0x0F & (c64 >> 0x34)) as base.u32
+            g0 = (0x0F & (color >> 0x34)) as base.u32
             g0 = (g0 << 4) | g0
-            g1 = (0x0F & (c64 >> 0x30)) as base.u32
+            g1 = (0x0F & (color >> 0x30)) as base.u32
             g1 = (g1 << 4) | g1
 
-            b0 = (0x0F & (c64 >> 0x2C)) as base.u32
+            b0 = (0x0F & (color >> 0x2C)) as base.u32
             b0 = (b0 << 4) | b0
-            b1 = (0x0F & (c64 >> 0x28)) as base.u32
+            b1 = (0x0F & (color >> 0x28)) as base.u32
             b1 = (b1 << 4) | b1
 
         } else {
-            // The high 32 bits of c64 (unless ETC2's T / H / Planar modes):
+            // The high 32 bits of color (unless ETC2's T / H / Planar modes):
             //
             // 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32  dec
             // 3F 3E 3D 3C 3B 3A 39 38 37 36 35 34 33 32 31 30 2F 2E 2D 2C 2B 2A 29 28 27 26 25 24 23 22 21 20  hex
             // R0 r0 r0 r0 r0 R1 r1 r1 G0 g0 g0 g0 g0 G1 g1 g1 B0 b0 b0 b0 b0 B1 b1 b1 W0 w0 w0 W1 w1 w1 01 Fl
 
-            r0 = (0x1F & (c64 >> 0x3B)) as base.u32
-            r1 = r0 ~mod+ DIFFS[0x07 & (c64 >> 0x38)]
+            r0 = (0x1F & (color >> 0x3B)) as base.u32
+            r1 = r0 ~mod+ DIFFS[0x07 & (color >> 0x38)]
             if (r1 >> 5) <> 0 {
                 this.decode_t_mode!(
-                        bits: c64,
+                        bits: color,
                         offset: 16 * bi)
                 bi += 1
                 continue
@@ -293,11 +304,11 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
             r0 = (r0 ~mod<< 3) | (r0 >> 2)
             r1 = (r1 ~mod<< 3) | (r1 >> 2)
 
-            g0 = (0x1F & (c64 >> 0x33)) as base.u32
-            g1 = g0 ~mod+ DIFFS[0x07 & (c64 >> 0x30)]
+            g0 = (0x1F & (color >> 0x33)) as base.u32
+            g1 = g0 ~mod+ DIFFS[0x07 & (color >> 0x30)]
             if (g1 >> 5) <> 0 {
                 this.decode_h_mode!(
-                        bits: c64,
+                        bits: color,
                         offset: 16 * bi)
                 bi += 1
                 continue
@@ -305,11 +316,11 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
             g0 = (g0 ~mod<< 3) | (g0 >> 2)
             g1 = (g1 ~mod<< 3) | (g1 >> 2)
 
-            b0 = (0x1F & (c64 >> 0x2B)) as base.u32
-            b1 = b0 ~mod+ DIFFS[0x07 & (c64 >> 0x28)]
+            b0 = (0x1F & (color >> 0x2B)) as base.u32
+            b1 = b0 ~mod+ DIFFS[0x07 & (color >> 0x28)]
             if (b1 >> 5) <> 0 {
                 this.decode_planar_mode!(
-                        bits: c64,
+                        bits: color,
                         offset: 16 * bi)
                 bi += 1
                 continue
@@ -318,20 +329,20 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
             b1 = (b1 ~mod<< 3) | (b1 >> 2)
         }
 
-        flip = (c64 & 0x1_0000_0000) <> 0
+        flip = (color & 0x1_0000_0000) <> 0
         this.decode_half_block!(
-                bits: (c64 & 0xFFFF_FFFF) as base.u32,
+                bits: (color & 0xFFFF_FFFF) as base.u32,
                 offset: 16 * bi,
-                which: ((c64 >> 0x25) & 7) as base.u32,
+                which: ((color >> 0x25) & 7) as base.u32,
                 r: r0,
                 g: g0,
                 b: b0,
                 flip: flip,
                 second: false)
         this.decode_half_block!(
-                bits: (c64 & 0xFFFF_FFFF) as base.u32,
+                bits: (color & 0xFFFF_FFFF) as base.u32,
                 offset: 16 * bi,
-                which: ((c64 >> 0x22) & 7) as base.u32,
+                which: ((color >> 0x22) & 7) as base.u32,
                 r: r1,
                 g: g1,
                 b: b1,
@@ -340,8 +351,6 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
 
         bi += 1
     }
-
-    this.buffer_index = bi
 }
 
 pri func decoder.decode_t_mode!(
@@ -678,8 +687,8 @@ pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
     dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     tab = args.dst.plane(p: 0)
 
-    while bi < this.buffer_index {
-        assert bi < 64 via "a < b: a < c; c <= b"(c: this.buffer_index)
+    while bi < this.num_buffered_blocks {
+        assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
 
         if this.width <= this.dst_x {
             this.dst_x = 0

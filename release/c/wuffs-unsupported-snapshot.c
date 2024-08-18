@@ -9116,10 +9116,9 @@ struct wuffs_etc2__decoder__struct {
     uint32_t f_pixfmt;
     uint32_t f_width;
     uint32_t f_height;
-    uint32_t f_remaining_blocks;
     uint8_t f_call_sequence;
     bool f_srgb;
-    uint32_t f_buffer_index;
+    uint32_t f_num_buffered_blocks;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     wuffs_base__pixel_swizzler f_swizzler;
@@ -9130,10 +9129,11 @@ struct wuffs_etc2__decoder__struct {
     uint32_t p_do_decode_frame_config;
     uint32_t p_decode_frame;
     uint32_t p_do_decode_frame;
-    uint32_t p_from_src_to_buffer;
+    uint32_t p_from_src_to_colors;
   } private_impl;
 
   struct {
+    uint64_t f_colors[64];
     uint8_t f_buffer[4096];
 
     struct {
@@ -9142,10 +9142,12 @@ struct wuffs_etc2__decoder__struct {
       uint64_t scratch;
     } s_do_decode_image_config;
     struct {
+      uint32_t v_remaining;
+    } s_do_decode_frame;
+    struct {
       uint32_t v_bi;
-      uint32_t v_bj;
       uint64_t scratch;
-    } s_from_src_to_buffer;
+    } s_from_src_to_colors;
   } private_data;
 
 #ifdef __cplusplus
@@ -41189,9 +41191,14 @@ wuffs_etc2__decoder__do_decode_frame(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_etc2__decoder__from_src_to_buffer(
+wuffs_etc2__decoder__from_src_to_colors(
     wuffs_etc2__decoder* self,
     wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer(
+    wuffs_etc2__decoder* self);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -41955,9 +41962,13 @@ wuffs_etc2__decoder__do_decode_frame(
     wuffs_base__decode_frame_options* a_opts) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  uint32_t v_remaining = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_do_decode_frame;
+  if (coro_susp_point) {
+    v_remaining = self->private_data.s_do_decode_frame.v_remaining;
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -41991,18 +42002,20 @@ wuffs_etc2__decoder__do_decode_frame(
     self->private_impl.f_dst_x = 0u;
     self->private_impl.f_dst_y = 0u;
     wuffs_private_impl__bulk_memset(&self->private_data.f_buffer[0], 4096u, 255u);
-    self->private_impl.f_remaining_blocks = (((self->private_impl.f_width + 3u) / 4u) * ((self->private_impl.f_height + 3u) / 4u));
-    while (self->private_impl.f_remaining_blocks > 0u) {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      status = wuffs_etc2__decoder__from_src_to_buffer(self, a_src);
-      if (status.repr) {
-        goto suspend;
-      }
-      if (self->private_impl.f_remaining_blocks < self->private_impl.f_buffer_index) {
+    v_remaining = (((self->private_impl.f_width + 3u) / 4u) * ((self->private_impl.f_height + 3u) / 4u));
+    while (v_remaining > 0u) {
+      self->private_impl.f_num_buffered_blocks = wuffs_base__u32__min(v_remaining, 64u);
+      if (v_remaining < self->private_impl.f_num_buffered_blocks) {
         status = wuffs_base__make_status(wuffs_base__error__too_much_data);
         goto exit;
       }
-      self->private_impl.f_remaining_blocks -= self->private_impl.f_buffer_index;
+      v_remaining -= self->private_impl.f_num_buffered_blocks;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      status = wuffs_etc2__decoder__from_src_to_colors(self, a_src);
+      if (status.repr) {
+        goto suspend;
+      }
+      wuffs_etc2__decoder__from_colors_to_buffer(self);
       v_status = wuffs_etc2__decoder__from_buffer_to_dst(self, a_dst);
       if ( ! wuffs_base__status__is_ok(&v_status)) {
         status = v_status;
@@ -42025,31 +42038,23 @@ wuffs_etc2__decoder__do_decode_frame(
   goto suspend;
   suspend:
   self->private_impl.p_do_decode_frame = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_do_decode_frame.v_remaining = v_remaining;
 
   goto exit;
   exit:
   return status;
 }
 
-// -------- func etc2.decoder.from_src_to_buffer
+// -------- func etc2.decoder.from_src_to_colors
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_etc2__decoder__from_src_to_buffer(
+wuffs_etc2__decoder__from_src_to_colors(
     wuffs_etc2__decoder* self,
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t v_bi = 0;
-  uint32_t v_bj = 0;
-  uint64_t v_c64 = 0;
-  uint32_t v_r0 = 0;
-  uint32_t v_r1 = 0;
-  uint32_t v_g0 = 0;
-  uint32_t v_g1 = 0;
-  uint32_t v_b0 = 0;
-  uint32_t v_b1 = 0;
-  bool v_flip = false;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -42062,16 +42067,14 @@ wuffs_etc2__decoder__from_src_to_buffer(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_from_src_to_buffer;
+  uint32_t coro_susp_point = self->private_impl.p_from_src_to_colors;
   if (coro_susp_point) {
-    v_bi = self->private_data.s_from_src_to_buffer.v_bi;
-    v_bj = self->private_data.s_from_src_to_buffer.v_bj;
+    v_bi = self->private_data.s_from_src_to_colors.v_bi;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    v_bj = wuffs_base__u32__min(self->private_impl.f_remaining_blocks, 64u);
-    while (v_bi < v_bj) {
+    while (v_bi < self->private_impl.f_num_buffered_blocks) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
         uint64_t t_0;
@@ -42079,14 +42082,14 @@ wuffs_etc2__decoder__from_src_to_buffer(
           t_0 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
           iop_a_src += 8;
         } else {
-          self->private_data.s_from_src_to_buffer.scratch = 0;
+          self->private_data.s_from_src_to_colors.scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
               goto suspend;
             }
-            uint64_t* scratch = &self->private_data.s_from_src_to_buffer.scratch;
+            uint64_t* scratch = &self->private_data.s_from_src_to_colors.scratch;
             uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
@@ -42099,84 +42102,21 @@ wuffs_etc2__decoder__from_src_to_buffer(
             *scratch |= ((uint64_t)(num_bits_0));
           }
         }
-        v_c64 = t_0;
+        self->private_data.f_colors[v_bi] = t_0;
       }
-      if ((v_c64 & 8589934592u) == 0u) {
-        v_r0 = ((uint32_t)((15u & (v_c64 >> 60u))));
-        v_r0 = ((v_r0 << 4u) | v_r0);
-        v_r1 = ((uint32_t)((15u & (v_c64 >> 56u))));
-        v_r1 = ((v_r1 << 4u) | v_r1);
-        v_g0 = ((uint32_t)((15u & (v_c64 >> 52u))));
-        v_g0 = ((v_g0 << 4u) | v_g0);
-        v_g1 = ((uint32_t)((15u & (v_c64 >> 48u))));
-        v_g1 = ((v_g1 << 4u) | v_g1);
-        v_b0 = ((uint32_t)((15u & (v_c64 >> 44u))));
-        v_b0 = ((v_b0 << 4u) | v_b0);
-        v_b1 = ((uint32_t)((15u & (v_c64 >> 40u))));
-        v_b1 = ((v_b1 << 4u) | v_b1);
-      } else {
-        v_r0 = ((uint32_t)((31u & (v_c64 >> 59u))));
-        v_r1 = ((uint32_t)(v_r0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 56u))]));
-        if ((v_r1 >> 5u) != 0u) {
-          wuffs_etc2__decoder__decode_t_mode(self, v_c64, (16u * v_bi));
-          v_bi += 1u;
-          continue;
-        }
-        v_r0 = (((uint32_t)(v_r0 << 3u)) | (v_r0 >> 2u));
-        v_r1 = (((uint32_t)(v_r1 << 3u)) | (v_r1 >> 2u));
-        v_g0 = ((uint32_t)((31u & (v_c64 >> 51u))));
-        v_g1 = ((uint32_t)(v_g0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 48u))]));
-        if ((v_g1 >> 5u) != 0u) {
-          wuffs_etc2__decoder__decode_h_mode(self, v_c64, (16u * v_bi));
-          v_bi += 1u;
-          continue;
-        }
-        v_g0 = (((uint32_t)(v_g0 << 3u)) | (v_g0 >> 2u));
-        v_g1 = (((uint32_t)(v_g1 << 3u)) | (v_g1 >> 2u));
-        v_b0 = ((uint32_t)((31u & (v_c64 >> 43u))));
-        v_b1 = ((uint32_t)(v_b0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 40u))]));
-        if ((v_b1 >> 5u) != 0u) {
-          wuffs_etc2__decoder__decode_planar_mode(self, v_c64, (16u * v_bi));
-          v_bi += 1u;
-          continue;
-        }
-        v_b0 = (((uint32_t)(v_b0 << 3u)) | (v_b0 >> 2u));
-        v_b1 = (((uint32_t)(v_b1 << 3u)) | (v_b1 >> 2u));
-      }
-      v_flip = ((v_c64 & 4294967296u) != 0u);
-      wuffs_etc2__decoder__decode_half_block(self,
-          ((uint32_t)(v_c64)),
-          (16u * v_bi),
-          ((uint32_t)(((v_c64 >> 37u) & 7u))),
-          v_r0,
-          v_g0,
-          v_b0,
-          v_flip,
-          false);
-      wuffs_etc2__decoder__decode_half_block(self,
-          ((uint32_t)(v_c64)),
-          (16u * v_bi),
-          ((uint32_t)(((v_c64 >> 34u) & 7u))),
-          v_r1,
-          v_g1,
-          v_b1,
-          v_flip,
-          true);
       v_bi += 1u;
     }
-    self->private_impl.f_buffer_index = v_bi;
 
     goto ok;
     ok:
-    self->private_impl.p_from_src_to_buffer = 0;
+    self->private_impl.p_from_src_to_colors = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_from_src_to_buffer = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_data.s_from_src_to_buffer.v_bi = v_bi;
-  self->private_data.s_from_src_to_buffer.v_bj = v_bj;
+  self->private_impl.p_from_src_to_colors = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_from_src_to_colors.v_bi = v_bi;
 
   goto exit;
   exit:
@@ -42185,6 +42125,90 @@ wuffs_etc2__decoder__from_src_to_buffer(
   }
 
   return status;
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer(
+    wuffs_etc2__decoder* self) {
+  uint32_t v_bi = 0;
+  uint64_t v_color = 0;
+  uint32_t v_r0 = 0;
+  uint32_t v_r1 = 0;
+  uint32_t v_g0 = 0;
+  uint32_t v_g1 = 0;
+  uint32_t v_b0 = 0;
+  uint32_t v_b1 = 0;
+  bool v_flip = false;
+
+  while (v_bi < self->private_impl.f_num_buffered_blocks) {
+    v_color = self->private_data.f_colors[v_bi];
+    if ((v_color & 8589934592u) == 0u) {
+      v_r0 = ((uint32_t)((15u & (v_color >> 60u))));
+      v_r0 = ((v_r0 << 4u) | v_r0);
+      v_r1 = ((uint32_t)((15u & (v_color >> 56u))));
+      v_r1 = ((v_r1 << 4u) | v_r1);
+      v_g0 = ((uint32_t)((15u & (v_color >> 52u))));
+      v_g0 = ((v_g0 << 4u) | v_g0);
+      v_g1 = ((uint32_t)((15u & (v_color >> 48u))));
+      v_g1 = ((v_g1 << 4u) | v_g1);
+      v_b0 = ((uint32_t)((15u & (v_color >> 44u))));
+      v_b0 = ((v_b0 << 4u) | v_b0);
+      v_b1 = ((uint32_t)((15u & (v_color >> 40u))));
+      v_b1 = ((v_b1 << 4u) | v_b1);
+    } else {
+      v_r0 = ((uint32_t)((31u & (v_color >> 59u))));
+      v_r1 = ((uint32_t)(v_r0 + WUFFS_ETC2__DIFFS[(7u & (v_color >> 56u))]));
+      if ((v_r1 >> 5u) != 0u) {
+        wuffs_etc2__decoder__decode_t_mode(self, v_color, (16u * v_bi));
+        v_bi += 1u;
+        continue;
+      }
+      v_r0 = (((uint32_t)(v_r0 << 3u)) | (v_r0 >> 2u));
+      v_r1 = (((uint32_t)(v_r1 << 3u)) | (v_r1 >> 2u));
+      v_g0 = ((uint32_t)((31u & (v_color >> 51u))));
+      v_g1 = ((uint32_t)(v_g0 + WUFFS_ETC2__DIFFS[(7u & (v_color >> 48u))]));
+      if ((v_g1 >> 5u) != 0u) {
+        wuffs_etc2__decoder__decode_h_mode(self, v_color, (16u * v_bi));
+        v_bi += 1u;
+        continue;
+      }
+      v_g0 = (((uint32_t)(v_g0 << 3u)) | (v_g0 >> 2u));
+      v_g1 = (((uint32_t)(v_g1 << 3u)) | (v_g1 >> 2u));
+      v_b0 = ((uint32_t)((31u & (v_color >> 43u))));
+      v_b1 = ((uint32_t)(v_b0 + WUFFS_ETC2__DIFFS[(7u & (v_color >> 40u))]));
+      if ((v_b1 >> 5u) != 0u) {
+        wuffs_etc2__decoder__decode_planar_mode(self, v_color, (16u * v_bi));
+        v_bi += 1u;
+        continue;
+      }
+      v_b0 = (((uint32_t)(v_b0 << 3u)) | (v_b0 >> 2u));
+      v_b1 = (((uint32_t)(v_b1 << 3u)) | (v_b1 >> 2u));
+    }
+    v_flip = ((v_color & 4294967296u) != 0u);
+    wuffs_etc2__decoder__decode_half_block(self,
+        ((uint32_t)(v_color)),
+        (16u * v_bi),
+        ((uint32_t)(((v_color >> 37u) & 7u))),
+        v_r0,
+        v_g0,
+        v_b0,
+        v_flip,
+        false);
+    wuffs_etc2__decoder__decode_half_block(self,
+        ((uint32_t)(v_color)),
+        (16u * v_bi),
+        ((uint32_t)(((v_color >> 34u) & 7u))),
+        v_r1,
+        v_g1,
+        v_b1,
+        v_flip,
+        true);
+    v_bi += 1u;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func etc2.decoder.decode_t_mode
@@ -42456,7 +42480,7 @@ wuffs_etc2__decoder__from_buffer_to_dst(
   v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8u);
   v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0u);
-  while (v_bi < self->private_impl.f_buffer_index) {
+  while (v_bi < self->private_impl.f_num_buffered_blocks) {
     if (self->private_impl.f_width <= self->private_impl.f_dst_x) {
       self->private_impl.f_dst_x = 0u;
       self->private_impl.f_dst_y += 4u;
