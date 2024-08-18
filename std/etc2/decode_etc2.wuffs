@@ -22,9 +22,15 @@
 // AOSP has a software implementation, used by its etc1tool program:
 // https://cs.android.com/android/platform/superproject/main/+/main:frameworks/native/opengl/libs/ETC1/etc1.cpp;l=200;drc=efb735f4d5a2f04550e33e8aa9485f906018fe4e
 //
-// ETC2 (mandatory in OpenGL ES 3.0) extends ETC1 in a backwards-compatible way
-// by re-purposing bit patterns that well-behaved encoders wouldn't emit.
+// ETC2 (mandatory in OpenGL ES 3.0; see the 3.0 spec Appendix C.1 or the 3.2
+// spec Appendix C.2 "ETC Compressed Texture Image Formats") extends ETC1 in a
+// backwards-compatible way by re-purposing bit patterns that well-behaved
+// encoders wouldn't emit. It also uses 8 bytes per 4×4 block (0.5 bytes per
+// pixel), unless producing 8-bit alpha (instead of no alpha or 1-bit alpha),
+// in which case it's doubled to 16 bytes per 4×4 block (1 byte per pixel).
 //
+// https://registry.khronos.org/OpenGL/specs/es/3.0/es_spec_3.0.pdf
+// https://registry.khronos.org/OpenGL/specs/es/3.2/es_spec_3.2.pdf
 // https://www.khronos.org/assets/uploads/developers/library/2012-siggraph-opengl-es-bof/Ericsson-ETC2-SIGGRAPH_Aug12.pdf
 // https://www.graphicshardware.org/previous/www_2007/presentations/strom-etc2-gh07.pdf
 // https://github.com/Ericsson/ETCPACK
@@ -55,6 +61,7 @@ pub struct decoder? implements base.image_decoder(
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
+        alphas : array[64] base.u64,
         colors : array[64] base.u64,
 
         // buffer holds 64 blocks. Each block is 4×4 pixels, 64 bytes.
@@ -96,10 +103,16 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     c32 = args.src.read_u32le?()
-    if (c32 == '10\x00\x00'le) or  //      ETC1.
-            (c32 == '20\x00\x01'le) or  // ETC2  RGB.
-            (c32 == '20\x00\x09'le) {  //  ETC2 sRGB.
+    if (c32 == '10\x00\x00'le) or  //        ETC1.
+            (c32 == '20\x00\x01'le) or  //   ETC2  RGB.
+            (c32 == '20\x00\x09'le) {  //    ETC2 sRGB.
         this.pixfmt = base.PIXEL_FORMAT__BGRX
+    } else if (c32 == '20\x00\x03'le) or  // ETC2  RGBA8.
+            (c32 == '20\x00\x0A'le) {  //    ETC2 sRGBA8.
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+    } else if (c32 == '20\x00\x04'le) or  // ETC2  RGBA1.
+            (c32 == '20\x00\x0B'le) {  //    ETC2 sRGBA1.
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_BINARY
     } else if (c32 & 0xFFFF) == '20'le {
         return "#unsupported ETC2 file"
     } else {
@@ -217,7 +230,6 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
     this.dst_x = 0
     this.dst_y = 0
-    this.buffer[.. 4096].bulk_memset!(byte_value: 0xFF)
 
     remaining = ((this.width + 3) / 4) * ((this.height + 3) / 4)
     while remaining > 0 {
@@ -229,6 +241,9 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
         this.from_src_to_colors?(src: args.src)
         this.from_colors_to_buffer!()
+        if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL {
+            this.from_alphas_to_buffer!()
+        }
         status = this.from_buffer_to_dst!(dst: args.dst)
         if not status.is_ok() {
             return status
@@ -243,6 +258,9 @@ pri func decoder.from_src_to_colors?(src: base.io_reader) {
 
     while bi < this.num_buffered_blocks {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
+        if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL {
+            this.alphas[bi] = args.src.read_u64be?()
+        }
         this.colors[bi] = args.src.read_u64be?()
         bi += 1
     }
@@ -257,13 +275,17 @@ pri func decoder.from_colors_to_buffer!() {
     var g1    : base.u32
     var b0    : base.u32
     var b1    : base.u32
+    var diff  : base.bool
+    var tran  : base.bool
     var flip  : base.bool
 
     while bi < this.num_buffered_blocks {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
         color = this.colors[bi]
 
-        if (color & 0x2_0000_0000) == 0 {
+        diff = (color & 0x2_0000_0000) <> 0
+        tran = (not diff) and (this.pixfmt == base.PIXEL_FORMAT__BGRA_BINARY)
+        if (not diff) and (this.pixfmt <> base.PIXEL_FORMAT__BGRA_BINARY) {
             // The high 32 bits of color:
             //
             // 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32  dec
@@ -290,14 +312,15 @@ pri func decoder.from_colors_to_buffer!() {
             //
             // 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32  dec
             // 3F 3E 3D 3C 3B 3A 39 38 37 36 35 34 33 32 31 30 2F 2E 2D 2C 2B 2A 29 28 27 26 25 24 23 22 21 20  hex
-            // R0 r0 r0 r0 r0 R1 r1 r1 G0 g0 g0 g0 g0 G1 g1 g1 B0 b0 b0 b0 b0 B1 b1 b1 W0 w0 w0 W1 w1 w1 01 Fl
+            // R0 r0 r0 r0 r0 R1 r1 r1 G0 g0 g0 g0 g0 G1 g1 g1 B0 b0 b0 b0 b0 B1 b1 b1 W0 w0 w0 W1 w1 w1 .. Fl
 
             r0 = (0x1F & (color >> 0x3B)) as base.u32
             r1 = r0 ~mod+ DIFFS[0x07 & (color >> 0x38)]
             if (r1 >> 5) <> 0 {
                 this.decode_t_mode!(
                         bits: color,
-                        offset: 16 * bi)
+                        offset: 16 * bi,
+                        transparent: tran)
                 bi += 1
                 continue
             }
@@ -309,7 +332,8 @@ pri func decoder.from_colors_to_buffer!() {
             if (g1 >> 5) <> 0 {
                 this.decode_h_mode!(
                         bits: color,
-                        offset: 16 * bi)
+                        offset: 16 * bi,
+                        transparent: tran)
                 bi += 1
                 continue
             }
@@ -338,6 +362,7 @@ pri func decoder.from_colors_to_buffer!() {
                 g: g0,
                 b: b0,
                 flip: flip,
+                transparent: tran,
                 second: false)
         this.decode_half_block!(
                 bits: (color & 0xFFFF_FFFF) as base.u32,
@@ -347,6 +372,7 @@ pri func decoder.from_colors_to_buffer!() {
                 g: g1,
                 b: b1,
                 flip: flip,
+                transparent: tran,
                 second: true)
 
         bi += 1
@@ -355,19 +381,21 @@ pri func decoder.from_colors_to_buffer!() {
 
 pri func decoder.decode_t_mode!(
         bits: base.u64,
-        offset: base.u32[..= 1008]) {
+        offset: base.u32[..= 1008],
+        transparent: base.bool) {
     var r : array[4] base.u8
     var g : array[4] base.u8
     var b : array[4] base.u8
+    var a : array[4] base.u8
 
     var which : base.u32[..= 7]
     var delta : base.u32
 
-    var y   : base.u32
-    var x   : base.u32
-    var x4y : base.u32[..= 15]
-    var i   : base.u32[..= 3]
-    var o   : base.u32[..= 4092]
+    var y     : base.u32
+    var x     : base.u32
+    var x4y   : base.u32[..= 15]
+    var index : base.u32[..= 3]
+    var o     : base.u32[..= 4092]
 
     // Unjumble T-mode's 59 bits and convert from RGB444 to RGB888.
     //
@@ -384,6 +412,7 @@ pri func decoder.decode_t_mode!(
     g[0] = (g[0] << 4) | g[0]
     b[0] = (0x0F & (args.bits >> 0x30)) as base.u8
     b[0] = (b[0] << 4) | b[0]
+    a[0] = 0xFF
 
     r[2] = (0x0F & (args.bits >> 0x2C)) as base.u8
     r[2] = (r[2] << 4) | r[2]
@@ -391,8 +420,9 @@ pri func decoder.decode_t_mode!(
     g[2] = (g[2] << 4) | g[2]
     b[2] = (0x0F & (args.bits >> 0x24)) as base.u8
     b[2] = (b[2] << 4) | b[2]
+    a[2] = 0xFF
 
-    // Modulate.
+    // Modulate and apply transparency.
 
     which = ((0x06 & (args.bits >> 0x21)) as base.u32) |
             ((0x01 & (args.bits >> 0x20)) as base.u32)
@@ -401,10 +431,19 @@ pri func decoder.decode_t_mode!(
     r[1] = CLAMP[((r[2] as base.u32) ~mod+ delta) & 1023]
     g[1] = CLAMP[((g[2] as base.u32) ~mod+ delta) & 1023]
     b[1] = CLAMP[((b[2] as base.u32) ~mod+ delta) & 1023]
+    a[1] = 0xFF
 
     r[3] = CLAMP[((r[2] as base.u32) ~mod- delta) & 1023]
     g[3] = CLAMP[((g[2] as base.u32) ~mod- delta) & 1023]
     b[3] = CLAMP[((b[2] as base.u32) ~mod- delta) & 1023]
+    a[3] = 0xFF
+
+    if args.transparent {
+        r[2] = 0
+        g[2] = 0
+        b[2] = 0
+        a[2] = 0
+    }
 
     // Paint the 4×4 block.
 
@@ -414,12 +453,13 @@ pri func decoder.decode_t_mode!(
                 inv y < 4,
         {
             x4y = (x * 4) | y
-            i = (((args.bits >> x4y) & 1) as base.u32) |
+            index = (((args.bits >> x4y) & 1) as base.u32) |
                     (((args.bits >> (x4y + 15)) & 2) as base.u32)
             o = args.offset + (x * 4) + (y * 1024)
-            this.buffer[o + 0] = b[i]
-            this.buffer[o + 1] = g[i]
-            this.buffer[o + 2] = r[i]
+            this.buffer[o + 0] = b[index]
+            this.buffer[o + 1] = g[index]
+            this.buffer[o + 2] = r[index]
+            this.buffer[o + 3] = a[index]
             x += 1
         }
         y += 1
@@ -428,21 +468,23 @@ pri func decoder.decode_t_mode!(
 
 pri func decoder.decode_h_mode!(
         bits: base.u64,
-        offset: base.u32[..= 1008]) {
+        offset: base.u32[..= 1008],
+        transparent: base.bool) {
     var r : array[4] base.u8
     var g : array[4] base.u8
     var b : array[4] base.u8
+    var a : array[4] base.u8
 
     var rgb0  : base.u32
     var rgb2  : base.u32
     var which : base.u32[..= 7]
     var delta : base.u32
 
-    var y   : base.u32
-    var x   : base.u32
-    var x4y : base.u32[..= 15]
-    var i   : base.u32[..= 3]
-    var o   : base.u32[..= 4092]
+    var y     : base.u32
+    var x     : base.u32
+    var x4y   : base.u32[..= 15]
+    var index : base.u32[..= 3]
+    var o     : base.u32[..= 4092]
 
     // Unjumble H-mode's 58 bits (one of the 'which' bits is implied by order)
     // and convert from RGB444 to RGB888.
@@ -469,7 +511,7 @@ pri func decoder.decode_h_mode!(
     b[2] = (0x0F & (args.bits >> 0x23)) as base.u8
     b[2] = (b[2] << 4) | b[2]
 
-    // Modulate.
+    // Modulate and apply transparency.
 
     rgb0 = ((r[0] as base.u32) << 0x10) |
             ((g[0] as base.u32) << 0x08) |
@@ -487,18 +529,29 @@ pri func decoder.decode_h_mode!(
     r[1] = CLAMP[((r[0] as base.u32) ~mod- delta) & 1023]
     g[1] = CLAMP[((g[0] as base.u32) ~mod- delta) & 1023]
     b[1] = CLAMP[((b[0] as base.u32) ~mod- delta) & 1023]
+    a[1] = 0xFF
 
     r[0] = CLAMP[((r[0] as base.u32) ~mod+ delta) & 1023]
     g[0] = CLAMP[((g[0] as base.u32) ~mod+ delta) & 1023]
     b[0] = CLAMP[((b[0] as base.u32) ~mod+ delta) & 1023]
+    a[0] = 0xFF
 
     r[3] = CLAMP[((r[2] as base.u32) ~mod- delta) & 1023]
     g[3] = CLAMP[((g[2] as base.u32) ~mod- delta) & 1023]
     b[3] = CLAMP[((b[2] as base.u32) ~mod- delta) & 1023]
+    a[3] = 0xFF
 
     r[2] = CLAMP[((r[2] as base.u32) ~mod+ delta) & 1023]
     g[2] = CLAMP[((g[2] as base.u32) ~mod+ delta) & 1023]
     b[2] = CLAMP[((b[2] as base.u32) ~mod+ delta) & 1023]
+    a[2] = 0xFF
+
+    if args.transparent {
+        r[2] = 0
+        g[2] = 0
+        b[2] = 0
+        a[2] = 0
+    }
 
     // Paint the 4×4 block.
 
@@ -508,12 +561,13 @@ pri func decoder.decode_h_mode!(
                 inv y < 4,
         {
             x4y = (x * 4) | y
-            i = (((args.bits >> x4y) & 1) as base.u32) |
+            index = (((args.bits >> x4y) & 1) as base.u32) |
                     (((args.bits >> (x4y + 15)) & 2) as base.u32)
             o = args.offset + (x * 4) + (y * 1024)
-            this.buffer[o + 0] = b[i]
-            this.buffer[o + 1] = g[i]
-            this.buffer[o + 2] = r[i]
+            this.buffer[o + 0] = b[index]
+            this.buffer[o + 1] = g[index]
+            this.buffer[o + 2] = r[index]
+            this.buffer[o + 3] = a[index]
             x += 1
         }
         y += 1
@@ -606,6 +660,7 @@ pri func decoder.decode_planar_mode!(
             rp = ((x ~mod* rh) ~mod+ (y ~mod* rv)) ~mod+ ro
             this.buffer[o + 2] = CLAMP[((rp ~mod+ 2) / 4) & 1023]
             x += 1
+            this.buffer[o + 3] = 0xFF
         }
         y += 1
     }
@@ -619,15 +674,23 @@ pri func decoder.decode_half_block!(
         g: base.u32,
         b: base.u32,
         flip: base.bool,
+        transparent: base.bool,
         second: base.bool) {
+    var which : base.u32[..= 15]
     var x0    : base.u32[..= 2]
     var y0    : base.u32[..= 2]
     var x     : base.u32[..= 3]
     var y     : base.u32[..= 3]
     var i     : base.u32
     var x4y   : base.u32[..= 15]
+    var index : base.u32[..= 3]
     var modif : base.u32
     var o     : base.u32[..= 4092]
+
+    which = args.which
+    if args.transparent {
+        which |= 8
+    }
 
     if not args.second {
         // No-op.
@@ -647,16 +710,68 @@ pri func decoder.decode_half_block!(
         }
 
         x4y = (x * 4) | y
-        modif = MODIFIERS[args.which][
-                ((args.bits >> x4y) & 1) |
-                ((args.bits >> (x4y + 15)) & 2)]
+        index = ((args.bits >> x4y) & 1) |
+                ((args.bits >> (x4y + 15)) & 2)
+        modif = MODIFIERS[which][index]
 
         o = args.offset + (x * 4) + (y * 1024)
-        this.buffer[o + 0] = CLAMP[(args.b ~mod+ modif) & 1023]
-        this.buffer[o + 1] = CLAMP[(args.g ~mod+ modif) & 1023]
-        this.buffer[o + 2] = CLAMP[(args.r ~mod+ modif) & 1023]
+        if args.transparent and (index == 2) {
+            this.buffer[o + 0] = 0
+            this.buffer[o + 1] = 0
+            this.buffer[o + 2] = 0
+            this.buffer[o + 3] = 0
+        } else {
+            this.buffer[o + 0] = CLAMP[(args.b ~mod+ modif) & 1023]
+            this.buffer[o + 1] = CLAMP[(args.g ~mod+ modif) & 1023]
+            this.buffer[o + 2] = CLAMP[(args.r ~mod+ modif) & 1023]
+            this.buffer[o + 3] = 0xFF
+        }
 
         i += 1
+    }
+}
+
+pri func decoder.from_alphas_to_buffer!() {
+    var bi         : base.u32[..= 64]
+    var alpha      : base.u64
+    var a0         : base.u32
+    var multiplier : base.u32[..= 15]
+    var which      : base.u32[..= 15]
+    var offset     : base.u32[..= 1008]
+    var y          : base.u32
+    var x          : base.u32
+    var shift      : base.u32[..= 45]
+    var delta      : base.u32
+    var o          : base.u32[..= 4092]
+
+    while bi < this.num_buffered_blocks {
+        assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
+        alpha = this.alphas[bi]
+
+        a0 = (alpha >> 56) as base.u32
+        multiplier = ((alpha >> 52) & 0x0F) as base.u32
+        which = ((alpha >> 48) & 0x0F) as base.u32
+
+        offset = 16 * bi
+        y = 0
+        while y < 4,
+                inv bi < 64,
+        {
+            x = 0
+            while x < 4,
+                    inv bi < 64,
+                    inv y < 4,
+            {
+                shift = (((x ^ 3) * 4) | (y ^ 3)) * 3
+                delta = multiplier ~mod* ALPHA_MODIFIERS[which][7 & (alpha >> shift)]
+                o = offset + (x * 4) + (y * 1024)
+                this.buffer[o + 3] = CLAMP[(a0 ~mod+ delta) & 1023]
+                x += 1
+            }
+            y += 1
+        }
+
+        bi += 1
     }
 }
 
@@ -801,18 +916,46 @@ pri const DIFFS : roarray[8] base.u32 = [
         0xFFFF_FFFF,
 ]
 
-pri const MODIFIERS : roarray[8] roarray[4] base.u32 = [
-        [0x0000_0002, 0x0000_0008, 0xFFFF_FFFE, 0xFFFF_FFF8],  // [  -8,  -2,  2,   8] re-ordered.
-        [0x0000_0005, 0x0000_0011, 0xFFFF_FFFB, 0xFFFF_FFEF],  // [ -17,  -5,  5,  17] re-ordered.
-        [0x0000_0009, 0x0000_001D, 0xFFFF_FFF7, 0xFFFF_FFE3],  // [ -29,  -9,  9,  29] re-ordered.
-        [0x0000_000D, 0x0000_002A, 0xFFFF_FFF3, 0xFFFF_FFD6],  // [ -42, -13, 13,  42] re-ordered.
-        [0x0000_0012, 0x0000_003C, 0xFFFF_FFEE, 0xFFFF_FFC4],  // [ -60, -18, 18,  60] re-ordered.
-        [0x0000_0018, 0x0000_0050, 0xFFFF_FFE8, 0xFFFF_FFB0],  // [ -80, -24, 24,  80] re-ordered.
-        [0x0000_0021, 0x0000_006A, 0xFFFF_FFDF, 0xFFFF_FF96],  // [-106, -33, 33, 106] re-ordered.
-        [0x0000_002F, 0x0000_00B7, 0xFFFF_FFD1, 0xFFFF_FF49],  // [-183, -47, 47, 183] re-ordered.
+pri const MODIFIERS : roarray[16] roarray[4] base.u32 = [
+        [0x0000_0002, 0x0000_0008, 0xFFFF_FFFE, 0xFFFF_FFF8],  // [  -8,  -2,  +2,   +8] re-ordered.
+        [0x0000_0005, 0x0000_0011, 0xFFFF_FFFB, 0xFFFF_FFEF],  // [ -17,  -5,  +5,  +17] re-ordered.
+        [0x0000_0009, 0x0000_001D, 0xFFFF_FFF7, 0xFFFF_FFE3],  // [ -29,  -9,  +9,  +29] re-ordered.
+        [0x0000_000D, 0x0000_002A, 0xFFFF_FFF3, 0xFFFF_FFD6],  // [ -42, -13, +13,  +42] re-ordered.
+        [0x0000_0012, 0x0000_003C, 0xFFFF_FFEE, 0xFFFF_FFC4],  // [ -60, -18, +18,  +60] re-ordered.
+        [0x0000_0018, 0x0000_0050, 0xFFFF_FFE8, 0xFFFF_FFB0],  // [ -80, -24, +24,  +80] re-ordered.
+        [0x0000_0021, 0x0000_006A, 0xFFFF_FFDF, 0xFFFF_FF96],  // [-106, -33, +33, +106] re-ordered.
+        [0x0000_002F, 0x0000_00B7, 0xFFFF_FFD1, 0xFFFF_FF49],  // [-183, -47, +47, +183] re-ordered.
+
+        [0x0000_0000, 0x0000_0008, 0x0000_0000, 0xFFFF_FFF8],  // [  -8,   0,   0,   +8] re-ordered.
+        [0x0000_0000, 0x0000_0011, 0x0000_0000, 0xFFFF_FFEF],  // [ -17,   0,   0,  +17] re-ordered.
+        [0x0000_0000, 0x0000_001D, 0x0000_0000, 0xFFFF_FFE3],  // [ -29,   0,   0,  +29] re-ordered.
+        [0x0000_0000, 0x0000_002A, 0x0000_0000, 0xFFFF_FFD6],  // [ -42,   0,   0,  +42] re-ordered.
+        [0x0000_0000, 0x0000_003C, 0x0000_0000, 0xFFFF_FFC4],  // [ -60,   0,   0,  +60] re-ordered.
+        [0x0000_0000, 0x0000_0050, 0x0000_0000, 0xFFFF_FFB0],  // [ -80,   0,   0,  +80] re-ordered.
+        [0x0000_0000, 0x0000_006A, 0x0000_0000, 0xFFFF_FF96],  // [-106,   0,   0, +106] re-ordered.
+        [0x0000_0000, 0x0000_00B7, 0x0000_0000, 0xFFFF_FF49],  // [-183,   0,   0, +183] re-ordered.
 ]
 
 pri const T_H_MODIFIERS : roarray[8] base.u8 = [3, 6, 11, 16, 23, 32, 41, 64]
+
+pri const ALPHA_MODIFIERS : roarray[16] roarray[8] base.u32 = [
+        [0xFFFF_FFFD, 0xFFFF_FFFA, 0xFFFF_FFF7, 0xFFFF_FFF1, 0x0000_0002, 0x0000_0005, 0x0000_0008, 0x0000_000E],  // [-3, -6,  -9, -15, +2, +5, +8, +14]
+        [0xFFFF_FFFD, 0xFFFF_FFF9, 0xFFFF_FFF6, 0xFFFF_FFF3, 0x0000_0002, 0x0000_0006, 0x0000_0009, 0x0000_000C],  // [-3, -7, -10, -13, +2, +6, +9, +12]
+        [0xFFFF_FFFE, 0xFFFF_FFFB, 0xFFFF_FFF8, 0xFFFF_FFF3, 0x0000_0001, 0x0000_0004, 0x0000_0007, 0x0000_000C],  // [-2, -5,  -8, -13, +1, +4, +7, +12]
+        [0xFFFF_FFFE, 0xFFFF_FFFC, 0xFFFF_FFFA, 0xFFFF_FFF3, 0x0000_0001, 0x0000_0003, 0x0000_0005, 0x0000_000C],  // [-2, -4,  -6, -13, +1, +3, +5, +12]
+        [0xFFFF_FFFD, 0xFFFF_FFFA, 0xFFFF_FFF8, 0xFFFF_FFF4, 0x0000_0002, 0x0000_0005, 0x0000_0007, 0x0000_000B],  // [-3, -6,  -8, -12, +2, +5, +7, +11]
+        [0xFFFF_FFFD, 0xFFFF_FFF9, 0xFFFF_FFF7, 0xFFFF_FFF5, 0x0000_0002, 0x0000_0006, 0x0000_0008, 0x0000_000A],  // [-3, -7,  -9, -11, +2, +6, +8, +10]
+        [0xFFFF_FFFC, 0xFFFF_FFF9, 0xFFFF_FFF8, 0xFFFF_FFF5, 0x0000_0003, 0x0000_0006, 0x0000_0007, 0x0000_000A],  // [-4, -7,  -8, -11, +3, +6, +7, +10]
+        [0xFFFF_FFFD, 0xFFFF_FFFB, 0xFFFF_FFF8, 0xFFFF_FFF5, 0x0000_0002, 0x0000_0004, 0x0000_0007, 0x0000_000A],  // [-3, -5,  -8, -11, +2, +4, +7, +10]
+        [0xFFFF_FFFE, 0xFFFF_FFFA, 0xFFFF_FFF8, 0xFFFF_FFF6, 0x0000_0001, 0x0000_0005, 0x0000_0007, 0x0000_0009],  // [-2, -6,  -8, -10, +1, +5, +7,  +9]
+        [0xFFFF_FFFE, 0xFFFF_FFFB, 0xFFFF_FFF8, 0xFFFF_FFF6, 0x0000_0001, 0x0000_0004, 0x0000_0007, 0x0000_0009],  // [-2, -5,  -8, -10, +1, +4, +7,  +9]
+        [0xFFFF_FFFE, 0xFFFF_FFFC, 0xFFFF_FFF8, 0xFFFF_FFF6, 0x0000_0001, 0x0000_0003, 0x0000_0007, 0x0000_0009],  // [-2, -4,  -8, -10, +1, +3, +7,  +9]
+        [0xFFFF_FFFE, 0xFFFF_FFFB, 0xFFFF_FFF9, 0xFFFF_FFF6, 0x0000_0001, 0x0000_0004, 0x0000_0006, 0x0000_0009],  // [-2, -5,  -7, -10, +1, +4, +6,  +9]
+        [0xFFFF_FFFD, 0xFFFF_FFFC, 0xFFFF_FFF9, 0xFFFF_FFF6, 0x0000_0002, 0x0000_0003, 0x0000_0006, 0x0000_0009],  // [-3, -4,  -7, -10, +2, +3, +6,  +9]
+        [0xFFFF_FFFF, 0xFFFF_FFFE, 0xFFFF_FFFD, 0xFFFF_FFF6, 0x0000_0000, 0x0000_0001, 0x0000_0002, 0x0000_0009],  // [-1, -2,  -3, -10, +0, +1, +2,  +9]
+        [0xFFFF_FFFC, 0xFFFF_FFFA, 0xFFFF_FFF8, 0xFFFF_FFF7, 0x0000_0003, 0x0000_0005, 0x0000_0007, 0x0000_0008],  // [-4, -6,  -8,  -9, +3, +5, +7,  +8]
+        [0xFFFF_FFFD, 0xFFFF_FFFB, 0xFFFF_FFF9, 0xFFFF_FFF7, 0x0000_0002, 0x0000_0004, 0x0000_0006, 0x0000_0008],  // [-3, -5,  -7,  -9, +2, +4, +6,  +8]
+]
 
 pri const CLAMP : roarray[1024] base.u8 = [
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,

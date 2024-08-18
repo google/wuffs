@@ -250,6 +250,10 @@ wuffs_base__pixel_buffer__set_color_u32_at(
           wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
               color));
       break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+      wuffs_base__poke_u32le__no_bounds_check(
+          row + (4 * ((size_t)x)), (color >> 31) ? (color | 0xFF000000) : 0);
+      break;
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       wuffs_base__poke_u24le__no_bounds_check(
@@ -5694,6 +5698,100 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_premul(
 }
 
 static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
+wuffs_private_impl__pixel_swizzler__prepare__bgra_binary(
+    wuffs_base__pixel_swizzler* p,
+    wuffs_base__pixel_format dst_pixfmt,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src_palette,
+    wuffs_base__pixel_blend blend) {
+  switch (dst_pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_bgr_565__bgra_premul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgr_565__bgra_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_bgr__bgra_premul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgr__bgra_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_copy_4_4;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgra_nonpremul__bgra_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_bgra_nonpremul_4x16le__bgra_premul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgra_nonpremul_4x16le__bgra_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_copy_4_4;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgra_premul__bgra_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_bgr__rgba_premul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgr__rgba_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2)
+          if (wuffs_base__cpu_arch__have_x86_sse42()) {
+            return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
+          }
+#endif
+          return wuffs_private_impl__swizzle_swap_rgbx_bgrx;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgra_nonpremul__rgba_premul__src_over;
+      }
+      return NULL;
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2)
+          if (wuffs_base__cpu_arch__have_x86_sse42()) {
+            return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
+          }
+#endif
+          return wuffs_private_impl__swizzle_swap_rgbx_bgrx;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_bgra_premul__rgba_premul__src_over;
+      }
+      return NULL;
+  }
+  return NULL;
+}
+
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgrx(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -6108,6 +6206,11 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       func = wuffs_private_impl__pixel_swizzler__prepare__bgra_premul(
+          p, dst_pixfmt, dst_palette, src_palette, blend);
+      break;
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+      func = wuffs_private_impl__pixel_swizzler__prepare__bgra_binary(
           p, dst_pixfmt, dst_palette, src_palette, blend);
       break;
 
