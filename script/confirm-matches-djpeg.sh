@@ -72,10 +72,18 @@ handle() {
 
   # Image file format specifications cover how to correctly decode complete
   # input but usually do not mandate exactly how to decode truncated input.
-  # Print "trunc" vs "other" to distinguish these cases.
+  #
+  # A short SOS (Start Of Scan) bitstream is similar. Strictly speaking, such
+  # JPEG images are invalid. In practice, decoders have some discretion in how
+  # many implicit zero bits to produce before giving up. Giving up effectively
+  # truncates the input, even if we haven't reached the actual end of file.
+  #
+  # Print "trunc" vs "sSOSb" vs "other" to distinguish these cases.
   local error=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>&1 >/dev/null)
-  if [[ $error =~ :\ truncated.input$ ]]; then
+  if [[ $error =~ :\ truncated\ input$ ]]; then
     echo "Differ (trunc)  $1"
+  elif [[ $error =~ :\ short\ SOS\ bitstream$ ]]; then
+    echo "Differ (sSOSb)  $1"
   else
     echo "Differ (other)  $1"
     result=1

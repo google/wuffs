@@ -19,6 +19,7 @@ pub status "#bad scan count"
 pub status "#missing Huffman table"
 pub status "#missing Quantization table"
 pub status "#rejected progressive JPEG"
+pub status "#short SOS bitstream"
 pub status "#truncated input"
 pub status "#unsupported arithmetic coding"
 pub status "#unsupported color model"
@@ -1370,7 +1371,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
                     if bitstream_length < (this.bitstream_wi ~mod- this.bitstream_ri) {
                         break.fill_bitstream
                     } else if this.bitstream_padding == 0 {
-                        return "#bad SOS marker"
+                        return "#short SOS bitstream"
                     } else if args.src.is_closed() and (not this.bitstream_is_closed) {
                         if this.bitstream_wi < (0x800 / 2) {
                             assert this.bitstream_wi <= (this.bitstream_wi + 264) via "a <= (a + b): 0 <= b"()

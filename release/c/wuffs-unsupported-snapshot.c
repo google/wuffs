@@ -10034,6 +10034,7 @@ extern const char wuffs_jpeg__error__bad_scan_count[];
 extern const char wuffs_jpeg__error__missing_huffman_table[];
 extern const char wuffs_jpeg__error__missing_quantization_table[];
 extern const char wuffs_jpeg__error__rejected_progressive_jpeg[];
+extern const char wuffs_jpeg__error__short_sos_bitstream[];
 extern const char wuffs_jpeg__error__truncated_input[];
 extern const char wuffs_jpeg__error__unsupported_arithmetic_coding[];
 extern const char wuffs_jpeg__error__unsupported_color_model[];
@@ -46681,6 +46682,7 @@ const char wuffs_jpeg__error__bad_scan_count[] = "#jpeg: bad scan count";
 const char wuffs_jpeg__error__missing_huffman_table[] = "#jpeg: missing Huffman table";
 const char wuffs_jpeg__error__missing_quantization_table[] = "#jpeg: missing Quantization table";
 const char wuffs_jpeg__error__rejected_progressive_jpeg[] = "#jpeg: rejected progressive JPEG";
+const char wuffs_jpeg__error__short_sos_bitstream[] = "#jpeg: short SOS bitstream";
 const char wuffs_jpeg__error__truncated_input[] = "#jpeg: truncated input";
 const char wuffs_jpeg__error__unsupported_arithmetic_coding[] = "#jpeg: unsupported arithmetic coding";
 const char wuffs_jpeg__error__unsupported_color_model[] = "#jpeg: unsupported color model";
@@ -50862,7 +50864,7 @@ wuffs_jpeg__decoder__decode_sos(
             if (v_bitstream_length < ((uint32_t)(self->private_impl.f_bitstream_wi - self->private_impl.f_bitstream_ri))) {
               break;
             } else if (self->private_impl.f_bitstream_padding == 0u) {
-              status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+              status = wuffs_base__make_status(wuffs_jpeg__error__short_sos_bitstream);
               goto exit;
             } else if ((a_src && a_src->meta.closed) &&  ! self->private_impl.f_bitstream_is_closed) {
               if (self->private_impl.f_bitstream_wi < 1024u) {
