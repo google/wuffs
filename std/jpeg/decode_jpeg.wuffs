@@ -441,6 +441,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                     return "#rejected progressive JPEG"
                 } else if this.sof_marker <> 0 {
                     return "#bad SOF marker"
+                } else if (marker == 0xC0) {
+                    // SOF0 (which is 0xC0) means a baseline JPEG. The baseline
+                    // (th <= 1) restriction is specified in table B.5.
+                    if this.seen_dht[2] or this.seen_dht[3] or this.seen_dht[6] or this.seen_dht[7] {
+                        return "#bad SOF marker"
+                    }
                 }
                 this.sof_marker = marker
                 this.decode_sof?(src: args.src)
@@ -450,8 +456,8 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 return "#unsupported lossless coding"
 
             } else if marker == 0xC4 {  // DHT (Define Huffman Table).
-                // We shouldn't see DHT before SOF.
-                return "#bad DHT marker"
+                this.decode_dht?(src: args.src)
+                continue
 
             } else if (0xC5 <= marker) and (marker <= 0xC7) {
                 return "#unsupported hierarchical coding"
@@ -1104,9 +1110,6 @@ pri func decoder.decode_dht?(src: base.io_reader) {
     var i                   : base.u32
     var failed              : base.bool
 
-    if this.sof_marker == 0 {
-        return "#bad DHT marker"
-    }
     while this.payload_length > 0 {
         if this.payload_length < 17 {
             return "#bad DHT marker"

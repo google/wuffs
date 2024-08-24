@@ -49085,6 +49085,14 @@ wuffs_jpeg__decoder__do_decode_image_config(
           } else if (self->private_impl.f_sof_marker != 0u) {
             status = wuffs_base__make_status(wuffs_jpeg__error__bad_sof_marker);
             goto exit;
+          } else if (v_marker == 192u) {
+            if (self->private_impl.f_seen_dht[2u] ||
+                self->private_impl.f_seen_dht[3u] ||
+                self->private_impl.f_seen_dht[6u] ||
+                self->private_impl.f_seen_dht[7u]) {
+              status = wuffs_base__make_status(wuffs_jpeg__error__bad_sof_marker);
+              goto exit;
+            }
           }
           self->private_impl.f_sof_marker = v_marker;
           if (a_src) {
@@ -49103,8 +49111,18 @@ wuffs_jpeg__decoder__do_decode_image_config(
           status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_lossless_coding);
           goto exit;
         } else if (v_marker == 196u) {
-          status = wuffs_base__make_status(wuffs_jpeg__error__bad_dht_marker);
-          goto exit;
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          status = wuffs_jpeg__decoder__decode_dht(self, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+          if (status.repr) {
+            goto suspend;
+          }
+          continue;
         } else if ((197u <= v_marker) && (v_marker <= 199u)) {
           status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_hierarchical_coding);
           goto exit;
@@ -49126,7 +49144,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
           status = wuffs_jpeg__decoder__decode_dqt(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -49139,7 +49157,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
           status = wuffs_jpeg__decoder__decode_dri(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -49156,7 +49174,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
         status = wuffs_jpeg__decoder__decode_appn(self, a_src, v_marker);
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -49173,7 +49191,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
         }
       }
       self->private_data.s_do_decode_image_config.scratch = self->private_impl.f_payload_length;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
       if (self->private_data.s_do_decode_image_config.scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
         self->private_data.s_do_decode_image_config.scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
@@ -50521,10 +50539,6 @@ wuffs_jpeg__decoder__decode_dht(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_sof_marker == 0u) {
-      status = wuffs_base__make_status(wuffs_jpeg__error__bad_dht_marker);
-      goto exit;
-    }
     while (self->private_impl.f_payload_length > 0u) {
       if (self->private_impl.f_payload_length < 17u) {
         status = wuffs_base__make_status(wuffs_jpeg__error__bad_dht_marker);

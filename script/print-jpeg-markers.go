@@ -40,11 +40,11 @@ func main1() error {
 
 	pos := 0
 	if len(src) < 2 {
-		return posError(pos)
+		return posError(pos, len(src))
 	}
 	for pos <= (len(src) - 2) {
 		if src[pos] != 0xFF {
-			return posError(pos)
+			return posError(pos, len(src))
 		}
 		marker := src[pos+1]
 		fmt.Printf("pos = 0x%08X = %10d    marker = 0xFF 0x%02X  %s\n", pos, pos, marker, names[marker])
@@ -59,12 +59,12 @@ func main1() error {
 		}
 
 		if pos >= (len(src) - 2) {
-			return posError(pos)
+			return posError(pos, len(src))
 		}
 		payloadLength := (int(src[pos]) << 8) | int(src[pos+1])
 		pos += payloadLength
 		if (payloadLength < 2) || (pos < 0) || (pos > len(src)) {
-			return posError(pos)
+			return posError(pos, len(src))
 		}
 
 		if marker != 0xDA { // SOS (Start Of Scan) marker.
@@ -74,7 +74,7 @@ func main1() error {
 			if src[pos] != 0xFF {
 				pos += 1
 			} else if pos >= (len(src) - 1) {
-				return posError(pos)
+				return posError(pos, len(src))
 			} else if m := src[pos+1]; (m != 0x00) && ((m < 0xD0) || (0xD7 < m)) {
 				break
 			} else {
@@ -82,11 +82,12 @@ func main1() error {
 			}
 		}
 	}
-	return posError(pos)
+	return posError(pos, len(src))
 }
 
-func posError(pos int) error {
-	return fmt.Errorf("invalid JPEG at pos = 0x%08X = %10d", pos, pos)
+func posError(pos int, lenSrc int) error {
+	return fmt.Errorf("bad JPEG, pos = 0x%08X = %10d, len(src) is 0x%08X = %10d",
+		pos, pos, lenSrc, lenSrc)
 }
 
 var names = [256]string{
