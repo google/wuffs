@@ -78,12 +78,25 @@ handle() {
   # many implicit zero bits to produce before giving up. Giving up effectively
   # truncates the input, even if we haven't reached the actual end of file.
   #
-  # Print "trunc" vs "sSOSb" vs "other" to distinguish these cases.
+  # The ectn (example-convert-to-nia) program runs under a SECCOMP_MODE_STRICT
+  # sandbox, which prohibits dynamic memory allocation (calling malloc). Using
+  # only statically allocated memory, its maximum supported image size has to
+  # be configured at compile time, not probed at runtime. The ectn program can
+  # reject some perfectly valid (but large) JPEG images that the djpeg program
+  # is happy to process (if run on a system with plentiful RAM).
+  #
+  # These "image is too large" rejections are a property of the ectn program
+  # (and its sandbox), not of the Wuffs library. Wuffs' JPEG decoder can
+  # happily decode such images if the library caller gives it enough memory.
+  #
+  # Print "trunc" vs "sSOSb" vs "large" vs "other" to distinguish these cases.
   local error=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>&1 >/dev/null)
-  if [[ $error =~ :\ truncated\ input$ ]]; then
+  if [[ $error =~ ^jpeg:\ truncated\ input$ ]]; then
     echo "Differ (trunc)  $1"
-  elif [[ $error =~ :\ short\ SOS\ bitstream$ ]]; then
+  elif [[ $error =~ ^jpeg:\ short\ SOS\ bitstream$ ]]; then
     echo "Differ (sSOSb)  $1"
+  elif [[ $error =~ ^main:\ image\ is\ too\ large ]]; then
+    echo "Differ (large)  $1"
   else
     echo "Differ (other)  $1"
     result=1

@@ -6,7 +6,7 @@ test files for which Wuffs' `example/convert-to-nia` and libjpeg-turbo's
 
 ```
 Differ (other)  test/3pdata/blinksuite/182.jpg
-Differ (other)  test/3pdata/blinksuite/large-size-image-crash.jpeg
+Differ (large)  test/3pdata/blinksuite/large-size-image-crash.jpeg
 Differ (trunc)  test/3pdata/blinksuite/missing-eoi.jpg
 Differ (trunc)  test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
 Differ (trunc)  test/3pdata/blinksuite/non-interleaved_progressive.jpg
