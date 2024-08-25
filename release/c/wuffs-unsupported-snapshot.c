@@ -49070,14 +49070,14 @@ wuffs_jpeg__decoder__do_decode_image_config(
           }
           self->private_impl.f_payload_length = t_4;
         }
-        if (self->private_impl.f_payload_length >= 2u) {
-          self->private_impl.f_payload_length -= 2u;
-        } else if ((v_marker == 254u) || ((224u <= v_marker) && (v_marker < 240u))) {
-          continue;
-        } else {
+        if (self->private_impl.f_payload_length < 2u) {
+          if ((v_marker == 254u) || ((224u <= v_marker) && (v_marker < 240u))) {
+            continue;
+          }
           status = wuffs_base__make_status(wuffs_jpeg__error__bad_marker);
           goto exit;
         }
+        self->private_impl.f_payload_length -= 2u;
       }
       if (v_marker < 192u) {
         status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_marker);
