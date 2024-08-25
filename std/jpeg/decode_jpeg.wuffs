@@ -1749,7 +1749,7 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
             break
         }
 
-        c8 = (args.src.peek_u16le() >> 8) as base.u8
+        c8 = args.src.peek_u8_at(offset: 1)
         if c8 == 0x00 {
             this.bitstream_buffer[wi] = 0xFF
             wi += 1

@@ -51400,7 +51400,7 @@ wuffs_jpeg__decoder__fill_bitstream(
     } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 1u) {
       break;
     }
-    v_c8 = ((uint8_t)(((uint16_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u))));
+    v_c8 = iop_a_src[1u];
     if (v_c8 == 0u) {
       self->private_data.f_bitstream_buffer[v_wi] = 255u;
       v_wi += 1u;

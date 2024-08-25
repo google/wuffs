@@ -570,6 +570,7 @@ const (
 
 	IDPeekUndoByte = ID(0x1A0)
 	IDPeekU8       = ID(0x1A1)
+	IDPeekU8At     = ID(0x1A2)
 
 	IDPeekU8AsU16 = ID(0x1A5)
 	IDPeekU16BE   = ID(0x1A6)
@@ -1020,6 +1021,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDPeekUndoByte: "peek_undo_byte",
 	IDPeekU8:       "peek_u8",
+	IDPeekU8At:     "peek_u8_at",
 
 	IDPeekU8AsU16: "peek_u8_as_u16",
 	IDPeekU16BE:   "peek_u16be",

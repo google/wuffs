@@ -253,6 +253,14 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writeb(')')
 		return nil
 
+	case t.IDPeekU8At:
+		b.printf("%s%s[", iopPrefix, recvName)
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writeb(']')
+		return nil
+
 	case t.IDPeekU64LEAt:
 		b.printf("wuffs_base__peek_u64le__no_bounds_check(%s%s + ", iopPrefix, recvName)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {

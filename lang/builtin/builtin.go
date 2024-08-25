@@ -510,8 +510,9 @@ var funcsOther = [...]string{
 	"io_reader.peek_u64le() u64",
 
 	// As an implementation restriction, we require that offset has a constant
-	// value. The (0x1_0000 - sizeof(u64)) limit is arbitrary, but high enough
+	// value. The (0x1_0000 - sizeof(uxx)) limit is arbitrary, but high enough
 	// in practice.
+	"io_reader.peek_u8_at(offset: u32[..= 0xFFFF]) u8",
 	"io_reader.peek_u64le_at(offset: u32[..= 0xFFF8]) u64",
 
 	"io_reader.count_since(mark: u64) u64",

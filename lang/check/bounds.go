@@ -1259,16 +1259,20 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				advanceExpr, update = actual, true
 			}
 
-		} else if method == t.IDPeekU64LEAt {
+		} else if (method == t.IDPeekU8At) || (method == t.IDPeekU64LEAt) {
 			args := n.Args()
 			if len(args) != 1 {
-				return bounds{}, fmt.Errorf("check: internal error: bad peek_u64le_at arguments")
+				return bounds{}, fmt.Errorf("check: internal error: bad peek_uxx_at arguments")
 			}
 			offset := args[0].AsArg().Value()
 			if offset.ConstValue() == nil {
-				return bounds{}, fmt.Errorf("check: peek_u64le_at offset is not a constant value")
+				return bounds{}, fmt.Errorf("check: peek_uxx_at offset is not a constant value")
 			}
-			advance, update = big.NewInt(8), false
+			adv := int64(1)
+			if method == t.IDPeekU64LEAt {
+				adv = 8
+			}
+			advance, update = big.NewInt(adv), false
 			advance.Add(advance, offset.ConstValue())
 
 		} else if method >= t.IDPeekU8 {
