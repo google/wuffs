@@ -51399,13 +51399,17 @@ wuffs_jpeg__decoder__fill_bitstream(
       continue;
     } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 1u) {
       break;
-    } else if (((uint16_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u)) > 0u) {
-      break;
-    } else {
+    }
+    v_c8 = ((uint8_t)(((uint16_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u))));
+    if (v_c8 == 0u) {
       self->private_data.f_bitstream_buffer[v_wi] = 255u;
       v_wi += 1u;
       iop_a_src += 2u;
+      continue;
+    } else if (v_c8 < 255u) {
+      break;
     }
+    iop_a_src += 1u;
   }
   if (((uint64_t)(io2_a_src - iop_a_src)) > 1u) {
     if ((wuffs_base__peek_u8be__no_bounds_check(iop_a_src) >= 255u) && (((uint16_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u)) > 0u)) {

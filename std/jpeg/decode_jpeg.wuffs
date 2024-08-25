@@ -1745,18 +1745,22 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
             wi += 1
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             continue
-
         } else if args.src.length() <= 1 {
             break
+        }
 
-        } else if (args.src.peek_u16le() >> 8) > 0 {
-            break
-
-        } else {
+        c8 = (args.src.peek_u16le() >> 8) as base.u8
+        if c8 == 0x00 {
             this.bitstream_buffer[wi] = 0xFF
             wi += 1
             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+            continue
+        } else if c8 < 0xFF {
+            break
         }
+        // Section B.1.1.2: "Any marker may optionally be preceded by any
+        // number of [0xFF] fill bytes".
+        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
     }
 
     // If we hit a "\xFF\x??" marker then pad the bitstream. In this method
