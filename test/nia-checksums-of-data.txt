@@ -21,6 +21,7 @@ BAD 2342e3fc test/data/artificial-gif/pixel-data-too-much-good-lzw.gif
 OK. 39a71dce test/data/artificial-gif/small-frame-interlaced.gif
 OK. beaec397 test/data/artificial-gif/transparent-index.gif
 BAD f33b9bc1 test/data/artificial-gif/zero-width-frame.gif
+OK. 96bdbbb3 test/data/artificial-jpeg/hippopotamus-bad-comment-length.jpeg
 OK. 96bdbbb3 test/data/artificial-jpeg/hippopotamus-sof-dht-swap.jpeg
 OK. 0564b364 test/data/artificial-png/apng-skip-idat.png
 OK. e08a7cc8 test/data/artificial-png/exif.png

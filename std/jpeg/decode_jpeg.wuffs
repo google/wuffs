@@ -426,10 +426,18 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         } else {
             this.payload_length = args.src.read_u16be_as_u32?()
             // Payload length includes the 2 bytes for the u16be just read.
-            if this.payload_length < 2 {
+            if this.payload_length >= 2 {
+                this.payload_length -= 2
+            } else if (marker == 0xFE) or  // COM.
+                    ((0xE0 <= marker) and (marker < 0xF0)) {  // APPn.
+                // Strictly speaking, this is invalid according to Section
+                // B.1.1.4 "Marker segments". However, libjpeg-turbo allows it
+                // (for COM and APPn markers; see its jdmarker.c file's
+                // skip_variable function) so we do too.
+                continue
+            } else {
                 return "#bad marker"
             }
-            this.payload_length -= 2
         }
 
         // Switch on the marker.

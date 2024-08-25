@@ -86,7 +86,7 @@ func main1() error {
 }
 
 func posError(pos int, lenSrc int) error {
-	return fmt.Errorf("bad JPEG, pos = 0x%08X = %10d, len(src) is 0x%08X = %10d",
+	return fmt.Errorf("bad JPEG, pos = 0x%08X = %10d, len(src) = 0x%08X = %10d",
 		pos, pos, lenSrc, lenSrc)
 }
 
