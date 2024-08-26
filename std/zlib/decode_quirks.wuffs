@@ -12,9 +12,9 @@
 
 // Quirks are discussed in (/doc/note/quirks.md).
 //
-// The base38 encoding of "zlib" is 0x1F_7F79. Left shifting by 10 gives
-// 0x7DFD_E400.
-pri const QUIRKS_BASE : base.u32 = 0x7DFD_E400
+// The base38 encoding of "zlib" is 0x1E_A356. Left shifting by 10 gives
+// 0x7A8D_5800.
+pri const QUIRKS_BASE : base.u32 = 0x7A8D_5800
 
 // --------
 
@@ -24,6 +24,6 @@ pri const QUIRKS_BASE : base.u32 = 0x7DFD_E400
 // A zlib.decoder basically becomes a deflate.decoder. This is useful when the
 // caller might want to choose between the two related-but-slightly-different
 // formats at run time but would rather not allocate two separate decoders.
-pub const QUIRK_JUST_RAW_DEFLATE : base.u32 = 0x7DFD_E400 | 0x00
+pub const QUIRK_JUST_RAW_DEFLATE : base.u32 = 0x7A8D_5800 | 0x00
 
 pri const QUIRKS_COUNT : base.u32 = 0x01

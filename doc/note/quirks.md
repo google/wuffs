@@ -30,15 +30,16 @@ even for malformed input.
 
 ## Wuffs API
 
-Each quirk is assigned a `uint32_t` number, packed using the [base38 namespace
+Each quirk is assigned a 31-bit `uint32_t` number (the highest bit is unused),
+whose high 21 bits use the [base38 namespace
 convention](/doc/note/base38-and-fourcc.md). Decoders and encoders can have a
 `set_quirk!(key: base.u32, value: base.u64) base.status` method whose key
 argument is this `uint32_t` number.
 
-For example, the base38 encoding of `"gif "` and `"json"` is `0x0F8586` and
-`0x124265` respectively, so that the GIF-specific quirks have a `uint32_t` key
-of `((0x0F8586 << 10) | g)` and the JSON-specific quirks have a `uint32_t` key
-of `((0x124265 << 10) | j)`, for some small integers `g` and `j`. The high bits
+For example, the base38 encoding of `"gif."` and `"json"` is `0x0EA964` and
+`0x116642` respectively, so that the GIF-specific quirks have a `uint32_t` key
+of `((0x0EA964 << 10) | g)` and the JSON-specific quirks have a `uint32_t` key
+of `((0x116642 << 10) | j)`, for some small integers `g` and `j`. The high bits
 are a namespace. The overall quirk keys are different even if `g` and `j`
 re-use the same 10-bit integer.
 

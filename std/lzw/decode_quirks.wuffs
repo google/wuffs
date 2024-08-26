@@ -12,13 +12,13 @@
 
 // Quirks are discussed in (/doc/note/quirks.md).
 //
-// The base38 encoding of "lzw " is 0x1417A8. Left shifting by 10 gives
-// 0x505E_A000.
-pri const QUIRKS_BASE : base.u32 = 0x505E_A000
+// The base38 encoding of "lzw." is 0x13_3B86. Left shifting by 10 gives
+// 0x4CEE_1800.
+pri const QUIRKS_BASE : base.u32 = 0x4CEE_1800
 
 // --------
 
 // When this quirk is set (to a value in the range 0 ..= 9), a positive value
 // is one more than the initial number of bits of a literal code. Zero means to
 // use the default literal width, 8.
-pub const QUIRK_LITERAL_WIDTH_PLUS_ONE : base.u32 = 0x505E_A000 | 0x00
+pub const QUIRK_LITERAL_WIDTH_PLUS_ONE : base.u32 = 0x4CEE_1800 | 0x00

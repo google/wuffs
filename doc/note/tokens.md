@@ -72,10 +72,10 @@ a simple token that provides the semantics for each `value_extension`.
 - Bits `42 ..= 62` (21 bits) are the `value_major`.
 - Bits `17 ..= 41` (25 bits) are the `value_minor`.
 
-The `value_major` is a 21-bit [Base38](/doc/note/base38-and-fourcc.md) number.
+The `value_major` is a 21-bit [base38](/doc/note/base38-and-fourcc.md) number.
 For example, an HTML tokenizer might produce a combination of "base" tokens
-(see below) and tokens whose `value_major` is `0x109B0B`, the Base38 encoding
-of `html`. The `value_major` forms a namespace that distinguishes e.g.
+(see below) and tokens whose `value_major` is `0x0FBEE8`, the base38 encoding
+of `"html"`. The `value_major` forms a namespace that distinguishes e.g.
 HTML-specific tokens from JSON-specific tokens.
 
 If `value_major` is non-zero then `value_minor` has whatever meaning the

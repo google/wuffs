@@ -255,9 +255,9 @@ const char* g_vbc_names[16] = {
 };
 
 const int g_base38_decode[38] = {
-    ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '?',       //
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',  //
-    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',  //
+    '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',                 //
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',       //
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '~',  //
 };
 
 const char*  //
@@ -341,10 +341,10 @@ main1(int argc, char** argv) {
 
           if (vmajor > 0) {
             char vmajor_name[5];
-            vmajor_name[0] = '*';
-            vmajor_name[1] = '*';
-            vmajor_name[2] = '*';
-            vmajor_name[3] = '*';
+            vmajor_name[0] = '?';
+            vmajor_name[1] = '?';
+            vmajor_name[2] = '?';
+            vmajor_name[3] = '?';
             vmajor_name[4] = '\x00';
             uint32_t m = vmajor;
             if (m < 38 * 38 * 38 * 38) {
@@ -364,7 +364,7 @@ main1(int argc, char** argv) {
               vmajor_name[3] = g_base38_decode[m3];
             }
 
-            printf("vmajor=0x%06" PRIX32 ":%s vminor=0x%07" PRIX32 "\n", vmajor,
+            printf("vmajor=0x%06" PRIX32 "=%s vminor=0x%07" PRIX32 "\n", vmajor,
                    vmajor_name, vminor);
           } else if (vmajor == 0) {
             printf("vbc=%s  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15], vbd);

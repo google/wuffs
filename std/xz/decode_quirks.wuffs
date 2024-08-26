@@ -12,9 +12,9 @@
 
 // Quirks are discussed in (/doc/note/quirks.md).
 //
-// The base38 encoding of "xz  " is 0x1E1EBC. Left shifting by 10 gives
-// 0x787A_F000.
-pri const QUIRKS_BASE : base.u32 = 0x787A_F000
+// The base38 encoding of "xz.." is 0x1D_42C0. Left shifting by 10 gives
+// 0x750B_0000.
+pri const QUIRKS_BASE : base.u32 = 0x750B_0000
 
 // --------
 
@@ -37,4 +37,4 @@ pri const QUIRKS_BASE : base.u32 = 0x787A_F000
 // XZ-as-part-of-something-else format, not the XZ-standalone format. Like most
 // of Wuffs' other std/foobar quirks, decoding a more lenient variant of the
 // foobar format is opt-in, not opt-out.
-pub const QUIRK_DECODE_STANDALONE_CONCATENATED_STREAMS : base.u32 = 0x787A_F000 | 0x00
+pub const QUIRK_DECODE_STANDALONE_CONCATENATED_STREAMS : base.u32 = 0x750B_0000 | 0x00

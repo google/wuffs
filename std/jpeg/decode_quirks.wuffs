@@ -12,9 +12,9 @@
 
 // Quirks are discussed in (/doc/note/quirks.md).
 //
-// The base38 encoding of "jpeg" is 0x122FF6. Left shifting by 10 gives
-// 0x48BF_D800.
-pri const QUIRKS_BASE : base.u32 = 0x48BF_D800
+// The base38 encoding of "jpeg" is 0x11_53D3. Left shifting by 10 gives
+// 0x454F_4C00.
+pri const QUIRKS_BASE : base.u32 = 0x454F_4C00
 
 // --------
 
@@ -35,7 +35,7 @@ pri const QUIRKS_BASE : base.u32 = 0x48BF_D800
 // encountering a progressive JPEG. This results in more readable calling code,
 // instead of commenting about "positive work buffer minimum length implies a
 // progressive JPEG".
-pub const QUIRK_REJECT_PROGRESSIVE_JPEGS : base.u32 = 0x48BF_D800 | 0x00
+pub const QUIRK_REJECT_PROGRESSIVE_JPEGS : base.u32 = 0x454F_4C00 | 0x00
 
 // --------
 

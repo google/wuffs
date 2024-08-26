@@ -10,7 +10,7 @@
 
 // ----------------
 
-// Package base38 converts a 4-byte string, each byte in [ 0-9?a-z], to a base
+// Package base38 converts a 4-byte string, each byte in [.0-9a-z~], to a base
 // 38 number.
 package base38
 
@@ -25,10 +25,13 @@ const (
 
 // Encode encodes a 4-byte string as a uint32 in the range [0, Max].
 //
-// Each byte must be ' ', be in the range '0'-'9', be '?' or be in the range
-// 'a'-'z'.
+// Each byte must be one of:
+//   - '.'
+//   - in the range ['0', '9']
+//   - in the range ['a', 'z']
+//   - '~'
 //
-// The string "    " is mapped to zero.
+// The string "...." is mapped to zero.
 func Encode(s string) (u uint32, ok bool) {
 	if len(s) == 4 {
 		for i := 0; i < 4; i++ {
@@ -47,7 +50,7 @@ func Encode(s string) (u uint32, ok bool) {
 }
 
 var table = [256]uint8{
-	' ': 1,
+	'.': 1,
 	'0': 2,
 	'1': 3,
 	'2': 4,
@@ -58,31 +61,31 @@ var table = [256]uint8{
 	'7': 9,
 	'8': 10,
 	'9': 11,
-	'?': 12,
-	'a': 13,
-	'b': 14,
-	'c': 15,
-	'd': 16,
-	'e': 17,
-	'f': 18,
-	'g': 19,
-	'h': 20,
-	'i': 21,
-	'j': 22,
-	'k': 23,
-	'l': 24,
-	'm': 25,
-	'n': 26,
-	'o': 27,
-	'p': 28,
-	'q': 29,
-	'r': 30,
-	's': 31,
-	't': 32,
-	'u': 33,
-	'v': 34,
-	'w': 35,
-	'x': 36,
-	'y': 37,
-	'z': 38,
+	'a': 12,
+	'b': 13,
+	'c': 14,
+	'd': 15,
+	'e': 16,
+	'f': 17,
+	'g': 18,
+	'h': 19,
+	'i': 20,
+	'j': 21,
+	'k': 22,
+	'l': 23,
+	'm': 24,
+	'n': 25,
+	'o': 26,
+	'p': 27,
+	'q': 28,
+	'r': 29,
+	's': 30,
+	't': 31,
+	'u': 32,
+	'v': 33,
+	'w': 34,
+	'x': 35,
+	'y': 36,
+	'z': 37,
+	'~': 38,
 }

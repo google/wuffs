@@ -36,7 +36,7 @@ func main1() error {
 	args := os.Args
 	if len(args) > 1 {
 		for _, arg := range args[1:] {
-			arg := (strings.ToLower(arg) + "    ")[:4]
+			arg := (strings.ToLower(arg) + "....")[:4]
 			if code, ok := base38.Encode(arg); ok {
 				code0 := fmt.Sprintf("0x%06X", code)
 				code1 := fmt.Sprintf("0x%08X", code<<10)

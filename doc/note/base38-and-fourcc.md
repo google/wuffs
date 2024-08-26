@@ -31,26 +31,42 @@ Wuffs uses the big-endian interpretation, as it maintains ordering.
 
 Base38 is a tighter encoding than FourCC, fitting four characters into 21 bits
 instead of 32 bits. This is achieved by using a smaller alphabet of 38 possible
-values (space, 0-9, ? or a-z), so that it cannot distinguish between e.g. an
-upper case 'X' and a lower case 'x'. There's also the happy coincidence that
-`38 ** 4 = 0x1FD110 = 2085136` is slightly smaller than `2 ** 21 = 0x200000 =
-2097152`.
+values ('.', 0-9, a-z or '~'), so that it cannot distinguish between e.g. an
+upper case 'X' and a lower case 'x'. There are then two happy coincidences:
 
-The base38 encoding of `"JPEG"` is `0x122FF6`, which is `1191926`, which is
-`((21 * (38 ** 3)) + (27 * (38 ** 2)) + (16 * (38 ** 1)) + (18 * (38 ** 0)))`.
+- `38 ** 4 = 0x1FD110 = 2085136` is slightly smaller than `2 ** 21 = 0x200000 =
+  2097152`.
+- 21 bits is just large enough to hold every valid Unicode code point, so that
+  systems and data formats that can hold "one UCP" can be repurposed to
+  alternatively hold "one base38-encoded four-character string".
+
+The base38 encoding of `"jpeg"` is `0x1153D3`, which is `1135571`, which is
+`((20 * (38 ** 3)) + (26 * (38 ** 2)) + (15 * (38 ** 1)) + (17 * (38 ** 0)))`.
+
+The minimum base38 value, 0x000000, corresponds to `"...."`. Depending on
+context, this can be used as a default, built-in or placeholder value.
+
+The maximum base38 value, 0x1FD10F = 2085135, corresponds to `"~~~~"`.
+Depending on context, this can be used as a "matches everything" wildcard.
+
+The maximum 21-bit value, 0x1FFFFF = 2097151, is not a valid base38 value but
+can still be used in some contexts as a sentinel or option-not-set value.
+
+
+### Base38 Namespaces
 
 Using only 21 bits means that we can use base38 values to partition the set of
 possible `uint32_t` values into file-format specific enumerations. Each package
 (i.e. Wuffs implementation of a specific file format) can define up to 1024
-different values in their own namespace, without conflicting with other
-packages (assuming that there aren't e.g. two `"JPEG"` Wuffs packages in the
-same library). The conventional `uint32_t` packing is:
+local values in their own four-character namespace, without conflicting with
+other packages (assuming that there aren't e.g. two `"jpeg"` Wuffs packages in
+the same library). The conventional `uint32_t` packing is:
 
 - Bit         `31`  (1 bit)  is reserved (zero).
-- Bits `10 ..= 30` (21 bits) are the base38 value, shifted by 10.
-- Bits  `0 ..=  9` (10 bits) are the enumeration value.
+- Bits `10 ..= 30` (21 bits) are the base38-encoded namespace, shifted by 10.
+- Bits  `0 ..=  9` (10 bits) are the local enumeration value.
 
 For example:
-- [Quirk values](/doc/note/quirks.md) use this `((base38 << 10) | enumeration)`
+- [Quirk values](/doc/note/quirks.md) use this `((namespace << 10) | local)`
   scheme.
-- [Tokens](/doc/note/tokens.md) assign 21 out of 64 bits for a Base38 value.
+- [Tokens](/doc/note/tokens.md) assign 21 out of 64 bits for a base38 value.
