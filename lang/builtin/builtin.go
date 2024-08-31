@@ -24,6 +24,8 @@ import (
 )
 
 var FourCCs = [...][2]string{
+	{"ABXR", "Android Binary XML (for resources; see AndroidBinXmlParser.java)"},
+	{"ABXS", "Android Binary XML (for system_server; see BinaryXmlSerializer.java)"},
 	{"BGCL", "Background Color"},
 	{"BMP ", "Bitmap"},
 	{"BRTL", "Brotli"},
