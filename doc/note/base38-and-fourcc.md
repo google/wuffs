@@ -43,6 +43,9 @@ upper case 'X' and a lower case 'x'. There are then two happy coincidences:
 The base38 encoding of `"jpeg"` is `0x1153D3`, which is `1135571`, which is
 `((20 * (38 ** 3)) + (26 * (38 ** 2)) + (15 * (38 ** 1)) + (17 * (38 ** 0)))`.
 
+The base38 encoding of `"ping"` is `0x1633BD`, which is `1455037`, which is
+`((26 * (38 ** 3)) + (19 * (38 ** 2)) + (24 * (38 ** 1)) + (17 * (38 ** 0)))`.
+
 The minimum base38 value, 0x000000, corresponds to `"...."`. Depending on
 context, this can be used as a default, built-in or placeholder value.
 
@@ -70,3 +73,86 @@ For example:
 - [Quirk values](/doc/note/quirks.md) use this `((namespace << 10) | local)`
   scheme.
 - [Tokens](/doc/note/tokens.md) assign 21 out of 64 bits for a base38 value.
+
+
+### Base38 4/4/4 and 4/4/2
+
+3×21 bits fits snugly into a `int64_t` or `uint64_t` (the sign or high bit is
+unused). 63 bits can therefore hold a 12-character or three 4-character strings
+(taken from base38's limited alphabet).
+
+For example, in a custom RPC protocol, the namespace/class/method name could be
+base38-encoded as a 4/4/4 string like `"net./conn/ping"`. As a number, this
+would be `((0x147150 << 42) | (0x0B7324 << 21) | 0x1633BD)` which is
+`0x51C5416E_649633BD`. At the wire format level, this would occupy a
+fixed-length (8 bytes) and that 64th bit could, for example, indicate request
+or response.
+
+A 2-character string can fit in 11 bits, as `38 ** 2 = 0x5A4 = 1444` is smaller
+than `2 ** 11 = 0x800 = 2048`. 53 bits can therefore hold a 10-character or
+4/4/2 alpha-numeric-ish string. 53 bits also fits snugly under JavaScript's
+`Number.MAX_SAFE_INTEGER` - these integers can be losslessly stored in a
+`double` or `float64_t`.
+
+[Enumerated Media Types](./enumerated-media-types.txt) uses this base38 4/4/2
+encoding, mapping `"image/jpeg"` to the base38 `"imag/jpeg/.."` which is
+`((0x106BF7 << 32) | (0x1153D3 << 11) | 0x000)` which is `0x106BF7_8A9E9800`.
+Some more examples:
+
+- `0x09CC62_A9E37800 = "appl/octe/.." = "application/octet-stream"`
+- `0x09CC62_B0B24000 = "appl/pdf./.." = "application/pdf"`
+- `0x09CC62_DACDFC4E = "appl/voao/s." = "application/vnd.oasis.opendocument.spreadsheet"`
+- `0x09CC62_DACDFC6C = "appl/voao/st" = "application/vnd.oasis.opendocument.spreadsheet-template"`
+- `0x09CC62_DACDFC74 = "appl/voao/t." = "application/vnd.oasis.opendocument.text"`
+- `0x09CC62_DADFCC6B = "appl/vopo/ss" = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"`
+- `0x106BF7_8A9E9800 = "imag/jpeg/.." = "image/jpeg"`
+- `0x106BF7_B276B000 = "imag/png./.." = "image/png"`
+- `0x106BF7_FE887DA3 = "imag/~~~~/~~" = "image/*"`
+- `0x197816_7DF74000 = "text/html/.." = "text/html"`
+- `0x197816_B215E800 = "text/plai/.." = "text/plain"`
+
+
+### Base38 Alphabet
+
+Case-insensitive alpha-numeric, roughly speaking.
+
+```
+'.' =  0
+'0' =  1
+'1' =  2
+'2' =  3
+'3' =  4
+'4' =  5
+'5' =  6
+'6' =  7
+'7' =  8
+'8' =  9
+'9' = 10
+'a' = 11
+'b' = 12
+'c' = 13
+'d' = 14
+'e' = 15
+'f' = 16
+'g' = 17
+'h' = 18
+'i' = 19
+'j' = 20
+'k' = 21
+'l' = 22
+'m' = 23
+'n' = 24
+'o' = 25
+'p' = 26
+'q' = 27
+'r' = 28
+'s' = 29
+'t' = 30
+'u' = 31
+'v' = 32
+'w' = 33
+'x' = 34
+'y' = 35
+'z' = 36
+'~' = 37
+```
