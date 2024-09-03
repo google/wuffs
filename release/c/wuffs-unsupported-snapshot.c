@@ -916,6 +916,9 @@ typedef struct wuffs_base__transform__output__struct {
 // Truevision Advanced Raster Graphics Adapter.
 #define WUFFS_BASE__FOURCC__TGA 0x54474120
 
+// Thumbhash.
+#define WUFFS_BASE__FOURCC__TH 0x54482020
+
 // Tagged Image File Format.
 #define WUFFS_BASE__FOURCC__TIFF 0x54494646
 
@@ -22391,6 +22394,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x514F4920, "\x03\x71\x6F\x69\x66"},          // QOI
       {+0x5A4C4942, "\x01\x78\x9C"},                  // ZLIB
       {+0x504E4720, "\x03\x89\x50\x4E\x47"},          // PNG
+      {+0x54482020, "\x02\xC3\xBE\xFE"},              // TH
       {+0x585A2020, "\x04\xFD\x37\x7A\x58\x5A"},      // XZ
       {+0x4A504547, "\x01\xFF\xD8"},                  // JPEG
   };

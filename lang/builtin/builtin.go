@@ -78,6 +78,7 @@ var FourCCs = [...][2]string{
 	{"TAR ", "Tape Archive"},
 	{"TEXT", "Text"},
 	{"TGA ", "Truevision Advanced Raster Graphics Adapter"},
+	{"TH  ", "Thumbhash"},
 	{"TIFF", "Tagged Image File Format"},
 	{"TOML", "Tom's Obvious Minimal Language"},
 	{"WAVE", "Waveform"},
