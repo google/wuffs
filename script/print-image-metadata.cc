@@ -56,6 +56,7 @@ print-image-metadata prints images' metadata.
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__QOI
 #define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__THUMBHASH
 #define WUFFS_CONFIG__MODULE__VP8
 #define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__WEBP
@@ -397,6 +398,9 @@ redirect:
         break;
       case WUFFS_BASE__FOURCC__TGA:
         dec = wuffs_tga__decoder::alloc_as__wuffs_base__image_decoder();
+        break;
+      case WUFFS_BASE__FOURCC__TH:
+        dec = wuffs_thumbhash__decoder::alloc_as__wuffs_base__image_decoder();
         break;
       case WUFFS_BASE__FOURCC__WBMP:
         dec = wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();

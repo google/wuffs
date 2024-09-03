@@ -66,6 +66,7 @@ to enable.
 - `QOI:       BASE`
 - `SHA256:    BASE`
 - `TGA:       BASE`
+- `THUMBHASH: BASE`
 - `VP8:       BASE`
 - `WBMP:      BASE`
 - `WEBP:      BASE, VP8`

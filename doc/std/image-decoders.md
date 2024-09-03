@@ -132,6 +132,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [std/png](/std/png)
 - [std/qoi](/std/qoi)
 - [std/tga](/std/tga)
+- [std/thumbhash](/std/thumbhash)
 - [std/wbmp](/std/wbmp)
 - [std/webp](/std/webp)
 

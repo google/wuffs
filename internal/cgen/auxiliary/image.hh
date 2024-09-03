@@ -83,8 +83,9 @@ class DecodeImageCallbacks {
   // of the FOO file format is optional (for each value of FOO) and depends on
   // the corresponding module to be enabled at compile time (i.e. #define'ing
   // WUFFS_CONFIG__MODULE__FOO).
+  //
   //  - WUFFS_BASE__FOURCC__BMP
-  //  - WUFFS_BASE__FOURCC__ETC
+  //  - WUFFS_BASE__FOURCC__ETC2
   //  - WUFFS_BASE__FOURCC__GIF
   //  - WUFFS_BASE__FOURCC__JPEG
   //  - WUFFS_BASE__FOURCC__NIE
@@ -92,8 +93,13 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__PNG
   //  - WUFFS_BASE__FOURCC__QOI
   //  - WUFFS_BASE__FOURCC__TGA
+  //  - WUFFS_BASE__FOURCC__TH
   //  - WUFFS_BASE__FOURCC__WBMP
   //  - WUFFS_BASE__FOURCC__WEBP
+  //
+  // The FOOBAR in WUFFS_BASE__FOURCC__FOBA is limited to four characters, but
+  // the FOOBAR in the corresponding WUFFS_CONFIG__MODULE__FOOBAR macro might
+  // be fuller and longer. For example, NPBM / NETPBM or TH / THUMBHASH.
   virtual wuffs_base__image_decoder::unique_ptr  //
   SelectDecoder(uint32_t fourcc,
                 wuffs_base__slice_u8 prefix_data,
