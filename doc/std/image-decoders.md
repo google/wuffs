@@ -158,6 +158,8 @@ Examples in other repositories:
 ## [Quirks](/doc/note/quirks.md)
 
 - [GIF decoder quirks](/std/gif/decode_quirks.wuffs)
+- [JPEG decoder quirks](/std/jpeg/decode_quirks.wuffs)
+- [TH decoder quirks](/std/thumbhash/decode_quirks.wuffs)
 
 
 ## Related Documentation

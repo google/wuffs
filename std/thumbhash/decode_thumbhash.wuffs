@@ -71,6 +71,8 @@ pub struct decoder? implements base.image_decoder(
         q_dc : base.u64,  // Fixed-point denominator is (LDENOM << 28).
         a_dc : base.u64,  // Fixed-point denominator is (ADENOM << 28).
 
+        quirk_just_raw_thumbhash : base.bool,
+
         l_scale : base.u8[..= 31],
         p_scale : base.u8[..= 63],
         q_scale : base.u8[..= 63],
@@ -185,10 +187,17 @@ pub struct decoder? implements base.image_decoder(
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if (args.key == QUIRK_JUST_RAW_THUMBHASH) and this.quirk_just_raw_thumbhash {
+        return 1
+    }
     return 0
 }
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == QUIRK_JUST_RAW_THUMBHASH {
+        this.quirk_just_raw_thumbhash = args.value > 0
+        return ok
+    }
     return base."#unsupported option"
 }
 
@@ -212,10 +221,11 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
-    // TODO: implement QUIRK_JUST_RAW_THUMBHASH.
-    c32 = args.src.read_u24le_as_u32?()
-    if c32 <> '\xC3\xBE\xFE'le {
-        return "#bad header"
+    if not this.quirk_just_raw_thumbhash {
+        c32 = args.src.read_u24le_as_u32?()
+        if c32 <> '\xC3\xBE\xFE'le {
+            return "#bad header"
+        }
     }
 
     c32 = args.src.read_u24le_as_u32?()
@@ -247,11 +257,17 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     this.frame_config_io_position = 8
+    assert this.frame_config_io_position >= 8
     if this.has_alpha <> 0 {
-        this.frame_config_io_position = 9
         c32 = args.src.read_u8_as_u32?()
         this.a_dc = (((c32 >> 0x00) & 15) as base.u64) << 42
         this.a_scale = ((c32 >> 0x04) & 15) as base.u8
+        this.frame_config_io_position = 9
+        assert this.frame_config_io_position >= 8
+    }
+
+    if this.quirk_just_raw_thumbhash {
+        this.frame_config_io_position -= 3
     }
 
     this.pixfmt = base.PIXEL_FORMAT__BGRX

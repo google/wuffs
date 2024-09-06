@@ -108,8 +108,7 @@ test_wuffs_thumbhash_decode_truncated_input() {
 }
 
 const char*  //
-test_wuffs_thumbhash_decode_frame_config() {
-  CHECK_FOCUS(__func__);
+do_test_wuffs_thumbhash_decode_frame_config(bool raw) {
   wuffs_thumbhash__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_thumbhash__decoder__initialize(
@@ -122,8 +121,24 @@ test_wuffs_thumbhash_decode_frame_config() {
   });
   CHECK_STRING(read_file(
       &src, "test/data/artificial-thumbhash/3OcRJYB4d3h_iIeHeEh3eIhw-j3A.th"));
+
+  if (raw) {
+    if ((src.meta.wi <= src.meta.ri) || ((src.meta.wi - src.meta.ri) < 3)) {
+      return "could not skip 3 bytes";
+    }
+    src.meta.ri += 3;  // The number of bytes in "\xC3\xBE\xFE".
+    wuffs_thumbhash__decoder__set_quirk(
+        &dec, WUFFS_THUMBHASH__QUIRK_JUST_RAW_THUMBHASH, 1);
+  }
+
   CHECK_STATUS("decode_frame_config #0",
                wuffs_thumbhash__decoder__decode_frame_config(&dec, &fc, &src));
+
+  uint32_t have = wuffs_base__frame_config__height(&fc);
+  uint32_t want = 23;
+  if (have != want) {
+    RETURN_FAIL("height: have %u, want %u", have, want);
+  }
 
   wuffs_base__status status =
       wuffs_thumbhash__decoder__decode_frame_config(&dec, &fc, &src);
@@ -132,6 +147,18 @@ test_wuffs_thumbhash_decode_frame_config() {
                 wuffs_base__note__end_of_data);
   }
   return NULL;
+}
+
+const char*  //
+test_wuffs_thumbhash_decode_frame_config_cooked() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_thumbhash_decode_frame_config(false);
+}
+
+const char*  //
+test_wuffs_thumbhash_decode_frame_config_raw() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_thumbhash_decode_frame_config(true);
 }
 
 // ---------------- Mimic Tests
@@ -158,7 +185,8 @@ test_wuffs_thumbhash_decode_frame_config() {
 
 proc g_tests[] = {
 
-    test_wuffs_thumbhash_decode_frame_config,
+    test_wuffs_thumbhash_decode_frame_config_cooked,
+    test_wuffs_thumbhash_decode_frame_config_raw,
     test_wuffs_thumbhash_decode_interface,
     test_wuffs_thumbhash_decode_truncated_input,
 
