@@ -389,6 +389,7 @@ var funcsOther = [...]string{
 	"utility.empty_rect_ii_u32() rect_ii_u32",
 	"utility.empty_rect_ie_u32() rect_ie_u32",
 	"utility.empty_slice_u8() slice u8",
+	"utility.i64_divide(a: u64, b: u64[1 ..=]) u64",
 	"utility.make_bitvec256(e00: u64, e01: u64, e02: u64, e03: u64) bitvec256",
 	"utility.make_optional_u63(has_value: bool, value: u64[..= 0x7FFF_FFFF_FFFF_FFFF]) optional_u63",
 	"utility.make_pixel_format(repr: u32) pixel_format",
@@ -401,7 +402,10 @@ var funcsOther = [...]string{
 	"utility.make_rect_ie_u32(" +
 		"min_incl_x: u32, min_incl_y: u32, max_excl_x: u32, max_excl_y: u32) rect_ie_u32",
 	"utility.sign_extend_convert_u8_u32(a: u8) u32",
+	"utility.sign_extend_convert_u8_u64(a: u8) u64",
 	"utility.sign_extend_convert_u16_u32(a: u16) u32",
+	"utility.sign_extend_convert_u16_u64(a: u16) u64",
+	"utility.sign_extend_convert_u32_u64(a: u32) u64",
 	"utility.sign_extend_rshift_u32(a: u32, n: u32[..= 31]) u32",
 	"utility.sign_extend_rshift_u64(a: u64, n: u32[..= 63]) u64",
 

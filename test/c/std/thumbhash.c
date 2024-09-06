@@ -76,7 +76,7 @@ test_wuffs_thumbhash_decode_interface() {
   return do_test__wuffs_base__image_decoder(
       wuffs_thumbhash__decoder__upcast_as__wuffs_base__image_decoder(&dec),
       "test/data/artificial-thumbhash/3OcRJYB4d3h_iIeHeEh3eIhw-j3A.th", 0,
-      SIZE_MAX, 32, 32, 0xFF00F8F8);
+      SIZE_MAX, 32, 23, 0xFF56632E);
 }
 
 const char*  //
