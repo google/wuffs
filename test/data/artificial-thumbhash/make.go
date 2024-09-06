@@ -27,6 +27,16 @@ package main
 // slightly different from the base64.RawStdEncoding used on that web page)
 // plus a ".th" extension.
 //
+// The foobar.png files that correspond to each foobar.th file were manually
+// scraped from the https://evanw.github.io/thumbhash/ page. These PNG files
+// were written by thumbhash's original JavaScript reference implementation,
+// exercised by that page. This small JavaScript library favors implementation
+// simplicity over maximizing the compression ratio.
+//
+// For any given foobar.th input file, that library's RGBA output and Wuffs'
+// RGBA output may differ slightly, due to floating point versus fixed point
+// rounding errors, but they're pretty close.
+//
 // Usage: go run make.go
 
 import (
