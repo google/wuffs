@@ -113,6 +113,11 @@ OK. dcbb225a test/data/hippopotamus.ppm
 OK. ed4b78fc test/data/hippopotamus.regular.gif
 OK. dcbb225a test/data/hippopotamus.regular.png
 BAD 888b1c04 test/data/hippopotamus.regular.truncated.png
+OK. f6bb81e2 test/data/mona-lisa.21x32.etc2.pkm
+OK. 012ce4cf test/data/mona-lisa.21x32.png
+OK. 0a22e689 test/data/mona-lisa.21x32.q50.jpeg
+OK. 059ecb80 test/data/mona-lisa.21x32.q90.jpeg
+OK. 12fc69a5 test/data/mona-lisa.21x32.th
 OK. 2dccfe56 test/data/muybridge-frame-000.wbmp
 OK. db2733f5 test/data/muybridge.apng
 OK. db2733f5 test/data/muybridge.gif

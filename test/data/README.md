@@ -120,6 +120,9 @@ Museum."
 copied from
 [shakespeare.mit.edu](http://shakespeare.mit.edu/midsummer/midsummer.1.1.html).
 
+`mona-lisa.*` is derived from a Wikimedia Commons [photo of the Mona
+Lisa](https://en.wikipedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg).
+
 `muybridge.gif` is derived from
 [en.wikipedia.org](https://en.wikipedia.org/wiki/File:Muybridge_race_horse_animated.gif)
 which is in the public domain.
