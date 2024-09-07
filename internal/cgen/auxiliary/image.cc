@@ -101,9 +101,9 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
       return wuffs_qoi__decoder::alloc_as__wuffs_base__image_decoder();
 #endif
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TGA)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TARGA)
     case WUFFS_BASE__FOURCC__TGA:
-      return wuffs_tga__decoder::alloc_as__wuffs_base__image_decoder();
+      return wuffs_targa__decoder::alloc_as__wuffs_base__image_decoder();
 #endif
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__THUMBHASH)

@@ -68,7 +68,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__QOI
-#define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__TARGA
 #define WUFFS_CONFIG__MODULE__THUMBHASH
 #define WUFFS_CONFIG__MODULE__VP8
 #define WUFFS_CONFIG__MODULE__WBMP
@@ -169,7 +169,7 @@ union {
   wuffs_nie__decoder nie;
   wuffs_png__decoder png;
   wuffs_qoi__decoder qoi;
-  wuffs_tga__decoder tga;
+  wuffs_targa__decoder targa;
   wuffs_thumbhash__decoder thumbhash;
   wuffs_wbmp__decoder wbmp;
   wuffs_webp__decoder webp;
@@ -424,13 +424,13 @@ initialize_image_decoder() {
       return NULL;
 
     case WUFFS_BASE__FOURCC__TGA:
-      status = wuffs_tga__decoder__initialize(
-          &g_potential_decoders.tga, sizeof g_potential_decoders.tga,
+      status = wuffs_targa__decoder__initialize(
+          &g_potential_decoders.targa, sizeof g_potential_decoders.targa,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
       TRY(wuffs_base__status__message(&status));
       g_image_decoder =
-          wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.tga);
+          wuffs_targa__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.targa);
       return NULL;
 
     case WUFFS_BASE__FOURCC__TH:

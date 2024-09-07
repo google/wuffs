@@ -19,7 +19,7 @@ giflib for GIF, libpng for PNG, etc.
 To manually run this test:
 
 for CC in clang gcc; do
-  $CC -std=c99 -Wall -Werror tga.c && ./a.out
+  $CC -std=c99 -Wall -Werror targa.c && ./a.out
   rm -f a.out
 done
 
@@ -52,7 +52,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__TARGA
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -63,62 +63,62 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
-// ---------------- TGA Tests
+// ---------------- TARGA Tests
 
 const char*  //
-wuffs_tga_decode(uint64_t* n_bytes_out,
-                 wuffs_base__io_buffer* dst,
-                 uint32_t wuffs_initialize_flags,
-                 wuffs_base__pixel_format pixfmt,
-                 uint32_t* quirks_ptr,
-                 size_t quirks_len,
-                 wuffs_base__io_buffer* src) {
-  wuffs_tga__decoder dec;
+wuffs_targa_decode(uint64_t* n_bytes_out,
+                   wuffs_base__io_buffer* dst,
+                   uint32_t wuffs_initialize_flags,
+                   wuffs_base__pixel_format pixfmt,
+                   uint32_t* quirks_ptr,
+                   size_t quirks_len,
+                   wuffs_base__io_buffer* src) {
+  wuffs_targa__decoder dec;
   CHECK_STATUS("initialize",
-               wuffs_tga__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
-                                              wuffs_initialize_flags));
+               wuffs_targa__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                                wuffs_initialize_flags));
   return do_run__wuffs_base__image_decoder(
-      wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      wuffs_targa__decoder__upcast_as__wuffs_base__image_decoder(&dec),
       n_bytes_out, dst, pixfmt, quirks_ptr, quirks_len, src);
 }
 
 const char*  //
-test_wuffs_tga_decode_interface() {
+test_wuffs_targa_decode_interface() {
   CHECK_FOCUS(__func__);
-  wuffs_tga__decoder dec;
+  wuffs_targa__decoder dec;
   CHECK_STATUS("initialize",
-               wuffs_tga__decoder__initialize(
+               wuffs_targa__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
-      wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      wuffs_targa__decoder__upcast_as__wuffs_base__image_decoder(&dec),
       "test/data/bricks-color.tga", 0, SIZE_MAX, 160, 120, 0xFF022460);
 }
 
 const char*  //
-test_wuffs_tga_decode_truncated_input() {
+test_wuffs_targa_decode_truncated_input() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer src =
       wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
-  wuffs_tga__decoder dec;
+  wuffs_targa__decoder dec;
   CHECK_STATUS("initialize",
-               wuffs_tga__decoder__initialize(
+               wuffs_targa__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
   wuffs_base__status status =
-      wuffs_tga__decoder__decode_image_config(&dec, NULL, &src);
+      wuffs_targa__decoder__decode_image_config(&dec, NULL, &src);
   if (status.repr != wuffs_base__suspension__short_read) {
     RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
                 wuffs_base__suspension__short_read);
   }
 
   src.meta.closed = true;
-  status = wuffs_tga__decoder__decode_image_config(&dec, NULL, &src);
-  if (status.repr != wuffs_tga__error__truncated_input) {
+  status = wuffs_targa__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_targa__error__truncated_input) {
     RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
-                wuffs_tga__error__truncated_input);
+                wuffs_targa__error__truncated_input);
   }
   return NULL;
 }
@@ -131,23 +131,25 @@ test_wuffs_tga_decode_truncated_input() {
 
 #endif  // WUFFS_MIMIC
 
-// ---------------- TGA Benches
+// ---------------- TARGA Benches
 
 const char*  //
-bench_wuffs_tga_decode_19k_8bpp() {
+bench_wuffs_targa_decode_19k_8bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
-      &wuffs_tga_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      &wuffs_targa_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL),
       NULL, 0, "test/data/bricks-nodither.tga", 0, SIZE_MAX, 1000);
 }
 
 const char*  //
-bench_wuffs_tga_decode_77k_24bpp() {
+bench_wuffs_targa_decode_77k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
-      &wuffs_tga_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      &wuffs_targa_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
       NULL, 0, "test/data/bricks-color.tga", 0, SIZE_MAX, 200);
 }
@@ -164,8 +166,8 @@ bench_wuffs_tga_decode_77k_24bpp() {
 
 proc g_tests[] = {
 
-    test_wuffs_tga_decode_interface,
-    test_wuffs_tga_decode_truncated_input,
+    test_wuffs_targa_decode_interface,
+    test_wuffs_targa_decode_truncated_input,
 
 #ifdef WUFFS_MIMIC
 
@@ -178,8 +180,8 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-    bench_wuffs_tga_decode_19k_8bpp,
-    bench_wuffs_tga_decode_77k_24bpp,
+    bench_wuffs_targa_decode_19k_8bpp,
+    bench_wuffs_targa_decode_77k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
@@ -192,6 +194,6 @@ proc g_benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  g_proc_package_name = "std/tga";
+  g_proc_package_name = "std/targa";
   return test_main(argc, argv, g_tests, g_benches);
 }

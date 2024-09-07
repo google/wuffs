@@ -11,7 +11,7 @@
 pub status "#bad header"
 pub status "#bad run length encoding"
 pub status "#truncated input"
-pub status "#unsupported TGA file"
+pub status "#unsupported TARGA file"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -104,7 +104,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         // We have a color-mapped image (in Wuffs, an indexed pixel format).
         if (this.header_color_map_first_entry_index <> 0) or
                 (this.header_color_map_length > 0x100) {
-            return "#unsupported TGA file"
+            return "#unsupported TARGA file"
         } else if (this.header_color_map_entry_size <> 0x0F) and
                 (this.header_color_map_entry_size <> 0x10) and
                 (this.header_color_map_entry_size <> 0x18) and
@@ -162,7 +162,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             this.src_bytes_per_pixel = 4
             this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
         } else {
-            return "#unsupported TGA file"
+            return "#unsupported TARGA file"
         }
 
     } else {
@@ -172,14 +172,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             this.src_pixfmt = base.PIXEL_FORMAT__Y
             this.opaque = true
         } else {
-            return "#unsupported TGA file"
+            return "#unsupported TARGA file"
         }
     }
 
     this.header_image_descriptor = args.src.read_u8?()
     if (this.header_image_descriptor & 0x10) <> 0 {
         // We don't support right-to-left, only left-to-right pixel order.
-        return "#unsupported TGA file"
+        return "#unsupported TARGA file"
     }
 
     // Skip the Image ID.

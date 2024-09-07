@@ -67,7 +67,7 @@
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__QOI
-#define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__TARGA
 #define WUFFS_CONFIG__MODULE__THUMBHASH
 #define WUFFS_CONFIG__MODULE__VP8
 #define WUFFS_CONFIG__MODULE__WBMP
@@ -134,8 +134,8 @@ handle_image_decoder(wuffs_base__io_buffer src,
     case WUFFS_BASE__FOURCC__QOI:
       dec = wuffs_qoi__decoder::alloc_as__wuffs_base__image_decoder();
       break;
-    case WUFFS_BASE__FOURCC__TGA:
-      dec = wuffs_tga__decoder::alloc_as__wuffs_base__image_decoder();
+    case WUFFS_BASE__FOURCC__TARGA:
+      dec = wuffs_targa__decoder::alloc_as__wuffs_base__image_decoder();
       break;
     case WUFFS_BASE__FOURCC__TH:
       dec = wuffs_thumbhash__decoder::alloc_as__wuffs_base__image_decoder();

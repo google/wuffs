@@ -78,6 +78,13 @@ func doGenrelease(args []string) error {
 		}
 		relFilename := filename[len(baseDirSlash):]
 
+		// std/tga was renamed to std/targa in September 2024 (Wuffs v0.4
+		// alpha). Ignore the generated file from older versions.
+		if relFilename == "wuffs-std-tga.c" {
+			println(filename + " is obsolete, please delete it.")
+			continue
+		}
+
 		s, err := os.ReadFile(filename)
 		if err != nil {
 			return err

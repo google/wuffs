@@ -62,6 +62,20 @@
 
 #endif
 
+// ---------------- Obsolete Macros Check
+
+// std/tga was renamed to std/targa in September 2024 (Wuffs v0.4 alpha).
+#if defined(WUFFS_CONFIG__MODULE__TGA)
+
+#if defined(__GNUC__) || defined(__clang__)
+#warning "WUFFS_CONFIG__MODULE__TGA was renamed to WUFFS_CONFIG__MODULE__TARGA"
+#elif defined(_MSC_VER)
+#pragma message( \
+    "WUFFS_CONFIG__MODULE__TGA was renamed to WUFFS_CONFIG__MODULE__TARGA")
+#endif
+
+#endif
+
 // ---------------- Configuration
 
 // Define WUFFS_CONFIG__AVOID_CPU_ARCH to avoid any code tied to a specific CPU

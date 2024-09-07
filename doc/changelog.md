@@ -49,6 +49,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Removed the `std/gif -> std/lzw` dependency.
 - Removed `endwhile` keyword.
 - Removed `example/bzcat`.
+- Renamed `std/tga` to `std/targa`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.
 

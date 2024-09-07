@@ -21,7 +21,7 @@ such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 When working on the fuzz implementation, or as a coherence check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
-gcc -DWUFFS_CONFIG__FUZZLIB_MAIN tga_fuzzer.c
+gcc -DWUFFS_CONFIG__FUZZLIB_MAIN targa_fuzzer.c
 ./a.out ../../../test/data/*.tga
 rm -f ./a.out
 
@@ -59,7 +59,7 @@ It should print "PASS", amongst other information, and exit(0).
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__TARGA
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -70,8 +70,8 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char*  //
 fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
-  wuffs_tga__decoder dec;
-  wuffs_base__status status = wuffs_tga__decoder__initialize(
+  wuffs_targa__decoder dec;
+  wuffs_base__status status = wuffs_targa__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
   hash = wuffs_base__u64__rotate_right(hash, 1);
@@ -80,5 +80,5 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   }
   return fuzz_image_decoder(
       src, hash,
-      wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(&dec));
+      wuffs_targa__decoder__upcast_as__wuffs_base__image_decoder(&dec));
 }
