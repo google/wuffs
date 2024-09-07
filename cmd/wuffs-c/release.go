@@ -110,6 +110,8 @@ func doGenrelease(args []string) error {
 		out.WriteString("\n")
 	}
 	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
+	out.WriteString("\n")
+	out.WriteString(cgen.EmbeddedString_DropInSTBH.Trim())
 
 	out.Write(grImplStartsHere)
 	out.WriteString("\n")
@@ -129,6 +131,8 @@ func doGenrelease(args []string) error {
 		out.WriteString("\n")
 	}
 	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
+	out.WriteString("\n")
+	out.WriteString(cgen.EmbeddedString_DropInSTBC.Trim())
 
 	out.Write(grImplEndsHere)
 	out.WriteString(grPragmaPop)

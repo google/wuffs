@@ -142,3 +142,11 @@ var EmbeddedStrings_AuxNonBaseHhFiles = []EmbeddedString{
 	embedAuxImageHh,
 	embedAuxJsonHh,
 }
+
+// ----
+
+//go:embed drop-in/stb.c
+var EmbeddedString_DropInSTBC EmbeddedString
+
+//go:embed drop-in/stb.h
+var EmbeddedString_DropInSTBH EmbeddedString

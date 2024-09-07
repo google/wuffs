@@ -32,6 +32,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `WUFFS_BASE__QUIRK_QUALITY`.
 - Added `WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY`.
 - Added `WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST`.
+- Added `WUFFS_CONFIG__ENABLE_DROP_IN_REPLACEMENT__STB`.
 - Added `WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V2`.
 - Added `WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V3`.
 - Added `wuffs_base__status__is_truncated_input_error`.
