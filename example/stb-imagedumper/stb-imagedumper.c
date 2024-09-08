@@ -45,6 +45,8 @@ of four: JPEG and PNG. Wuffs' reimplementation decodes all four demo images.
 Define the USE_ONLY_JPEG macro to limit the variety of image file formats that
 Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 
+Pass the -ascii-art flag to print ASCII art instead of ANSI color codes.
+
 To run:
 
 $CC stb-imagedumper.c && ./a.out *.{jpeg,png}; rm -f a.out
@@ -52,6 +54,7 @@ $CC stb-imagedumper.c && ./a.out *.{jpeg,png}; rm -f a.out
 for a C compiler $CC, such as clang or gcc.
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #if defined(USE_THE_REAL_STBI)
@@ -381,6 +384,7 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
+  bool ascii_art;
   bool demo;
 } g_flags = {0};
 
@@ -412,6 +416,10 @@ parse_flags(int argc, char** argv) {
       }
     }
 
+    if (!strcmp(arg, "a") || !strcmp(arg, "ascii-art")) {
+      g_flags.ascii_art = true;
+      continue;
+    }
     if (!strcmp(arg, "demo")) {
       g_flags.demo = true;
       continue;
@@ -440,7 +448,7 @@ handle(const char* filename, const uint8_t* src_ptr, const size_t src_len) {
   int w = 0;
   int h = 0;
   int channels_in_file = 0;
-  int bytes_per_pixel = STBI_rgb;
+  int bytes_per_pixel = g_flags.ascii_art ? STBI_grey : STBI_rgb;
   unsigned char* pixels = NULL;
 
   if (src_len > 0) {
@@ -465,10 +473,14 @@ handle(const char* filename, const uint8_t* src_ptr, const size_t src_len) {
   for (int y = 0; y < h; y++) {
     char* dst = buffer;
     for (int x = 0; x < w; x++) {
-      // "\xE2\x96\x88" is U+2588 FULL BLOCK. Before that is a true color
-      // terminal escape code.
-      dst += sprintf(dst, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88",  //
-                     (uint8_t)src[0], (uint8_t)src[1], (uint8_t)src[2]);
+      if (g_flags.ascii_art) {
+        *dst++ = "-:=+IOX@"[(src[0] & 0xFF) >> 5];
+      } else {
+        // "\xE2\x96\x88" is U+2588 FULL BLOCK. Before that is a true color
+        // terminal escape code.
+        dst += sprintf(dst, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88",  //
+                       (uint8_t)src[0], (uint8_t)src[1], (uint8_t)src[2]);
+      }
       src += bytes_per_pixel;
     }
     *dst++ = '\n';

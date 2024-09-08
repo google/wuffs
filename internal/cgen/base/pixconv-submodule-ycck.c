@@ -1364,6 +1364,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
 #if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
   switch (dst->pixcfg.private_impl.pixfmt.repr) {
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_Y)
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      break;
+#endif
 #if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR_565)
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       break;

@@ -475,6 +475,7 @@ redirect:
   wuffs_base__pixel_format pixel_format = callbacks.SelectPixfmt(image_config);
   if (pixel_format.repr != image_config.pixcfg.pixel_format().repr) {
     switch (pixel_format.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__Y:
       case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       case WUFFS_BASE__PIXEL_FORMAT__BGR:
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:

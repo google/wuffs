@@ -123,6 +123,7 @@ class DecodeImageCallbacks {
 
   // SelectPixfmt returns the destination pixel format for AllocPixbuf. It
   // should return wuffs_base__make_pixel_format(etc) called with one of:
+  //  - WUFFS_BASE__PIXEL_FORMAT__Y
   //  - WUFFS_BASE__PIXEL_FORMAT__BGR_565
   //  - WUFFS_BASE__PIXEL_FORMAT__BGR
   //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL

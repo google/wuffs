@@ -199,6 +199,46 @@ wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
   return (a16 << 48) | (r16 << 32) | (g16 << 16) | (b16 << 0);
 }
 
+static inline uint8_t  //
+wuffs_base__color_u64_argb_premul__as__color_u8_gray(uint64_t argb_premul) {
+  uint32_t r16 = ((uint32_t)(0xFFFF & (argb_premul >> 32)));
+  uint32_t g16 = ((uint32_t)(0xFFFF & (argb_premul >> 16)));
+  uint32_t b16 = ((uint32_t)(0xFFFF & (argb_premul >> 0)));
+
+  // These coefficients (the fractions 0.299, 0.587 and 0.114) are the same
+  // as those given by the JFIF specification.
+  //
+  // Note that 19595 + 38470 + 7471 equals 65536, also known as (1 << 16). We
+  // shift by 24, not just by 16, because the return value is 8-bit color, not
+  // 16-bit color.
+  uint32_t weighted_average =
+      (19595 * r16) + (38470 * g16) + (7471 * b16) + 32768;
+  return (uint8_t)(weighted_average >> 24);
+}
+
+static inline uint8_t  //
+wuffs_base__color_u64_argb_nonpremul__as__color_u8_gray(
+    uint64_t argb_nonpremul) {
+  uint32_t a16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 48)));
+
+  uint32_t r16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 32)));
+  r16 = (r16 * a16) / 0xFFFF;
+  uint32_t g16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 16)));
+  g16 = (g16 * a16) / 0xFFFF;
+  uint32_t b16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 0)));
+  b16 = (b16 * a16) / 0xFFFF;
+
+  // These coefficients (the fractions 0.299, 0.587 and 0.114) are the same
+  // as those given by the JFIF specification.
+  //
+  // Note that 19595 + 38470 + 7471 equals 65536, also known as (1 << 16). We
+  // shift by 24, not just by 16, because the return value is 8-bit color, not
+  // 16-bit color.
+  uint32_t weighted_average =
+      (19595 * r16) + (38470 * g16) + (7471 * b16) + 32768;
+  return (uint8_t)(weighted_average >> 24);
+}
+
 static inline uint64_t  //
 wuffs_base__color_u32__as__color_u64(uint32_t c) {
   uint64_t a16 = 0x101 * (0xFF & (c >> 24));
