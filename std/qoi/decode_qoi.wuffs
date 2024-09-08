@@ -124,7 +124,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
     } else if this.call_sequence < 0x20 {
         this.do_decode_image_config?(dst: nullptr, src: args.src)
     } else if this.call_sequence == 0x28 {
-        if 16 <> args.src.position() {
+        if 14 <> args.src.position() {
             return base."#bad restart"
         }
     } else if this.call_sequence == 0x40 {

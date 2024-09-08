@@ -71396,7 +71396,7 @@ wuffs_qoi__decoder__do_decode_frame_config(
         goto suspend;
       }
     } else if (self->private_impl.f_call_sequence == 40u) {
-      if (16u != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
+      if (14u != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
