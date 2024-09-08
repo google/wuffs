@@ -113,6 +113,23 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_CONFIG__MODULE__ZLIB
 #endif
 
+// Defining the WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST (and the
+// associated ETC__ALLOW_FOO) macros are optional, but can lead to smaller
+// programs (in terms of binary size). By default (without these macros),
+// Wuffs' standard library can decode images to a variety of pixel formats,
+// such as BGR_565, BGRA_PREMUL or RGBA_NONPREMUL. The destination pixel format
+// is selectable at runtime. Using these macros essentially makes the selection
+// at compile time, by narrowing the list of supported destination pixel
+// formats. The FOO in ETC__ALLOW_FOO should match the pixel format passed (as
+// part of the wuffs_base__image_config argument) to the decode_frame method.
+//
+// If using the wuffs_aux C++ API, without overriding the SelectPixfmt method,
+// the implicit destination pixel format is BGRA_PREMUL.
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_Y
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGB
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_NONPREMUL
+
 // Defining this enables Wuffs' reimplementation of the STB library's API.
 #define WUFFS_CONFIG__ENABLE_DROP_IN_REPLACEMENT__STB
 
