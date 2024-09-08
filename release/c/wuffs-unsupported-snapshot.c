@@ -50883,11 +50883,11 @@ wuffs_jpeg__decoder__do_decode_frame(
     }
     self->private_impl.f_swizzle_immediately = false;
     if (self->private_impl.f_components_workbuf_offsets[8u] > ((uint64_t)(a_workbuf.len))) {
-      if (self->private_impl.f_sof_marker >= 194u) {
+      if ((self->private_impl.f_sof_marker >= 194u) ||  ! self->private_impl.f_use_lower_quality) {
         status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
         goto exit;
       }
-      self->private_impl.f_swizzle_immediately = self->private_impl.f_use_lower_quality;
+      self->private_impl.f_swizzle_immediately = true;
       self->private_impl.f_swizzle_immediately_status = wuffs_base__make_status(NULL);
     } else if (self->private_impl.f_components_workbuf_offsets[4u] < self->private_impl.f_components_workbuf_offsets[8u]) {
       wuffs_private_impl__bulk_memset(a_workbuf.ptr + self->private_impl.f_components_workbuf_offsets[4u], (self->private_impl.f_components_workbuf_offsets[8u] - self->private_impl.f_components_workbuf_offsets[4u]), 0u);

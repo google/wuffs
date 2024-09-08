@@ -993,10 +993,10 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     // is long enough and setting this.swizzle_immediately.
     this.swizzle_immediately = false
     if this.components_workbuf_offsets[8] > args.workbuf.length() {
-        if this.sof_marker >= 0xC2 {
+        if (this.sof_marker >= 0xC2) or not this.use_lower_quality {
             return base."#bad workbuf length"
         }
-        this.swizzle_immediately = this.use_lower_quality
+        this.swizzle_immediately = true
         this.swizzle_immediately_status = ok
     } else if this.components_workbuf_offsets[4] < this.components_workbuf_offsets[8] {
         args.workbuf[this.components_workbuf_offsets[4] .. this.components_workbuf_offsets[8]].bulk_memset!(byte_value: 0)
