@@ -42,6 +42,9 @@ Only the last one is lossless.
 As of September 2024, the actual STB Image implementation only decodes two out
 of four: JPEG and PNG. Wuffs' reimplementation decodes all four demo images.
 
+Define the USE_ONLY_JPEG macro to limit the variety of image file formats that
+Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
+
 To run:
 
 $CC stb-imagedumper.c && ./a.out *.{jpeg,png}; rm -f a.out
@@ -86,14 +89,15 @@ for a C compiler $CC, such as clang or gcc.
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
-#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__JPEG
+#if !defined(USE_ONLY_JPEG)
+#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__CRC32
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__ETC2
 #define WUFFS_CONFIG__MODULE__GIF
-#define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
@@ -104,6 +108,7 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__WEBP
 #define WUFFS_CONFIG__MODULE__ZLIB
+#endif
 
 // Defining this enables Wuffs' reimplementation of the STB library's API.
 #define WUFFS_CONFIG__ENABLE_DROP_IN_REPLACEMENT__STB
