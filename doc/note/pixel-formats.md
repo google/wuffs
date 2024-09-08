@@ -26,7 +26,8 @@ no alpha) and floating point samples should mean a bit depth of 16, 32 or 64.
 
 Formats hold between 1 and 4 channels. For example: Y (1 channel: gray), YA (2
 channels: gray and alpha), BGR (3 channels: blue, green, red) or CMYK (4
-channels: cyan, magenta, yellow, black).
+channels: cyan, magenta, yellow, black). BGRX holds 4 channels even though the
+X-padding channel's values are ignored.
 
 For direct formats with N > 1 channels, those channels can be laid out in
 either 1 (interleaved) or N (planar) planes. For example, RGBA data is usually

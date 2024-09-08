@@ -4360,6 +4360,20 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 
 // --------
 
+// wuffs_base__pixel_coloration is whether a pixel format's color model has no
+// color (alpha only), gray color or rich (non-gray) color. Rich color includes
+// RGB, BGR, YCC, YCCK, CMY and CMYK.
+//
+// Coloration does not capture the alpha aspect of the color model. It does not
+// distinguish RGB from RGBA.
+typedef uint32_t wuffs_base__pixel_coloration;
+
+#define WUFFS_BASE__PIXEL_COLORATION__NONE 0
+#define WUFFS_BASE__PIXEL_COLORATION__GRAY 1
+#define WUFFS_BASE__PIXEL_COLORATION__RICH 3
+
+// --------
+
 // Deprecated: use WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX_INCL.
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
 
@@ -4388,6 +4402,7 @@ typedef struct wuffs_base__pixel_format__struct {
   inline bool is_indexed() const;
   inline bool is_interleaved() const;
   inline bool is_planar() const;
+  inline uint32_t coloration() const;
   inline uint32_t num_planes() const;
   inline wuffs_base__pixel_alpha_transparency transparency() const;
 #endif  // __cplusplus
@@ -4495,6 +4510,12 @@ wuffs_base__pixel_format__is_planar(const wuffs_base__pixel_format* f) {
 }
 
 static inline uint32_t  //
+wuffs_base__pixel_format__coloration(const wuffs_base__pixel_format* f) {
+  uint32_t n = (f->repr) >> 29;
+  return (n <= 1) ? n : 3;
+}
+
+static inline uint32_t  //
 wuffs_base__pixel_format__num_planes(const wuffs_base__pixel_format* f) {
   return ((f->repr >> 16) & 0x03) + 1;
 }
@@ -4534,6 +4555,11 @@ wuffs_base__pixel_format::is_interleaved() const {
 inline bool  //
 wuffs_base__pixel_format::is_planar() const {
   return wuffs_base__pixel_format__is_planar(this);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_format::coloration() const {
+  return wuffs_base__pixel_format__coloration(this);
 }
 
 inline uint32_t  //
@@ -85704,20 +85730,10 @@ wuffs_drop_in__stb__load0(          //
   if (channels_in_file) {
     wuffs_base__pixel_format src_pixfmt =
         wuffs_base__pixel_config__pixel_format(&ic.pixcfg);
-    switch (src_pixfmt.repr) {
-      case WUFFS_BASE__PIXEL_FORMAT__Y:
-      case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
-      case WUFFS_BASE__PIXEL_FORMAT__Y_16BE:
-        *channels_in_file = 1;
-        break;
-      default:
-        *channels_in_file =
-            (wuffs_base__pixel_format__transparency(&src_pixfmt) ==
-             WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE)
-                ? 3
-                : 4;
-        break;
-    }
+    uint32_t n_color = wuffs_base__pixel_format__coloration(&src_pixfmt);
+    uint32_t n_alpha = wuffs_base__pixel_format__transparency(&src_pixfmt) !=
+                       WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE;
+    *channels_in_file = (int)(n_color + n_alpha);
   }
 
   return ret;

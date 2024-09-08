@@ -306,20 +306,10 @@ wuffs_drop_in__stb__load0(          //
   if (channels_in_file) {
     wuffs_base__pixel_format src_pixfmt =
         wuffs_base__pixel_config__pixel_format(&ic.pixcfg);
-    switch (src_pixfmt.repr) {
-      case WUFFS_BASE__PIXEL_FORMAT__Y:
-      case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
-      case WUFFS_BASE__PIXEL_FORMAT__Y_16BE:
-        *channels_in_file = 1;
-        break;
-      default:
-        *channels_in_file =
-            (wuffs_base__pixel_format__transparency(&src_pixfmt) ==
-             WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE)
-                ? 3
-                : 4;
-        break;
-    }
+    uint32_t n_color = wuffs_base__pixel_format__coloration(&src_pixfmt);
+    uint32_t n_alpha = wuffs_base__pixel_format__transparency(&src_pixfmt) !=
+                       WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE;
+    *channels_in_file = (int)(n_color + n_alpha);
   }
 
   return ret;
