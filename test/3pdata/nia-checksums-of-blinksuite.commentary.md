@@ -167,7 +167,7 @@ pos = 0x00000059 =         89    marker = 0xFF 0xDB  DQT
 pos = 0x0000009E =        158    marker = 0xFF 0xC0  SOF0 (Sequential/Baseline)
 pos = 0x000000B1 =        177    marker = 0xFF 0xC4  DHT
 pos = 0x000000CB =        203    marker = 0xFF 0xC4  DHT
-pos = 0x000000E3 =        227    marker = 0xFE 0xDA  SOS   *** corrupted ***
+pos = 0x000000E3 =        227    marker = 0xFE 0xDA  SOS corrupted: note the FE
 pos = 0x00000100 =        256    marker = 0xFF 0xC4  DHT
 pos = 0x00000120 =        288    marker = 0xFF 0xDA  SOS
 pos = 0x0000014B =        331    marker = 0xFF 0xC4  DHT
