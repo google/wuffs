@@ -53,7 +53,7 @@ instead of ANSI color codes. For example:
 ----
 $ stb-imagedumper -braille-art test/data/pjw-thumbnail.png
 
-test/data/pjw-thumbnail.png
+test/data/pjw-thumbnail.png (208 bytes, 164 microseconds)
 ⣿⣿⣿⣿⡿⡋⠉⠉⠉⠙⠻⢿⣿⣿⣿⣿
 ⣿⣿⣿⡿⣷⣿⣿⣿⣆⠀⠀⠀⠈⠹⣿⣿
 ⣿⣿⠃⢸⡿⢿⣿⣿⣿⠦⠀⠀⠀⠀⢼⣿
@@ -71,6 +71,7 @@ $CC stb-imagedumper.c && ./a.out *.{jpeg,png}; rm -f a.out
 for a C compiler $CC, such as clang or gcc.
 */
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -156,6 +157,51 @@ for a C compiler $CC, such as clang or gcc.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
 #endif  // defined(USE_THE_REAL_STBI)
+
+// ----------------
+
+#if defined(__unix__) || defined(__MACH__)
+
+#include <sys/stat.h>
+#include <time.h>
+
+#define WUFFS_EXAMPLE_USE_TIMERS
+
+uint64_t  //
+get_filesize(const char* filename) {
+  struct stat z;
+  if (stat(filename, &z) == 0) {
+    return z.st_size;
+  }
+  return 0;
+}
+
+bool g_started = false;
+struct timespec g_start_time = {0};
+
+int64_t  //
+micros_since_start(struct timespec* now) {
+  if (!g_started) {
+    return 0;
+  }
+  int64_t nanos = (int64_t)(now->tv_sec - g_start_time.tv_sec) * 1000000000 +
+                  (int64_t)(now->tv_nsec - g_start_time.tv_nsec);
+  if (nanos < 0) {
+    return 0;
+  }
+  return nanos / 1000;
+}
+
+#else  // defined(__unix__) || defined(__MACH__)
+
+#warning "TODO: stat and timers on non-POSIX systems"
+
+uint64_t  //
+get_filesize(const char* filename) {
+  return 0;
+}
+
+#endif  // defined(__unix__) || defined(__MACH__)
 
 // ----------------
 
@@ -599,13 +645,21 @@ parse_flags(int argc, char** argv) {
 #define BYTES_PER_COLOR_PIXEL 32
 
 static void  //
-handle(const char* filename, const uint8_t* src_ptr, const size_t src_len) {
+handle(const char* filename,
+       uint64_t filesize,
+       const uint8_t* src_ptr,
+       const size_t src_len) {
   int w = 0;
   int h = 0;
   int channels_in_file = 0;
   int bytes_per_pixel =
       (g_flags.ascii_art || g_flags.braille_art) ? STBI_grey : STBI_rgb;
   unsigned char* pixels = NULL;
+
+#if defined(WUFFS_EXAMPLE_USE_TIMERS)
+  g_started = true;
+  clock_gettime(CLOCK_MONOTONIC, &g_start_time);
+#endif
 
   if (src_len > 0) {
     pixels = stbi_load_from_memory(src_ptr, src_len,  //
@@ -614,6 +668,16 @@ handle(const char* filename, const uint8_t* src_ptr, const size_t src_len) {
     pixels = stbi_load(filename,  //
                        &w, &h, &channels_in_file, bytes_per_pixel);
   }
+
+  int64_t elapsed_micros = 0;
+#if defined(WUFFS_EXAMPLE_USE_TIMERS)
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  elapsed_micros = micros_since_start(&now);
+#endif
+
+  printf("\n%s (%" PRIu64 " bytes, %" PRIi64 " microseconds)\n", filename,
+         filesize, elapsed_micros);
 
   if (!pixels) {
     printf("%s\n", stbi_failure_reason());
@@ -687,6 +751,7 @@ handle(const char* filename, const uint8_t* src_ptr, const size_t src_len) {
 
   fflush(stdout);
   stbi_image_free(pixels);
+  printf("\n");
 }
 
 int  //
@@ -731,17 +796,14 @@ main(int argc, char** argv) {
 
   if (g_flags.demo) {
     for (size_t c = 0; demos[c].filename != NULL; c++) {
-      printf("\n%s (%zu bytes)\n", demos[c].filename, demos[c].src_len);
-      handle(demos[c].filename, demos[c].src_ptr, demos[c].src_len);
-      printf("\n");
+      handle(demos[c].filename, demos[c].src_len, demos[c].src_ptr,
+             demos[c].src_len);
     }
   }
 
   for (int c = 0; c < g_flags.remaining_argc; c++) {
     const char* filename = g_flags.remaining_argv[c];
-    printf("\n%s\n", filename);
-    handle(filename, NULL, 0);
-    printf("\n");
+    handle(filename, get_filesize(filename), NULL, 0);
   }
   return 0;
 }
