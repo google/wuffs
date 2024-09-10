@@ -47,21 +47,23 @@ Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 
 Pass the -a or -ascii-art flag to print ASCII art instead of ANSI color codes.
 
-Pass the -b or -braille-art flag to print Unicode Braille Pattern characters
-instead of ANSI color codes. For example:
+Pass the -b or -braille-art-light-mode (for black text on a white background)
+or -B or -braille-art-dark-mode (for white text on a black background) flag to
+print Unicode Braille Pattern characters instead of ANSI color codes. For
+example:
 
 ----
-$ stb-imagedumper -braille-art test/data/pjw-thumbnail.png
+$ stb-imagedumper -braille-art-light-mode test/data/pjw-thumbnail.png
 
 test/data/pjw-thumbnail.png (208 bytes, 164 microseconds)
-⣿⣿⣿⣿⡿⡋⠉⠉⠉⠙⠻⢿⣿⣿⣿⣿
-⣿⣿⣿⡿⣷⣿⣿⣿⣆⠀⠀⠀⠈⠹⣿⣿
-⣿⣿⠃⢸⡿⢿⣿⣿⣿⠦⠀⠀⠀⠀⢼⣿
-⣿⡁⠀⠀⣫⣁⡡⣅⢀⠀⠀⠀⠀⠀⣽⣿
-⣿⣷⡤⣺⣟⣫⠽⠿⠌⢑⠑⠀⠀⣶⣿⣿
-⣿⣿⣇⢻⣟⣛⣛⣂⠀⢁⢁⠀⠀⣿⣿⣿
-⣿⣿⣿⣿⣯⢽⣶⣤⠆⠈⠠⢬⣽⣿⣿⣿
-⣿⣿⣿⣿⣷⡩⡂⠀⠀⠀⠀⣾⣿⣿⣿⣿
+⠀⠀⠀⠀⢀⢴⣶⣶⣶⣦⣄⡀⠀⠀⠀⠀
+⠀⠀⠀⢀⠈⠀⠀⠀⠹⣯⣿⣿⣷⣆⠀⠀
+⠀⠀⣼⡇⢀⡀⠀⠀⠀⣙⣿⣿⣿⣿⡃⠀
+⠀⢾⣿⢿⠔⠾⢞⠺⡿⣿⣿⣿⣿⣿⠂⠀
+⠀⠈⢛⠅⠠⠔⣂⣀⣳⡮⣮⣿⣿⠉⠀⠀
+⠀⠀⠸⡄⠠⠤⠤⠽⣿⡾⡾⣿⣿⠀⠀⠀
+⠀⠀⠀⠀⠐⡂⠉⠛⣹⣷⣟⡓⠂⠀⠀⠀
+⠀⠀⠀⠀⠈⢖⢽⣿⣿⣿⣿⠁⠀⠀⠀⠀
 ----
 
 To run:
@@ -581,7 +583,8 @@ struct {
   char** remaining_argv;
 
   bool ascii_art;
-  bool braille_art;
+  bool braille_art_dark_mode;
+  bool braille_art_light_mode;
   bool demo;
 } g_flags = {0};
 
@@ -617,8 +620,12 @@ parse_flags(int argc, char** argv) {
       g_flags.ascii_art = true;
       continue;
     }
-    if (!strcmp(arg, "b") || !strcmp(arg, "braille-art")) {
-      g_flags.braille_art = true;
+    if (!strcmp(arg, "B") || !strcmp(arg, "braille-art-dark-mode")) {
+      g_flags.braille_art_dark_mode = true;
+      continue;
+    }
+    if (!strcmp(arg, "b") || !strcmp(arg, "braille-art-light-mode")) {
+      g_flags.braille_art_light_mode = true;
       continue;
     }
     if (!strcmp(arg, "demo")) {
@@ -652,8 +659,10 @@ handle(const char* filename,
   int w = 0;
   int h = 0;
   int channels_in_file = 0;
-  int bytes_per_pixel =
-      (g_flags.ascii_art || g_flags.braille_art) ? STBI_grey : STBI_rgb;
+  int bytes_per_pixel = (g_flags.ascii_art || g_flags.braille_art_dark_mode ||
+                         g_flags.braille_art_light_mode)
+                            ? STBI_grey  // 1.
+                            : STBI_rgb;  // 3.
   unsigned char* pixels = NULL;
 
 #if defined(WUFFS_EXAMPLE_USE_TIMERS)
@@ -694,14 +703,15 @@ handle(const char* filename,
     for (int y = 0; y < h; y++) {
       char* dst = buffer;
       for (int x = 0; x < w; x++) {
-        *dst++ = "-:=+IOX@"[(src[0] & 0xFF) >> 5];
+        *dst++ = "-:=+IOX@"[(src[0] & 0xff) >> 5];
         src += bytes_per_pixel;
       }
       *dst++ = '\n';
       fwrite(buffer, sizeof(char), dst - buffer, stdout);
     }
 
-  } else if (g_flags.braille_art) {
+  } else if (g_flags.braille_art_dark_mode || g_flags.braille_art_light_mode) {
+    uint8_t xor = g_flags.braille_art_dark_mode ? 0x00 : 0xff;
     // Each 2×4 pixel block becomes one Unicode Braille Pattern character. We
     // also apply blue noise dithering, similar to what's described at
     // https://surma.dev/things/ditherpunk/
@@ -717,7 +727,7 @@ handle(const char* filename,
             size_t tx = x + dx;
             uint8_t pixel = pixels[(ty * (size_t)w) + tx];
             uint8_t threshold = g_noise[ty & 31][tx & 31];
-            if (pixel > threshold) {
+            if ((xor^pixel) > (xor^threshold)) {
               uint8_t b = g_braille[dy][dx];
               dst[1] |= b >> 6;
               dst[2] |= b & 0x3f;
