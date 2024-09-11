@@ -671,6 +671,35 @@ u64min(uint64_t a, uint64_t b) {
   return (a < b) ? a : b;
 }
 
+static bool  //
+resize_wh(int* inout_w, int* inout_h, int dst_wh) {
+  // Check arguments.
+  if (!inout_w || !inout_h || (dst_wh <= 0) || (0x4000 < dst_wh) ||  //
+      (*inout_w <= 0) || (0xffffff < *inout_w) ||                    //
+      (*inout_h <= 0) || (0xffffff < *inout_h)) {
+    printf("main: resize failed: invalid argument\n");
+    return false;
+  }
+
+  // Compute dst width × height from src width × height.
+  uint64_t dw = 0;
+  uint64_t dh = 0;
+  uint64_t sw = (uint64_t)(*inout_w);
+  uint64_t sh = (uint64_t)(*inout_h);
+  if (sw < sh) {
+    dw = intmax(1, (int)(((sw * dst_wh * 2) + sh) / (2 * sh)));
+    dh = dst_wh;
+  } else {
+    dw = dst_wh;
+    dh = intmax(1, (int)(((sh * dst_wh * 2) + sw) / (2 * sw)));
+  }
+
+  // Return width and height.
+  *inout_w = (int)dw;
+  *inout_h = (int)dh;
+  return true;
+}
+
 static unsigned char*  //
 resize(int* inout_w,
        int* inout_h,
@@ -808,8 +837,21 @@ handle(const char* filename,
   elapsed_micros = micros_since_start(&now);
 #endif
 
-  printf("\n%s (%" PRIu64 " bytes, %" PRIi64 " microseconds)\n", filename,
-         filesize, elapsed_micros);
+  char resize_info_string[64];
+  resize_info_string[0] = 0;
+  if (g_flags.resize > 0) {
+    int resize_w = src_w;
+    int resize_h = src_h;
+    if (!resize_wh(&resize_w, &resize_h, g_flags.resize)) {
+      stbi_image_free(src_pixels);
+      return;
+    }
+    snprintf(resize_info_string, sizeof(resize_info_string), " → %d×%d",
+             resize_w, resize_h);
+  }
+
+  printf("\n%s (%" PRIu64 " bytes, %d×%d%s pixels, %" PRIi64 " microseconds)\n",
+         filename, filesize, src_w, src_h, resize_info_string, elapsed_micros);
 
   if (!src_pixels) {
     printf("%s\n", stbi_failure_reason());
