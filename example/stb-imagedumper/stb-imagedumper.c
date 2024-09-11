@@ -586,13 +586,18 @@ struct {
   bool braille_art_dark_mode;
   bool braille_art_light_mode;
   bool demo;
+  int resize;
 } g_flags = {0};
 
 static const char* g_usage =
     "Usage: stb-imagedumper *.{jpeg,png}\n"
     "\n"
     "Flags:\n"
-    "    -demo (dump the built-in demonstration images)\n";
+    "    -a or -ascii-art (use ASCII art instead of ANSI color codes)\n"
+    "    -B or -braille-art-dark-mode (use white-on-black Braille art)\n"
+    "    -b or -braille-art-light-mode (use black-on-white Braille art)\n"
+    "    -demo (dump the built-in demonstration images)\n"
+    "    -r or -resize=N (resize to fit in N×N, N≤1024; -r means N=64)\n";
 
 const char*  //
 parse_flags(int argc, char** argv) {
@@ -632,6 +637,19 @@ parse_flags(int argc, char** argv) {
       g_flags.demo = true;
       continue;
     }
+    if (!strcmp(arg, "r")) {
+      g_flags.resize = 64;
+      continue;
+    }
+    if (!strncmp(arg, "resize=", 7)) {
+      while (*arg++ != '=') {
+      }
+      g_flags.resize = atoi(arg);
+      if ((g_flags.resize <= 0) || (1024 < g_flags.resize)) {
+        return g_usage;
+      }
+      continue;
+    }
 
     return g_usage;
   }
@@ -639,6 +657,110 @@ parse_flags(int argc, char** argv) {
   g_flags.remaining_argc = argc - c;
   g_flags.remaining_argv = argv + c;
   return NULL;
+}
+
+// ----------------
+
+static int  //
+intmax(int a, int b) {
+  return (a < b) ? b : a;
+}
+
+static uint64_t  //
+u64min(uint64_t a, uint64_t b) {
+  return (a < b) ? a : b;
+}
+
+static unsigned char*  //
+resize(int* inout_w,
+       int* inout_h,
+       unsigned char* src_pixels,
+       int dst_wh,
+       int bytes_per_pixel) {
+  // Check arguments.
+  if (!inout_w || !inout_h || (dst_wh <= 0) || (0x4000 < dst_wh) ||  //
+      (*inout_w <= 0) || (0xffffff < *inout_w) ||                    //
+      (*inout_h <= 0) || (0xffffff < *inout_h) ||                    //
+      ((bytes_per_pixel != 1) && (bytes_per_pixel != 3))) {
+    printf("main: resize failed: invalid argument\n");
+    return NULL;
+  }
+
+  // Compute dst width × height from src width × height.
+  uint64_t dw = 0;
+  uint64_t dh = 0;
+  uint64_t sw = (uint64_t)(*inout_w);
+  uint64_t sh = (uint64_t)(*inout_h);
+  if (sw < sh) {
+    dw = intmax(1, (int)(((sw * dst_wh * 2) + sh) / (2 * sh)));
+    dh = dst_wh;
+  } else {
+    dw = dst_wh;
+    dh = intmax(1, (int)(((sh * dst_wh * 2) + sw) / (2 * sw)));
+  }
+
+  // Allocate the dst pixel buffer.
+  unsigned char* dst_pixels =
+      malloc((size_t)dw * (size_t)dh * (size_t)bytes_per_pixel);
+  if (!dst_pixels) {
+    printf("main: resize failed: out of memory\n");
+    return NULL;
+  }
+
+  // For every dst pixel, accumulate the weighted sum of the corresponding
+  // source pixels. It's a basic box filter (scaling (sw×sh) explicit src
+  // pixels up to ((sw*dw)×(sh*dh)) implicit tmp pixels down to (dw×dh)
+  // explicit dst pixels) and the implementation is very slow (no SIMD and lots
+  // of branches and uint64_t divisions) but also very simple (for an image
+  // resizing algorithm).
+  unsigned char* dst = dst_pixels;
+  for (uint64_t dy = 0; dy < dh; dy++) {
+    for (uint64_t dx = 0; dx < dw; dx++) {
+      uint64_t tot0 = 0;
+      uint64_t tot1 = 0;
+      uint64_t tot2 = 0;
+      uint64_t totw = 0;
+
+      uint64_t ty = dy * sh;
+      int sy = (int)(ty / dh);
+      for (uint64_t ty_end = (dy + 1) * sh; ty < ty_end; sy++) {
+        uint64_t weighty = u64min(ty_end - ty, dh - (ty % dh));
+        ty += weighty;
+
+        uint64_t tx = dx * sw;
+        int sx = (int)(tx / dw);
+        for (uint64_t tx_end = (dx + 1) * sw; tx < tx_end; sx++) {
+          uint64_t weightx = u64min(tx_end - tx, dw - (tx % dw));
+          tx += weightx;
+
+          uint64_t weight = weightx * weighty;
+          totw += weight;
+          if (bytes_per_pixel == 1) {
+            size_t i = (((size_t)sy * (size_t)sw) + (size_t)sx) * 1;
+            tot0 += weight * src_pixels[i + 0];
+          } else {
+            size_t i = (((size_t)sy * (size_t)sw) + (size_t)sx) * 3;
+            tot0 += weight * src_pixels[i + 0];
+            tot1 += weight * src_pixels[i + 1];
+            tot2 += weight * src_pixels[i + 2];
+          }
+        }
+      }
+
+      if (bytes_per_pixel == 1) {
+        *dst++ = (unsigned char)(((tot0 * 2) + totw) / (totw * 2));
+      } else {
+        *dst++ = (unsigned char)(((tot0 * 2) + totw) / (totw * 2));
+        *dst++ = (unsigned char)(((tot1 * 2) + totw) / (totw * 2));
+        *dst++ = (unsigned char)(((tot2 * 2) + totw) / (totw * 2));
+      }
+    }
+  }
+
+  // Return width, height and pixel buffer.
+  *inout_w = (int)dw;
+  *inout_h = (int)dh;
+  return dst_pixels;
 }
 
 // ----------------
@@ -656,14 +778,14 @@ handle(const char* filename,
        uint64_t filesize,
        const uint8_t* src_ptr,
        const size_t src_len) {
-  int w = 0;
-  int h = 0;
+  int src_w = 0;
+  int src_h = 0;
   int channels_in_file = 0;
   int bytes_per_pixel = (g_flags.ascii_art || g_flags.braille_art_dark_mode ||
                          g_flags.braille_art_light_mode)
                             ? STBI_grey  // 1.
                             : STBI_rgb;  // 3.
-  unsigned char* pixels = NULL;
+  unsigned char* src_pixels = NULL;
 
 #if defined(WUFFS_EXAMPLE_USE_TIMERS)
   g_started = true;
@@ -671,11 +793,12 @@ handle(const char* filename,
 #endif
 
   if (src_len > 0) {
-    pixels = stbi_load_from_memory(src_ptr, src_len,  //
-                                   &w, &h, &channels_in_file, bytes_per_pixel);
+    src_pixels = stbi_load_from_memory(src_ptr, src_len,  //
+                                       &src_w, &src_h, &channels_in_file,
+                                       bytes_per_pixel);
   } else {
-    pixels = stbi_load(filename,  //
-                       &w, &h, &channels_in_file, bytes_per_pixel);
+    src_pixels = stbi_load(filename,  //
+                           &src_w, &src_h, &channels_in_file, bytes_per_pixel);
   }
 
   int64_t elapsed_micros = 0;
@@ -688,13 +811,30 @@ handle(const char* filename,
   printf("\n%s (%" PRIu64 " bytes, %" PRIi64 " microseconds)\n", filename,
          filesize, elapsed_micros);
 
-  if (!pixels) {
+  if (!src_pixels) {
     printf("%s\n", stbi_failure_reason());
     return;
-  } else if ((w < 0) || (MAX_INCL_DIMENSION < w) ||  //
-             (h < 0) || (MAX_INCL_DIMENSION < h)) {
+  } else if ((src_w < 0) || (MAX_INCL_DIMENSION < src_w) ||  //
+             (src_h < 0) || (MAX_INCL_DIMENSION < src_h)) {
     printf("main: image is too large\n");
+    stbi_image_free(src_pixels);
     return;
+  } else if ((src_w == 0) || (src_h == 0)) {
+    stbi_image_free(src_pixels);
+    return;
+  }
+
+  uint8_t* dst_pixels = NULL;
+  uint8_t* pixels = src_pixels;
+  int w = src_w;
+  int h = src_h;
+  if (g_flags.resize > 0) {
+    dst_pixels = resize(&w, &h, src_pixels, g_flags.resize, bytes_per_pixel);
+    if (!dst_pixels) {
+      stbi_image_free(src_pixels);
+      return;
+    }
+    pixels = dst_pixels;
   }
 
   // The +16 is some slack for a new-line and ANSI reset code.
@@ -778,7 +918,8 @@ handle(const char* filename,
   }
 
   fflush(stdout);
-  stbi_image_free(pixels);
+  free(dst_pixels);
+  stbi_image_free(src_pixels);
   printf("\n");
 }
 
