@@ -508,7 +508,16 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
       m_stack.push_back(JsonValue(static_cast<JsonVector*>(nullptr)));
       return "";
     } else if (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT) {
+      // Avoid a g++ -O3 -Wall -Werror "maybe uninitialized" false positive:
+      // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109448#c6
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
       m_stack.push_back(JsonValue(static_cast<JsonMap*>(nullptr)));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
       return "";
     }
     return "main: internal error: bad push";
