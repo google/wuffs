@@ -645,11 +645,11 @@ parse_flags(int argc, char** argv) {
 
 #define MAX_INCL_DIMENSION 10000
 
-// BYTES_PER_COLOR_PIXEL is long enough to contain "\x1B[38;2;255;255;255mABC"
-// plus a trailing NUL byte and a few bytes of slack. It starts with a true
-// color terminal escape code. ABC is three bytes for the UTF-8 representation
-// "\xE2\x96\x88" of "█", U+2588 FULL BLOCK.
-#define BYTES_PER_COLOR_PIXEL 32
+// BYTES_PER_COLOR_OUTPUT_CHARACTER is long enough to contain
+// "\x1B[38;2;255;255;255m\x1B[48;2;255;255;255mABC" plus a trailing NUL byte.
+// It starts with a true color terminal escape code. ABC is three bytes for the
+// UTF-8 representation "\xE2\x96\x80" of "▀", U+2580 UPPER HALF BLOCK.
+#define BYTES_PER_COLOR_OUTPUT_CHARACTER 42
 
 static void  //
 handle(const char* filename,
@@ -697,14 +697,17 @@ handle(const char* filename,
     return;
   }
 
-  static char buffer[MAX_INCL_DIMENSION * BYTES_PER_COLOR_PIXEL];
+  // The +16 is some slack for a new-line and ANSI reset code.
+  static char
+      buffer[(MAX_INCL_DIMENSION * BYTES_PER_COLOR_OUTPUT_CHARACTER) + 16];
+
   if (g_flags.ascii_art) {
     unsigned char* src = pixels;
     for (int y = 0; y < h; y++) {
       char* dst = buffer;
       for (int x = 0; x < w; x++) {
         *dst++ = "-:=+IOX@"[(src[0] & 0xff) >> 5];
-        src += bytes_per_pixel;
+        src++;
       }
       *dst++ = '\n';
       fwrite(buffer, sizeof(char), dst - buffer, stdout);
@@ -742,21 +745,36 @@ handle(const char* filename,
 
   } else {
     unsigned char* src = pixels;
-    for (int y = 0; y < h; y++) {
+    for (int y = 0; y < h; y += 2) {
       char* dst = buffer;
       for (int x = 0; x < w; x++) {
-        // "\xE2\x96\x88" is U+2588 FULL BLOCK. Before that is a true color
-        // terminal escape code.
-        dst += sprintf(dst, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88",  //
-                       (uint8_t)src[0], (uint8_t)src[1], (uint8_t)src[2]);
-        src += bytes_per_pixel;
+        // "\xE2\x96\x80" is U+2588 UPPER HALF BLOCK. Before that is a true
+        // color terminal escape code for foreground and background color, to
+        // dump two pixels per output character.
+        uint8_t upper0 = (uint8_t)src[0];
+        uint8_t upper1 = (uint8_t)src[1];
+        uint8_t upper2 = (uint8_t)src[2];
+        if ((y + 1) >= h) {
+          dst += sprintf(dst, "\x1B[38;2;%d;%d;%dm\xE2\x96\x80",  //
+                         upper0, upper1, upper2);
+        } else {
+          uint8_t lower0 = (uint8_t)src[(w * 3) + 0];
+          uint8_t lower1 = (uint8_t)src[(w * 3) + 1];
+          uint8_t lower2 = (uint8_t)src[(w * 3) + 2];
+          dst +=
+              sprintf(dst,
+                      "\x1B[38;2;%d;%d;%dm\x1B[48;2;%d;%d;%dm\xE2\x96\x80",  //
+                      upper0, upper1, upper2, lower0, lower1, lower2);
+        }
+        src += 3;
       }
-      *dst++ = '\n';
+      memcpy(dst, "\x1B[0m\n", 5);
+      dst += 5;
       fwrite(buffer, sizeof(char), dst - buffer, stdout);
+      if ((y + 1) < h) {
+        src += w * 3;
+      }
     }
-    const char* reset_color_str = "\x1B[0m";
-    const size_t reset_color_len = 4;
-    fwrite(reset_color_str, sizeof(char), reset_color_len, stdout);
   }
 
   fflush(stdout);
