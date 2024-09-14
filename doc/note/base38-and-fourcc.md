@@ -70,8 +70,9 @@ the same library). The conventional `uint32_t` packing is:
 - Bits  `0 ..=  9` (10 bits) are the local enumeration value.
 
 For example:
-- [Quirk values](/doc/note/quirks.md) use this `((namespace << 10) | local)`
-  scheme.
+
+- [Quirk keys](/doc/note/quirks.md), as a `uint32_t`, use this
+  `((namespace << 10) | local)` scheme.
 - [Tokens](/doc/note/tokens.md) assign 21 out of 64 bits for a base38 value.
 
 
@@ -82,17 +83,22 @@ unused). 63 bits can therefore hold a 12-character or three 4-character strings
 (taken from base38's limited alphabet).
 
 For example, in a custom RPC protocol, the namespace/class/method name could be
-base38-encoded as a 4/4/4 string like `"net./conn/ping"`. As a number, this
-would be `((0x147150 << 42) | (0x0B7324 << 21) | 0x1633BD)` which is
-`0x51C5416E_649633BD`. At the wire format level, this would occupy a
-fixed-length (8 bytes) and that 64th bit could, for example, indicate request
-or response.
+base38-encoded as a 4/4/4 string like `"net./conn/ping"`. As a number, the
+4/4/4 format (instead of a monolithic 12) means that each 4-character fragment
+is base-38 encoded independently and the three 21-bit numbers are then combined
+(with bitshifting). `"net./conn/ping"` would be `((0x147150 << 42) | (0x0B7324
+<< 21) | 0x1633BD)` which is `0x51C5416E_649633BD`. At the wire format level,
+this would occupy a fixed-length (8 bytes) and that 64th bit could, for
+example, indicate request or response.
 
 A 2-character string can fit in 11 bits, as `38 ** 2 = 0x5A4 = 1444` is smaller
-than `2 ** 11 = 0x800 = 2048`. 53 bits can therefore hold a 10-character or
-4/4/2 alpha-numeric-ish string. 53 bits also fits snugly under JavaScript's
-`Number.MAX_SAFE_INTEGER` - these integers can be losslessly stored in a
-`double` or `float64_t`.
+than `2 ** 11 = 0x800 = 2048`. Therefore:
+
+- 32 bits (21 + 11) can hold a 6-character (as 4/2) alpha-numeric-ish string.
+  32 bits obviously fits snugly in a `uint32_t`.
+- 53 bits (21 + 21 + 11) can hold a 10-character (as 4/4/2) alpha-numeric-ish
+  string. 53 bits fits snugly under JavaScript's `Number.MAX_SAFE_INTEGER` so
+  these integers can be losslessly stored in a `double` or a JSON value.
 
 [Enumerated Media Types](./enumerated-media-types.txt) uses this base38 4/4/2
 encoding, mapping `"image/jpeg"` to the base38 `"imag/jpeg/.."` which is
