@@ -91,6 +91,7 @@ OK. f37cea44 test/3pdata/blinksuite/icc-v2-gbr-422-whole-mcus.jpg
 OK. 1de5a906 test/3pdata/blinksuite/icc-v2-gbr.jpg
 OK. 0da5f37e test/3pdata/blinksuite/jpeg-height-exif-orientation.jpg
 OK. 4409dca6 test/3pdata/blinksuite/large-gif-checkerboard.gif
+OK. 42c50963 test/3pdata/blinksuite/large.webp
 BAD 2f310e57 test/3pdata/blinksuite/missing-eoi.jpg
 OK. 72bbe2b6 test/3pdata/blinksuite/motion-jpeg-single-frame.jpg
 OK. 0268284a test/3pdata/blinksuite/mu.png
@@ -169,7 +170,10 @@ OK. 9a7e5ec7 test/3pdata/blinksuite/sprite_alternate_fragments_same.png
 OK. 1b1f5f96 test/3pdata/blinksuite/stripes-large.png
 OK. 6b85cdb9 test/3pdata/blinksuite/stripes-small.png
 OK. 16c2c0fe test/3pdata/blinksuite/test-load.jpg
+OK. 2e88e913 test/3pdata/blinksuite/test.webp
 OK. 19d3a207 test/3pdata/blinksuite/test3.webp
+OK. 60f368dc test/3pdata/blinksuite/truncated2.webp
+OK. 194d8b64 test/3pdata/blinksuite/webp-color-no-profile-lossy.webp
 BAD ed67a9a5 test/3pdata/blinksuite/wrong-block-length.gif
 OK. 577c5c4c test/3pdata/blinksuite/ycbcr-420-fast-int-progressive.jpg
 OK. bf4cd8e2 test/3pdata/blinksuite/ycbcr-420-float-progressive.jpg

@@ -42,6 +42,8 @@ pub struct decoder? implements base.image_decoder(
 
         sub_chunk_has_padding : base.bool,
 
+        is_vp8_lossy : base.bool,
+
         frame_config_io_position : base.u64,
 
         riff_chunk_length : base.u32,
@@ -90,6 +92,8 @@ pub struct decoder? implements base.image_decoder(
         // The two slices (workbuf[i .. j] and workbuf[0 .. j]) overlap.
         // apply_transform_color_indexing modifies the pixel buffer in-place.
         workbuf_offset_for_color_indexing : base.u32[..= 0x4000_0000],
+
+        vp8 : vp8.decoder,
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
@@ -178,7 +182,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     while true {
         io_limit (io: args.src, limit: this.riff_chunk_length as base.u64) {
             r_mark = args.src.mark()
-            status =? this.do_decode_image_config_limited?(src: args.src)
+            status =? this.do_decode_image_config_limited?(dst: args.dst, src: args.src)
             this.riff_chunk_length ~sat-=
                     (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
         }
@@ -195,7 +199,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     this.frame_config_io_position = args.src.position()
 
-    if args.dst <> nullptr {
+    if (not this.is_vp8_lossy) and (args.dst <> nullptr) {
         args.dst.set!(
                 pixfmt: this.pixfmt,
                 pixsub: 0,
@@ -208,7 +212,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     this.call_sequence = 0x20
 }
 
-pri func decoder.do_decode_image_config_limited?(src: base.io_reader) {
+pri func decoder.do_decode_image_config_limited?(dst: nptr base.image_config, src: base.io_reader) {
     var c32    : base.u32
     var r_mark : base.u64
     var status : base.status
@@ -220,38 +224,41 @@ pri func decoder.do_decode_image_config_limited?(src: base.io_reader) {
 
     c32 = args.src.read_u32le?()
     if c32 == 'VP8 'le {
-        return "#unsupported WebP file"
-
+        this.is_vp8_lossy = true
     } else if c32 == 'VP8L'le {
-        this.sub_chunk_length = args.src.read_u32le?()
-        if this.sub_chunk_length < 4 {
-            return "#bad header"
-        }
-        this.sub_chunk_has_padding = (this.sub_chunk_length & 1) <> 0
-
-        while true {
-            io_limit (io: args.src, limit: this.sub_chunk_length as base.u64) {
-                r_mark = args.src.mark()
-                status =? this.do_decode_image_config_limited_vp8l?(src: args.src)
-                this.sub_chunk_length ~sat-=
-                        (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
-            }
-
-            if status.is_ok() {
-                break
-            } else if not status.is_suspension() {
-                return status
-            } else if (status == base."$short read") and (this.sub_chunk_length == 0) {
-                return "#short chunk"
-            }
-            yield? status
-        }
-
+        // No-op.
     } else if c32 == 'VP8X'le {
         return "#unsupported WebP file"
-
     } else {
         return "#bad header"
+    }
+
+    this.sub_chunk_length = args.src.read_u32le?()
+    if this.sub_chunk_length < 4 {
+        return "#bad header"
+    }
+    this.sub_chunk_has_padding = (this.sub_chunk_length & 1) <> 0
+
+    while true {
+        io_limit (io: args.src, limit: this.sub_chunk_length as base.u64) {
+            r_mark = args.src.mark()
+            if this.is_vp8_lossy {
+                status =? this.vp8.decode_image_config?(dst: args.dst, src: args.src)
+            } else {
+                status =? this.do_decode_image_config_limited_vp8l?(src: args.src)
+            }
+            this.sub_chunk_length ~sat-=
+                    (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+        }
+
+        if status.is_ok() {
+            break
+        } else if not status.is_suspension() {
+            return status
+        } else if (status == base."$short read") and (this.sub_chunk_length == 0) {
+            return "#short chunk"
+        }
+        yield? status
     }
 }
 
@@ -288,7 +295,11 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
     var status : base.status
 
     while true {
-        status =? this.do_decode_frame_config?(dst: args.dst, src: args.src)
+        if this.is_vp8_lossy {
+            status =? this.vp8.decode_frame_config?(dst: args.dst, src: args.src)
+        } else {
+            status =? this.do_decode_frame_config?(dst: args.dst, src: args.src)
+        }
         if (status == base."$short read") and args.src.is_closed() {
             return "#truncated input"
         }
@@ -334,7 +345,11 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
     var status : base.status
 
     while true {
-        status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
+        if this.is_vp8_lossy {
+            status =? this.vp8.decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
+        } else {
+            status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
+        }
         if (status == base."$short read") and args.src.is_closed() {
             return "#truncated input"
         }
@@ -810,6 +825,9 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: roslice base.u8, blen
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
+    if this.is_vp8_lossy {
+        return this.vp8.frame_dirty_rect()
+    }
     return this.util.make_rect_ie_u32(
             min_incl_x: 0,
             min_incl_y: 0,
@@ -822,6 +840,9 @@ pub func decoder.num_animation_loops() base.u32 {
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
+    if this.is_vp8_lossy {
+        return this.vp8.num_decoded_frame_configs()
+    }
     if this.call_sequence > 0x20 {
         return 1
     }
@@ -829,6 +850,9 @@ pub func decoder.num_decoded_frame_configs() base.u64 {
 }
 
 pub func decoder.num_decoded_frames() base.u64 {
+    if this.is_vp8_lossy {
+        return this.vp8.num_decoded_frames()
+    }
     if this.call_sequence > 0x40 {
         return 1
     }
@@ -836,6 +860,12 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
+    var status : base.status
+
+    if this.is_vp8_lossy {
+        status = this.vp8.restart_frame!(index: args.index, io_position: args.io_position)
+        return status
+    }
     if this.call_sequence < 0x20 {
         return base."#bad call sequence"
     }
@@ -855,6 +885,9 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
+    if this.is_vp8_lossy {
+        return this.vp8.workbuf_len()
+    }
     return this.util.make_range_ii_u64(
             min_incl: this.workbuf_offset_for_transform[3] as base.u64,
             max_incl: this.workbuf_offset_for_transform[3] as base.u64)

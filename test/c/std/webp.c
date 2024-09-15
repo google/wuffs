@@ -88,7 +88,7 @@ wuffs_webp_decode(uint64_t* n_bytes_out,
 // --------
 
 const char*  //
-test_wuffs_webp_decode_interface() {
+test_wuffs_webp_decode_interface_lossless() {
   CHECK_FOCUS(__func__);
   wuffs_webp__decoder* dec = &g_webp_decoder;
   CHECK_STATUS("initialize",
@@ -99,6 +99,19 @@ test_wuffs_webp_decode_interface() {
       wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
       "test/data/bricks-color.lossless.webp", 0, SIZE_MAX, 160, 120,
       0xFF022460);
+}
+
+const char*  //
+test_wuffs_webp_decode_interface_lossy() {
+  CHECK_FOCUS(__func__);
+  wuffs_webp__decoder* dec = &g_webp_decoder;
+  CHECK_STATUS("initialize",
+               wuffs_webp__decoder__initialize(
+                   dec, sizeof *dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__image_decoder(
+      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
+      "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF9F7780);
 }
 
 // ---------------- Mimic Tests
@@ -280,7 +293,8 @@ bench_mimic_webp_lossless_decode_image_4002k_24bpp() {
 
 proc g_tests[] = {
 
-    test_wuffs_webp_decode_interface,
+    test_wuffs_webp_decode_interface_lossless,
+    test_wuffs_webp_decode_interface_lossy,
 
 #ifdef WUFFS_MIMIC
 
