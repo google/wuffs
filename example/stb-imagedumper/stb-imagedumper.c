@@ -839,7 +839,11 @@ handle(const char* filename,
 
   char resize_info_string[64];
   resize_info_string[0] = 0;
-  if (g_flags.resize > 0) {
+  if (g_flags.resize <= 0) {
+    // No-op.
+  } else if ((src_w <= 0) || (src_h <= 0)) {
+    snprintf(resize_info_string, sizeof(resize_info_string), " → 0×0");
+  } else {
     int resize_w = src_w;
     int resize_h = src_h;
     if (!resize_wh(&resize_w, &resize_h, g_flags.resize)) {
@@ -854,15 +858,16 @@ handle(const char* filename,
          filename, filesize, src_w, src_h, resize_info_string, elapsed_micros);
 
   if (!src_pixels) {
-    printf("%s\n", stbi_failure_reason());
+    printf("%s\n\n", stbi_failure_reason());
     return;
   } else if ((src_w < 0) || (MAX_INCL_DIMENSION < src_w) ||  //
              (src_h < 0) || (MAX_INCL_DIMENSION < src_h)) {
-    printf("main: image is too large\n");
+    printf("main: image is too large\n\n");
     stbi_image_free(src_pixels);
     return;
   } else if ((src_w == 0) || (src_h == 0)) {
     stbi_image_free(src_pixels);
+    printf("\n");
     return;
   }
 
@@ -874,6 +879,7 @@ handle(const char* filename,
     dst_pixels = resize(&w, &h, src_pixels, g_flags.resize, bytes_per_pixel);
     if (!dst_pixels) {
       stbi_image_free(src_pixels);
+      printf("\n");
       return;
     }
     pixels = dst_pixels;
