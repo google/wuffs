@@ -1297,6 +1297,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
   inline wuffs_base__status set_color_u32_fill_rect(
       wuffs_base__rect_ie_u32 rect,
       wuffs_base__color_u32_argb_premul color);
+  inline bool is_opaque();
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -1508,6 +1509,9 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect(
     wuffs_base__rect_ie_u32 rect,
     wuffs_base__color_u32_argb_premul color);
 
+WUFFS_BASE__MAYBE_STATIC bool  //
+wuffs_base__pixel_buffer__is_opaque(const wuffs_base__pixel_buffer* pb);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -1565,6 +1569,11 @@ wuffs_base__pixel_buffer::set_color_u32_fill_rect(
     wuffs_base__rect_ie_u32 rect,
     wuffs_base__color_u32_argb_premul color) {
   return wuffs_base__pixel_buffer__set_color_u32_fill_rect(this, rect, color);
+}
+
+inline bool  //
+wuffs_base__pixel_buffer::is_opaque() {
+  return wuffs_base__pixel_buffer__is_opaque(this);
 }
 
 #endif  // __cplusplus

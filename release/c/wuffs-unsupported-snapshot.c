@@ -5336,6 +5336,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
   inline wuffs_base__status set_color_u32_fill_rect(
       wuffs_base__rect_ie_u32 rect,
       wuffs_base__color_u32_argb_premul color);
+  inline bool is_opaque();
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -5547,6 +5548,9 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect(
     wuffs_base__rect_ie_u32 rect,
     wuffs_base__color_u32_argb_premul color);
 
+WUFFS_BASE__MAYBE_STATIC bool  //
+wuffs_base__pixel_buffer__is_opaque(const wuffs_base__pixel_buffer* pb);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -5604,6 +5608,11 @@ wuffs_base__pixel_buffer::set_color_u32_fill_rect(
     wuffs_base__rect_ie_u32 rect,
     wuffs_base__color_u32_argb_premul color) {
   return wuffs_base__pixel_buffer__set_color_u32_fill_rect(this, rect, color);
+}
+
+inline bool  //
+wuffs_base__pixel_buffer::is_opaque() {
+  return wuffs_base__pixel_buffer__is_opaque(this);
 }
 
 #endif  // __cplusplus
@@ -23790,6 +23799,96 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect(
     }
   }
   return wuffs_base__make_status(NULL);
+}
+
+WUFFS_BASE__MAYBE_STATIC bool  //
+wuffs_base__pixel_buffer__is_opaque(const wuffs_base__pixel_buffer* pb) {
+  if (!pb) {
+    return false;
+  } else if (wuffs_base__pixel_format__transparency(
+                 &pb->pixcfg.private_impl.pixfmt) ==
+             WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE) {
+    return true;
+  }
+
+  uint32_t w = pb->pixcfg.private_impl.width;
+  uint32_t h = pb->pixcfg.private_impl.height;
+  if ((w <= 0) || (h <= 0)) {
+    return true;
+  }
+  const wuffs_base__table_u8* p = &pb->private_impl.planes[0];
+
+  switch (pb->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY: {
+      for (uint32_t y = 0; y < h; y++) {
+        const uint8_t* row = p->ptr + (p->stride * (size_t)y);
+        for (uint32_t x = 0; x < w; x++) {
+          if (row[(4 * (size_t)x) + 3] != 0xFF) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE: {
+      for (uint32_t y = 0; y < h; y++) {
+        const uint8_t* row = p->ptr + (p->stride * (size_t)y);
+        for (uint32_t x = 0; x < w; x++) {
+          if ((row[(8 * (size_t)x) + 6] != 0xFF) ||
+              (row[(8 * (size_t)x) + 7] != 0xFF)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    case WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL: {
+      for (uint32_t y = 0; y < h; y++) {
+        const uint8_t* row = p->ptr + (p->stride * (size_t)y);
+        for (uint32_t x = 0; x < w; x++) {
+          if (row[(2 * (size_t)x) + 1] != 0xFF) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL: {
+      const uint8_t* palette = pb->private_impl.planes[3].ptr;
+      for (uint32_t i = 0; true; i++) {
+        if (i >= 256) {
+          return true;
+        } else if (palette[(4 * (size_t)i) + 3] != 0xFF) {
+          break;
+        }
+      }
+
+      for (uint32_t y = 0; y < h; y++) {
+        const uint8_t* row = p->ptr + (p->stride * (size_t)y);
+        for (uint32_t x = 0; x < w; x++) {
+          if (palette[(4 * (size_t)row[x]) + 3] != 0xFF) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    default:
+      break;
+  }
+  return false;
 }
 
 // --------
