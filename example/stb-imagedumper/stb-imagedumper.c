@@ -26,24 +26,30 @@ fact: a higher-level C++ one and a lower-level C one.
 Wuffs' C++ API is also a one-shot "decode an image, synchronously" API but also
 gives the caller access to metadata (e.g. EXIF orientation, color profiles),
 more control over destination pixel formats (e.g. RGB versus BGR byte order,
-premultiplied versus non-premultiplied alpha) and over memory allocators.
+premultiplied versus non-premultiplied alpha) and over memory allocators (e.g.
+early rejection of malicious "1 zillion pixel wide × 1 zillion pixel high"
+images attempting Denial of Service by exhausting the available memory).
 
 Wuffs' C API provides all of that (since the C++ API is implemented using the C
 API) but also supports multi-shot streaming (asynchronous) I/O and animated
-(not just still, single-frame) images.
+(not just still, single-frame) images. This lower-level C API is also capable
+of running in a very restrictive sandbox (Linux's SECCOMP_MODE_STRICT).
 
 See example/convert-to-nia and example/imageviewer in the Wuffs repository for
 examples of using its C and C++ APIs.
 
-Coming back to this program, if -demo is passed, it decodes four versions of
-the same image of the Mona Lisa, in Thumbhash, PKM/ETC2, JPEG and PNG formats.
-Only the last one is lossless.
+Coming back to this program, pass the -demo flag to decode four versions of the
+same image of the Mona Lisa, in Thumbhash, PKM/ETC2, JPEG and PNG formats. Only
+the last one is lossless.
 
 As of September 2024, the actual STB Image implementation only decodes two out
 of four: JPEG and PNG. Wuffs' reimplementation decodes all four demo images.
 
 Define the USE_ONLY_JPEG macro to limit the variety of image file formats that
 Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
+
+Pass the -resize=N flag (or -r as an abbreviation of -resize=64) to resize each
+image to fit within an N×N square (while preserving the aspect ratio).
 
 Pass the -a or -ascii-art flag to print ASCII art instead of ANSI color codes.
 
