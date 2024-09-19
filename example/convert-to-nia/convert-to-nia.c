@@ -348,10 +348,7 @@ read_more_src() {
                    g_src.data.len - g_src.meta.wi);
   if (n > 0) {
     g_src.meta.wi += n;
-  } else if (errno == 0) {
-    if (n < 0) {
-      return "main: unexpected negative-count read";
-    }
+  } else if (n == 0) {
     g_src.meta.closed = true;
   } else if (errno != EINTR) {
     return strerror(errno);
