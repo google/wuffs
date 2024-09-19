@@ -4470,6 +4470,7 @@ wuffs_base__make_pixel_format(uint32_t repr) {
 #define WUFFS_BASE__PIXEL_FORMAT__Y_16BE                    0x2010000B
 #define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL              0x21000088
 #define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL                 0x22000088
+#define WUFFS_BASE__PIXEL_FORMAT__YXXX                      0x30008888
 
 #define WUFFS_BASE__PIXEL_FORMAT__YCBCR                     0x40020888
 #define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL          0x41038888

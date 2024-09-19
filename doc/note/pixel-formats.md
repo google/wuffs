@@ -43,6 +43,7 @@ Color is encoded in 4 bits:
 
 -  0 means          A      (Alpha).
 -  2 means Y     or YA     (Gray, Alpha).
+-  3 means          YXXX   (Gray, 3 times X-padding).
 -  4 means YCbCr or YCbCrA (Luma, Chroma-blue, Chroma-red, Alpha).
 -  5 means          YCbCrK (Luma, Chroma-blue, Chroma-red, Black).
 -  6 means YCoCg or YCoCgA (Luma, Chroma-orange, Chroma-green, Alpha).

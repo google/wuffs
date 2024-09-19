@@ -100,6 +100,10 @@ that Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 // program to generate a stand-alone C file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
+#define UNCOMPNG_CONFIG__STATIC_FUNCTIONS
+#define UNCOMPNG_IMPLEMENTATION
+#include "../../snippet/uncompng.c"
+
 // ----
 
 #if defined(__linux__)
@@ -122,19 +126,28 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -1      -first-frame-only\n"
+    "    -d      -output-crc32-digest\n"
     "    -p      -output-netpbm\n"
+    "    -u      -output-uncompressed-png\n"
     "            -fail-if-unsandboxed\n"
     "\n"
     "convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG\n"
-    "or PNG format) to stdout (in the NIA format, or in the NIE or PPM/PGM\n"
-    "format if the -1 or -p flag is given; you cannot specify both flags).\n"
+    "or PNG format) to stdout (in the NIA format, or in the NIE, hash, PPM\n"
+    "or PNG format if the -1, -d, -p or -u flag is given).\n"
     "\n"
     "NIA/NIE is a trivial animated/still image file format, specified at\n"
     "https://github.com/google/wuffs/blob/main/doc/spec/nie-spec.md\n"
     "\n"
-    "PPM (color) and PGM (gray) are also trivial still image file formats.\n"
-    "They do not support alpha or animation. Using -p means that this program\n"
-    "outputs the same format as /usr/bin/djpeg\n"
+    "Using -d produces just the CRC-32/IEEE digest of the NIA form. Storing\n"
+    "shorter hashes is cheaper than storing complete NIA files but comparing\n"
+    "hashes can still detect most changes in codec output.\n"
+    "\n"
+    "Using -p means that this program outputs the same format as djpeg. PPM\n"
+    "(color) and PGM (gray) are also trivial still image file formats. They\n"
+    "do not support alpha or animation.\n"
+    "\n"
+    "Using -u produces PNG output that's relatively large for PNG but still\n"
+    "perfectly valid, suitable for piping to tools like cwebp or pngcrush.\n"
     "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
@@ -230,6 +243,7 @@ struct {
   bool first_frame_only;
   bool output_crc32_digest;
   bool output_netpbm;
+  bool output_uncompressed_png;
 } g_flags = {0};
 
 const char*  //
@@ -262,25 +276,39 @@ parse_flags(int argc, char** argv) {
       g_flags.first_frame_only = true;
       continue;
     }
-    if (!strcmp(arg, "output-crc32-digest")) {
-      if (g_flags.output_crc32_digest || g_flags.output_netpbm) {
+    if (!strcmp(arg, "d") || !strcmp(arg, "output-crc32-digest")) {
+      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
+          g_flags.output_uncompressed_png) {
         return "main: multiple --output-etc flags";
       }
       g_flags.output_crc32_digest = true;
       continue;
     }
     if (!strcmp(arg, "p") || !strcmp(arg, "output-netpbm")) {
-      if (g_flags.output_crc32_digest || g_flags.output_netpbm) {
+      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
+          g_flags.output_uncompressed_png) {
         return "main: multiple --output-etc flags";
       }
       g_flags.output_netpbm = true;
+      continue;
+    }
+    if (!strcmp(arg, "u") || !strcmp(arg, "output-uncompressed-png")) {
+      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
+          g_flags.output_uncompressed_png) {
+        return "main: multiple --output-etc flags";
+      }
+      g_flags.output_uncompressed_png = true;
       continue;
     }
 
     return g_usage;
   }
 
-  if (g_flags.first_frame_only && g_flags.output_netpbm) {
+  if (!g_flags.first_frame_only) {
+    // No-op.
+  } else if (g_flags.output_crc32_digest ||  //
+             g_flags.output_netpbm ||        //
+             g_flags.output_uncompressed_png) {
     return g_usage;
   }
 
@@ -687,6 +715,35 @@ print_netpbm_frame() {
   }
 }
 
+int  //
+my_uncompng_write_func(void* context,
+                       const uint8_t* data_ptr,
+                       size_t data_len) {
+  ssize_t n = write_to_stdout(data_ptr, data_len);
+  return (n >= 0) ? 0 : -1;
+}
+
+bool  //
+print_uncompressed_png_frame() {
+  uint32_t pixfmt = 0;
+  if (g_pixfmt_is_gray) {
+    pixfmt = UNCOMPNG__PIXEL_FORMAT__YXXX;
+  } else if (wuffs_base__pixel_buffer__is_opaque(&g_pixbuf)) {
+    pixfmt = UNCOMPNG__PIXEL_FORMAT__BGRX;
+  } else {
+    pixfmt = UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL;
+  }
+
+  uint32_t w = wuffs_base__pixel_config__width(&g_pixbuf.pixcfg);
+  uint32_t h = wuffs_base__pixel_config__height(&g_pixbuf.pixcfg);
+  wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
+  return UNCOMPNG__RESULT__OK ==
+         uncompng__encode(&my_uncompng_write_func, NULL, tab.ptr,
+                          wuffs_base__table__flattened_length(
+                              tab.width, tab.height, tab.stride),
+                          w, h, tab.stride, pixfmt);
+}
+
 void  //
 print_nia_padding() {
   if (g_width & g_height & 1) {
@@ -812,6 +869,10 @@ convert_frames() {
     // Print a complete NIE frame (and surrounding bytes, for NIA).
     if (g_flags.output_netpbm) {
       print_netpbm_frame();
+    } else if (g_flags.output_uncompressed_png) {
+      if (!print_uncompressed_png_frame()) {
+        return "main: PNG encoding failed";
+      }
     } else {
       if (!g_flags.first_frame_only) {
         print_nia_duration(total_duration);
@@ -827,7 +888,8 @@ convert_frames() {
       return wuffs_base__status__message(&df_status);
     } else if (decode_frame_io_error_message != NULL) {
       return decode_frame_io_error_message;
-    } else if (g_flags.first_frame_only || g_flags.output_netpbm) {
+    } else if (g_flags.first_frame_only || g_flags.output_netpbm ||
+               g_flags.output_uncompressed_png) {
       return NULL;
     }
 
@@ -877,11 +939,14 @@ main1(int argc, char** argv) {
   TRY(load_image_config());
   if (g_flags.output_netpbm) {
     print_netpbm_header();
+  } else if (g_flags.output_uncompressed_png) {
+    // No-op.
   } else if (!g_flags.first_frame_only) {
     print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
   }
   const char* ret = convert_frames();
-  if (!g_flags.first_frame_only && !g_flags.output_netpbm) {
+  if (!g_flags.first_frame_only && !g_flags.output_netpbm &&
+      !g_flags.output_uncompressed_png) {
     print_nia_footer();
   }
   return ret;
