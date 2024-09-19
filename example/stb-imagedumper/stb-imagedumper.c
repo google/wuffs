@@ -45,8 +45,8 @@ the last one is lossless.
 As of September 2024, the actual STB Image implementation only decodes two out
 of four: JPEG and PNG. Wuffs' reimplementation decodes all four demo images.
 
-Define the USE_ONLY_JPEG macro to limit the variety of image file formats that
-Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
+Define the DECODE_ONLY_JPEG macro to limit the variety of image file formats
+that Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 
 Pass the -resize=N flag (or -r as an abbreviation of -resize=64) to resize each
 image to fit within an N×N square (while preserving the aspect ratio).
@@ -120,7 +120,7 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__JPEG
-#if !defined(USE_ONLY_JPEG)
+#if !defined(DECODE_ONLY_JPEG)
 #define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__CRC32

@@ -21,6 +21,9 @@ https://chromium-review.googlesource.com/c/chromium/src/+/2210331
 
 An equivalent program (using the Skia image codecs) is at:
 https://skia-review.googlesource.com/c/skia/+/290618
+
+Define the DECODE_ONLY_JPEG macro to limit the variety of image file formats
+that Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 */
 
 #include <errno.h>
@@ -56,14 +59,15 @@ https://skia-review.googlesource.com/c/skia/+/290618
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
-#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__JPEG
+#if !defined(DECODE_ONLY_JPEG)
+#define WUFFS_CONFIG__MODULE__ADLER32
+#define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__ETC2
 #define WUFFS_CONFIG__MODULE__GIF
-#define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
@@ -74,6 +78,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 #define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__WEBP
 #define WUFFS_CONFIG__MODULE__ZLIB
+#endif
 
 // Defining the WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST (and the
 // associated ETC__ALLOW_FOO) macros are optional, but can lead to smaller
@@ -161,10 +166,11 @@ uint64_t g_num_printed_frames = 0;
 
 wuffs_base__image_decoder* g_image_decoder = NULL;
 union {
+  wuffs_jpeg__decoder jpeg;
+#if !defined(DECODE_ONLY_JPEG)
   wuffs_bmp__decoder bmp;
   wuffs_etc2__decoder etc2;
   wuffs_gif__decoder gif;
-  wuffs_jpeg__decoder jpeg;
   wuffs_netpbm__decoder netpbm;
   wuffs_nie__decoder nie;
   wuffs_png__decoder png;
@@ -173,6 +179,7 @@ union {
   wuffs_thumbhash__decoder thumbhash;
   wuffs_wbmp__decoder wbmp;
   wuffs_webp__decoder webp;
+#endif
 } g_potential_decoders;
 
 wuffs_crc32__ieee_hasher g_digest_hasher;
@@ -343,6 +350,17 @@ const char*  //
 initialize_image_decoder() {
   wuffs_base__status status;
   switch (g_fourcc) {
+    case WUFFS_BASE__FOURCC__JPEG:
+      status = wuffs_jpeg__decoder__initialize(
+          &g_potential_decoders.jpeg, sizeof g_potential_decoders.jpeg,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.jpeg);
+      return NULL;
+
+#if !defined(DECODE_ONLY_JPEG)
     case WUFFS_BASE__FOURCC__BMP:
       status = wuffs_bmp__decoder__initialize(
           &g_potential_decoders.bmp, sizeof g_potential_decoders.bmp,
@@ -371,16 +389,6 @@ initialize_image_decoder() {
       g_image_decoder =
           wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.gif);
-      return NULL;
-
-    case WUFFS_BASE__FOURCC__JPEG:
-      status = wuffs_jpeg__decoder__initialize(
-          &g_potential_decoders.jpeg, sizeof g_potential_decoders.jpeg,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      TRY(wuffs_base__status__message(&status));
-      g_image_decoder =
-          wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.jpeg);
       return NULL;
 
     case WUFFS_BASE__FOURCC__NIE:
@@ -463,6 +471,7 @@ initialize_image_decoder() {
           wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.webp);
       return NULL;
+#endif
   }
   return "main: unsupported file format";
 }
