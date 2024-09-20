@@ -106,12 +106,12 @@ OK. dcbb225a test/data/hippopotamus.bmp
 OK. ed4b78fc test/data/hippopotamus.interlaced.gif
 OK. dcbb225a test/data/hippopotamus.interlaced.png
 BAD c3c4bd65 test/data/hippopotamus.interlaced.truncated.gif
-BAD 7c6a771b test/data/hippopotamus.interlaced.truncated.png
+BAD 3feec847 test/data/hippopotamus.interlaced.truncated.png
 OK. 96bdbbb3 test/data/hippopotamus.jpeg
 OK. dcbb225a test/data/hippopotamus.lossless.webp
 OK. d5577434 test/data/hippopotamus.lossy.webp
-OK. 45979d1b test/data/hippopotamus.masked-with-muybridge.etc2.bgra-binary.pkm
-OK. b51ed7e8 test/data/hippopotamus.masked-with-muybridge.etc2.bgra-nonpremul.pkm
+OK. 2535637e test/data/hippopotamus.masked-with-muybridge.etc2.bgra-binary.pkm
+OK. 720180ee test/data/hippopotamus.masked-with-muybridge.etc2.bgra-nonpremul.pkm
 OK. d3bbed27 test/data/hippopotamus.masked-with-muybridge.gif
 OK. 7e6acf01 test/data/hippopotamus.masked-with-muybridge.png
 OK. dcbb225a test/data/hippopotamus.nie
@@ -119,7 +119,7 @@ OK. 57d9a4dd test/data/hippopotamus.pgm
 OK. dcbb225a test/data/hippopotamus.ppm
 OK. ed4b78fc test/data/hippopotamus.regular.gif
 OK. dcbb225a test/data/hippopotamus.regular.png
-BAD 888b1c04 test/data/hippopotamus.regular.truncated.png
+BAD e4c5926b test/data/hippopotamus.regular.truncated.png
 OK. f6bb81e2 test/data/mona-lisa.21x32.etc2.pkm
 OK. 012ce4cf test/data/mona-lisa.21x32.png
 OK. 0a22e689 test/data/mona-lisa.21x32.q50.jpeg

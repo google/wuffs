@@ -252,6 +252,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+    var pixfmt : base.pixel_format
+
     if this.call_sequence == 0x20 {
         // No-op.
     } else if this.call_sequence < 0x20 {
@@ -268,6 +270,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
     }
 
     if args.dst <> nullptr {
+        pixfmt = this.util.make_pixel_format(repr: this.src_pixfmt)
         args.dst.set!(bounds: this.util.make_rect_ie_u32(
                 min_incl_x: 0,
                 min_incl_y: 0,
@@ -279,7 +282,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 disposal: 0,
                 opaque_within_bounds: this.opaque,
                 overwrite_instead_of_blend: false,
-                background_color: 0xFF00_0000)
+                background_color: pixfmt.default_background_color())
     }
 
     this.call_sequence = 0x40

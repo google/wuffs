@@ -4438,6 +4438,7 @@ typedef struct wuffs_base__pixel_format__struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline uint32_t bits_per_pixel() const;
+  inline uint32_t default_background_color() const;
   inline bool is_direct() const;
   inline bool is_indexed() const;
   inline bool is_interleaved() const;
@@ -4530,6 +4531,13 @@ wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
                                                             (f->repr >> 12)];
 }
 
+static inline uint32_t  //
+wuffs_base__pixel_format__default_background_color(
+    const wuffs_base__pixel_format* f) {
+  return ((f->repr & 0x03000000) == 0) ? 0xFF000000   // Opaque black.
+                                       : 0x00000000;  // Transparent black.
+}
+
 static inline bool  //
 wuffs_base__pixel_format__is_direct(const wuffs_base__pixel_format* f) {
   return ((f->repr >> 18) & 0x01) == 0;
@@ -4576,6 +4584,11 @@ wuffs_base__pixel_format::is_valid() const {
 inline uint32_t  //
 wuffs_base__pixel_format::bits_per_pixel() const {
   return wuffs_base__pixel_format__bits_per_pixel(this);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_format::default_background_color() const {
+  return wuffs_base__pixel_format__default_background_color(this);
 }
 
 inline bool  //
@@ -34636,6 +34649,8 @@ wuffs_bmp__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -34678,6 +34693,7 @@ wuffs_bmp__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -34691,7 +34707,7 @@ wuffs_bmp__decoder__do_decode_frame_config(
           0u,
           true,
           false,
-          4278190080u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -43549,6 +43565,8 @@ wuffs_etc2__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -43591,6 +43609,7 @@ wuffs_etc2__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -43604,7 +43623,7 @@ wuffs_etc2__decoder__do_decode_frame_config(
           0u,
           (self->private_impl.f_pixfmt == 2415954056u),
           false,
-          4278190080u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -62544,7 +62563,7 @@ wuffs_netpbm__decoder__do_decode_frame_config(
           0u,
           false,
           false,
-          0u);
+          4278190080u);
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -63549,6 +63568,8 @@ wuffs_nie__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -63591,6 +63612,7 @@ wuffs_nie__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -63604,7 +63626,7 @@ wuffs_nie__decoder__do_decode_frame_config(
           0u,
           false,
           false,
-          0u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -69002,6 +69024,7 @@ wuffs_png__decoder__do_decode_frame_config(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t v_checksum_have = 0;
+  wuffs_base__pixel_format v_pixfmt = {0};
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -69226,6 +69249,7 @@ wuffs_png__decoder__do_decode_frame_config(
       }
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -69239,7 +69263,7 @@ wuffs_png__decoder__do_decode_frame_config(
           self->private_impl.f_frame_disposal,
           ((self->private_impl.f_color_type <= 3u) &&  ! self->private_impl.f_seen_trns),
           self->private_impl.f_frame_overwrite_instead_of_blend,
-          0u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_num_decoded_frame_configs_value, 1u);
     self->private_impl.f_call_sequence = 64u;
@@ -71685,6 +71709,8 @@ wuffs_qoi__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -71727,6 +71753,7 @@ wuffs_qoi__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -71740,7 +71767,7 @@ wuffs_qoi__decoder__do_decode_frame_config(
           0u,
           (self->private_impl.f_pixfmt == 2415954056u),
           false,
-          0u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -73822,6 +73849,8 @@ wuffs_targa__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -73864,6 +73893,7 @@ wuffs_targa__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -73877,7 +73907,7 @@ wuffs_targa__decoder__do_decode_frame_config(
           0u,
           self->private_impl.f_opaque,
           false,
-          4278190080u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -75412,6 +75442,8 @@ wuffs_thumbhash__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -75454,6 +75486,7 @@ wuffs_thumbhash__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -75467,7 +75500,7 @@ wuffs_thumbhash__decoder__do_decode_frame_config(
           0u,
           (self->private_impl.f_has_alpha == 0u),
           false,
-          0u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -76739,7 +76772,7 @@ wuffs_vp8__decoder__do_decode_frame_config(
           0u,
           false,
           false,
-          0u);
+          4278190080u);
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -80855,6 +80888,8 @@ wuffs_webp__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__pixel_format v_pixfmt = {0};
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -80897,6 +80932,7 @@ wuffs_webp__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -80910,7 +80946,7 @@ wuffs_webp__decoder__do_decode_frame_config(
           0u,
           false,
           false,
-          0u);
+          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
     self->private_impl.f_call_sequence = 64u;
 

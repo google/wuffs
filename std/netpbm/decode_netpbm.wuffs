@@ -250,7 +250,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 disposal: 0,
                 opaque_within_bounds: false,
                 overwrite_instead_of_blend: false,
-                background_color: 0x0000_0000)
+                background_color: 0xFF00_0000)
     }
 
     this.call_sequence = 0x40

@@ -684,6 +684,7 @@ var funcsOther = [...]string{
 	// ---- pixel_format
 
 	"pixel_format.bits_per_pixel() u32[..= 256]",
+	"pixel_format.default_background_color() u32",
 
 	// ---- pixel_swizzler
 

@@ -966,6 +966,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
     var checksum_have : base.u32
+    var pixfmt        : base.pixel_format
 
     if (this.call_sequence & 0x10) <> 0 {
         return base."#bad call sequence"
@@ -1033,6 +1034,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
     }
 
     if args.dst <> nullptr {
+        pixfmt = this.util.make_pixel_format(repr: this.src_pixfmt)
         args.dst.set!(bounds: this.util.make_rect_ie_u32(
                 min_incl_x: this.frame_rect_x0,
                 min_incl_y: this.frame_rect_y0,
@@ -1044,7 +1046,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 disposal: this.frame_disposal,
                 opaque_within_bounds: (this.color_type <= 3) and (not this.seen_trns),
                 overwrite_instead_of_blend: this.frame_overwrite_instead_of_blend,
-                background_color: 0x0000_0000)
+                background_color: pixfmt.default_background_color())
     }
 
     this.num_decoded_frame_configs_value ~sat+= 1

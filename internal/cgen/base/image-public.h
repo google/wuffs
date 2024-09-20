@@ -399,6 +399,7 @@ typedef struct wuffs_base__pixel_format__struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline uint32_t bits_per_pixel() const;
+  inline uint32_t default_background_color() const;
   inline bool is_direct() const;
   inline bool is_indexed() const;
   inline bool is_interleaved() const;
@@ -491,6 +492,13 @@ wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
                                                             (f->repr >> 12)];
 }
 
+static inline uint32_t  //
+wuffs_base__pixel_format__default_background_color(
+    const wuffs_base__pixel_format* f) {
+  return ((f->repr & 0x03000000) == 0) ? 0xFF000000   // Opaque black.
+                                       : 0x00000000;  // Transparent black.
+}
+
 static inline bool  //
 wuffs_base__pixel_format__is_direct(const wuffs_base__pixel_format* f) {
   return ((f->repr >> 18) & 0x01) == 0;
@@ -537,6 +545,11 @@ wuffs_base__pixel_format::is_valid() const {
 inline uint32_t  //
 wuffs_base__pixel_format::bits_per_pixel() const {
   return wuffs_base__pixel_format__bits_per_pixel(this);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_format::default_background_color() const {
+  return wuffs_base__pixel_format__default_background_color(this);
 }
 
 inline bool  //
