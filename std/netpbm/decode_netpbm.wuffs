@@ -34,6 +34,8 @@ pub struct decoder? implements base.image_decoder(
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
+) + (
+        buffer : array[8] base.u8,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
@@ -191,7 +193,15 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         this.max_value = n
     }
 
-    if this.max_value <> 255 {
+    if this.max_value == 255 {
+        // No-op.
+    } else if this.max_value == 65535 {
+        if this.pixfmt == base.PIXEL_FORMAT__Y {
+            this.pixfmt = base.PIXEL_FORMAT__Y_16BE
+        } else if this.pixfmt == base.PIXEL_FORMAT__RGB {
+            this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+        }
+    } else {
         return "#unsupported Netpbm file"
     }
 
@@ -281,6 +291,8 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
     this.dst_x = 0
     this.dst_y = 0
+    this.buffer[6] = 0xFF
+    this.buffer[7] = 0xFF
 
     status = this.swizzler.prepare!(
             dst_pixfmt: args.dst.pixel_format(),
@@ -293,7 +305,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     }
 
     while true {
-        status = this.swizzle!(dst: args.dst, src: args.src)
+        if this.pixfmt <> base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+            status = this.swizzle_easy!(dst: args.dst, src: args.src)
+        } else {
+            status = this.swizzle_hard!(dst: args.dst, src: args.src)
+        }
         if status.is_ok() {
             break
         } else if status <> "@internal note: short read" {
@@ -305,7 +321,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     this.call_sequence = 0x60
 }
 
-pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+pri func decoder.swizzle_easy!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
     var dst_bytes_per_pixel : base.u32[..= 32]
@@ -348,6 +364,9 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
             if this.pixfmt == base.PIXEL_FORMAT__RGB {
                 src_bytes_per_pixel = 3
                 assert src_bytes_per_pixel > 0
+            } else if this.pixfmt == base.PIXEL_FORMAT__Y_16BE {
+                src_bytes_per_pixel = 2
+                assert src_bytes_per_pixel > 0
             }
             n = args.src.length() / (src_bytes_per_pixel as base.u64)
             n = n.min(no_more_than: (this.width ~mod- this.dst_x) as base.u64)
@@ -380,6 +399,68 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
         this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
     }
 
+    return ok
+}
+
+pri func decoder.swizzle_hard!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+    var dst_pixfmt          : base.pixel_format
+    var dst_bits_per_pixel  : base.u32[..= 256]
+    var dst_bytes_per_pixel : base.u64[..= 32]
+    var tab                 : table base.u8
+    var dst                 : slice base.u8
+    var i                   : base.u64
+
+    // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+    // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+    dst_pixfmt = args.dst.pixel_format()
+    dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+    if (dst_bits_per_pixel & 7) <> 0 {
+        return base."#unsupported option"
+    }
+    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+    tab = args.dst.plane(p: 0)
+
+    while this.dst_y < this.height {
+        assert this.dst_y < 0xFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+        dst = tab.row_u32(y: this.dst_y)
+
+        i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+        if i <= dst.length() {
+            dst = dst[i ..]
+        }
+
+        while true,
+                pre this.dst_y < 0xFF_FFFF,
+        {
+            if this.dst_x >= this.width {
+                this.dst_x = 0
+                this.dst_y += 1
+                break
+            }
+            assert this.dst_x < 0xFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+
+            if args.src.length() < 6 {
+                return "@internal note: short read"
+            }
+            // Convert RGB_3X16BE to BGR_3X16LE.
+            this.buffer[5] = args.src.peek_u8_at(offset: 0)
+            this.buffer[4] = args.src.peek_u8_at(offset: 1)
+            this.buffer[3] = args.src.peek_u8_at(offset: 2)
+            this.buffer[2] = args.src.peek_u8_at(offset: 3)
+            this.buffer[1] = args.src.peek_u8_at(offset: 4)
+            this.buffer[0] = args.src.peek_u8_at(offset: 5)
+            args.src.skip_u32_fast!(actual: 6, worst_case: 6)
+
+            this.swizzler.swizzle_interleaved_from_slice!(
+                    dst: dst, dst_palette: args.dst.palette(), src: this.buffer[.. 8])
+
+            if dst_bytes_per_pixel <= dst.length() {
+                dst = dst[dst_bytes_per_pixel ..]
+            }
+
+            this.dst_x += 1
+        }
+    }
     return ok
 }
 

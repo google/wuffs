@@ -11946,6 +11946,10 @@ struct wuffs_netpbm__decoder__struct {
     uint32_t p_do_decode_frame;
   } private_impl;
 
+  struct {
+    uint8_t f_buffer[8];
+  } private_data;
+
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_netpbm__decoder, wuffs_unique_ptr_deleter>;
@@ -61921,7 +61925,14 @@ wuffs_netpbm__decoder__do_decode_frame(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_netpbm__decoder__swizzle(
+wuffs_netpbm__decoder__swizzle_easy(
+    wuffs_netpbm__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_netpbm__decoder__swizzle_hard(
     wuffs_netpbm__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src);
@@ -62396,7 +62407,14 @@ wuffs_netpbm__decoder__do_decode_image_config(
       }
       self->private_impl.f_max_value = v_n;
     }
-    if (self->private_impl.f_max_value != 255u) {
+    if (self->private_impl.f_max_value == 255u) {
+    } else if (self->private_impl.f_max_value == 65535u) {
+      if (self->private_impl.f_pixfmt == 536870920u) {
+        self->private_impl.f_pixfmt = 537919499u;
+      } else if (self->private_impl.f_pixfmt == 2684356744u) {
+        self->private_impl.f_pixfmt = 2164308923u;
+      }
+    } else {
       status = wuffs_base__make_status(wuffs_netpbm__error__unsupported_netpbm_file);
       goto exit;
     }
@@ -62691,6 +62709,8 @@ wuffs_netpbm__decoder__do_decode_frame(
     }
     self->private_impl.f_dst_x = 0u;
     self->private_impl.f_dst_y = 0u;
+    self->private_data.f_buffer[6u] = 255u;
+    self->private_data.f_buffer[7u] = 255u;
     v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
         wuffs_base__pixel_buffer__palette(a_dst),
@@ -62708,7 +62728,11 @@ wuffs_netpbm__decoder__do_decode_frame(
       goto ok;
     }
     while (true) {
-      v_status = wuffs_netpbm__decoder__swizzle(self, a_dst, a_src);
+      if (self->private_impl.f_pixfmt != 2164308923u) {
+        v_status = wuffs_netpbm__decoder__swizzle_easy(self, a_dst, a_src);
+      } else {
+        v_status = wuffs_netpbm__decoder__swizzle_hard(self, a_dst, a_src);
+      }
       if (wuffs_base__status__is_ok(&v_status)) {
         break;
       } else if (v_status.repr != wuffs_netpbm__note__internal_note_short_read) {
@@ -62740,11 +62764,11 @@ wuffs_netpbm__decoder__do_decode_frame(
   return status;
 }
 
-// -------- func netpbm.decoder.swizzle
+// -------- func netpbm.decoder.swizzle_easy
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_netpbm__decoder__swizzle(
+wuffs_netpbm__decoder__swizzle_easy(
     wuffs_netpbm__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src) {
@@ -62798,6 +62822,8 @@ wuffs_netpbm__decoder__swizzle(
       v_src_bytes_per_pixel = 1u;
       if (self->private_impl.f_pixfmt == 2684356744u) {
         v_src_bytes_per_pixel = 3u;
+      } else if (self->private_impl.f_pixfmt == 537919499u) {
+        v_src_bytes_per_pixel = 2u;
       }
       v_n = (((uint64_t)(io2_a_src - iop_a_src)) / ((uint64_t)(v_src_bytes_per_pixel)));
       v_n = wuffs_base__u64__min(v_n, ((uint64_t)(((uint32_t)(self->private_impl.f_width - self->private_impl.f_dst_x)))));
@@ -62827,6 +62853,85 @@ wuffs_netpbm__decoder__swizzle(
       goto ok;
     }
     wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(v_n)));
+  }
+  status = wuffs_base__make_status(NULL);
+  goto ok;
+
+  ok:
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func netpbm.decoder.swizzle_hard
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_netpbm__decoder__swizzle_hard(
+    wuffs_netpbm__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  wuffs_base__pixel_format v_dst_pixfmt = {0};
+  uint32_t v_dst_bits_per_pixel = 0;
+  uint64_t v_dst_bytes_per_pixel = 0;
+  wuffs_base__table_u8 v_tab = {0};
+  wuffs_base__slice_u8 v_dst = {0};
+  uint64_t v_i = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
+  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
+  if ((v_dst_bits_per_pixel & 7u) != 0u) {
+    status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
+    goto exit;
+  }
+  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8u)));
+  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0u);
+  while (self->private_impl.f_dst_y < self->private_impl.f_height) {
+    v_dst = wuffs_private_impl__table_u8__row_u32(v_tab, self->private_impl.f_dst_y);
+    v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+    if (v_i <= ((uint64_t)(v_dst.len))) {
+      v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_i);
+    }
+    while (true) {
+      if (self->private_impl.f_dst_x >= self->private_impl.f_width) {
+        self->private_impl.f_dst_x = 0u;
+        self->private_impl.f_dst_y += 1u;
+        break;
+      }
+      if (((uint64_t)(io2_a_src - iop_a_src)) < 6u) {
+        status = wuffs_base__make_status(wuffs_netpbm__note__internal_note_short_read);
+        goto ok;
+      }
+      self->private_data.f_buffer[5u] = iop_a_src[0u];
+      self->private_data.f_buffer[4u] = iop_a_src[1u];
+      self->private_data.f_buffer[3u] = iop_a_src[2u];
+      self->private_data.f_buffer[2u] = iop_a_src[3u];
+      self->private_data.f_buffer[1u] = iop_a_src[4u];
+      self->private_data.f_buffer[0u] = iop_a_src[5u];
+      iop_a_src += 6u;
+      wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, wuffs_base__pixel_buffer__palette(a_dst), wuffs_base__make_slice_u8(self->private_data.f_buffer, 8));
+      if (v_dst_bytes_per_pixel <= ((uint64_t)(v_dst.len))) {
+        v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_dst_bytes_per_pixel);
+      }
+      self->private_impl.f_dst_x += 1u;
+    }
   }
   status = wuffs_base__make_status(NULL);
   goto ok;
