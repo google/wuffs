@@ -169,9 +169,7 @@ wuffs_drop_in__stb__load1(           //
       return NULL;
     }
 
-    size_t wl = wuffs_base__io_buffer__writer_length(srcbuf);
-    wuffs_base__io_buffer__compact(srcbuf);
-    if (wl >= wuffs_base__io_buffer__writer_length(srcbuf)) {
+    if (wuffs_base__io_buffer__compact(srcbuf) <= 0) {
       wuffs_drop_in__stb__g_failure_reason = "I/O buffer is too small";
       return NULL;
     }
@@ -238,9 +236,7 @@ wuffs_drop_in__stb__load1(           //
       return NULL;
     }
 
-    size_t wl = wuffs_base__io_buffer__writer_length(srcbuf);
-    wuffs_base__io_buffer__compact(srcbuf);
-    if (wl >= wuffs_base__io_buffer__writer_length(srcbuf)) {
+    if (wuffs_base__io_buffer__compact(srcbuf) <= 0) {
       free(workbuf_ptr);
       free(pixbuf_ptr);
       wuffs_drop_in__stb__g_failure_reason = "I/O buffer is too small";

@@ -31,8 +31,8 @@ typedef struct wuffs_base__io_buffer__struct {
 
 #ifdef __cplusplus
   inline bool is_valid() const;
-  inline void compact();
-  inline void compact_retaining(uint64_t history_retain_length);
+  inline size_t compact();
+  inline size_t compact_retaining(uint64_t history_retain_length);
   inline size_t reader_length() const;
   inline uint8_t* reader_pointer() const;
   inline uint64_t reader_position() const;
@@ -151,11 +151,14 @@ wuffs_base__io_buffer__is_valid(const wuffs_base__io_buffer* buf) {
 
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
 // start of the buffer.
-static inline void  //
+//
+// It returns the increase in the writer length: how much meta.wi fell by.
+static inline size_t  //
 wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   if (!buf || (buf->meta.ri == 0)) {
-    return;
+    return 0;
   }
+  size_t old_ri = buf->meta.ri;
   buf->meta.pos = wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri);
   size_t new_wi = buf->meta.wi - buf->meta.ri;
   if (new_wi != 0) {
@@ -163,6 +166,7 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   }
   buf->meta.wi = new_wi;
   buf->meta.ri = 0;
+  return old_ri;
 }
 
 // wuffs_base__io_buffer__compact_retaining moves any written but unread bytes
@@ -170,6 +174,8 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 // recently read bytes), where H is min(buf->meta.ri, history_retain_length).
 // It is therefore a no-op if history_retain_length is UINT64_MAX. A
 // postcondition is that buf->meta.ri == H.
+//
+// It returns the increase in the writer length: how much meta.wi fell by.
 //
 // wuffs_base__io_buffer__compact_retaining(0) is equivalent to
 // wuffs_base__io_buffer__compact().
@@ -184,16 +190,16 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 //
 // Then, depending on history_retain_length, the resultant buf would be:
 //
-// HRL = 0     defgh?????    ri = 0    wi = 5    pos = 903
-// HRL = 1     cdefgh????    ri = 1    wi = 6    pos = 902
-// HRL = 2     bcdefgh???    ri = 2    wi = 7    pos = 901
-// HRL = 3     abcdefgh??    ri = 3    wi = 8    pos = 900
-// HRL = 4+    abcdefgh??    ri = 3    wi = 8    pos = 900
-static inline void  //
+// HRL = 0     defgh?????    ri = 0    wi = 5    pos = 903    return = 3
+// HRL = 1     cdefgh????    ri = 1    wi = 6    pos = 902    return = 2
+// HRL = 2     bcdefgh???    ri = 2    wi = 7    pos = 901    return = 1
+// HRL = 3     abcdefgh??    ri = 3    wi = 8    pos = 900    return = 0
+// HRL = 4+    abcdefgh??    ri = 3    wi = 8    pos = 900    return = 0
+static inline size_t  //
 wuffs_base__io_buffer__compact_retaining(wuffs_base__io_buffer* buf,
                                          uint64_t history_retain_length) {
   if (!buf || (buf->meta.ri == 0)) {
-    return;
+    return 0;
   }
   size_t old_ri = buf->meta.ri;
   size_t new_ri = (size_t)(wuffs_base__u64__min(old_ri, history_retain_length));
@@ -205,6 +211,7 @@ wuffs_base__io_buffer__compact_retaining(wuffs_base__io_buffer* buf,
   }
   buf->meta.wi = new_wi;
   buf->meta.ri = new_ri;
+  return memmove_start;
 }
 
 static inline size_t  //
@@ -260,14 +267,14 @@ wuffs_base__io_buffer::is_valid() const {
   return wuffs_base__io_buffer__is_valid(this);
 }
 
-inline void  //
+inline size_t  //
 wuffs_base__io_buffer::compact() {
-  wuffs_base__io_buffer__compact(this);
+  return wuffs_base__io_buffer__compact(this);
 }
 
-inline void  //
+inline size_t  //
 wuffs_base__io_buffer::compact_retaining(uint64_t history_retain_length) {
-  wuffs_base__io_buffer__compact_retaining(this, history_retain_length);
+  return wuffs_base__io_buffer__compact_retaining(this, history_retain_length);
 }
 
 inline size_t  //
