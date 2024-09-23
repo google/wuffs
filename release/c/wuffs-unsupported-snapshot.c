@@ -4064,6 +4064,21 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
 
 // ---------------- Images
 
+// WUFFS_BASE__IMAGE__DIMENSION_MAX_INCL is the largest width or height
+// (measured in pixels) supported by Wuffs' standard library's image codecs.
+//
+// Any non-negative integer N less than or equal to ((1 << 24) - 1) can be
+// losslessly converted to and from single-precision floating point (what C
+// calls the "float" type and what Go calls "float32").
+//
+// A Wuffs image can have up to 4 channels and up to 8 bytes per channel (8 is
+// also known as sizeof(double)), combining for up to 32 bytes per pixel. When
+// calculating memory requirements, the 0xFFFFFF upper bound also means that:
+//   - (32 * N)     will not overflow an int32_t or uint32_t.
+//   - (32 * N * N) will not overflow an int64_t or uint64_t, provided that N
+//     already has a 64-bit type.
+//
+// 0xFFFFFF in decimal is 16777215.
 #define WUFFS_BASE__IMAGE__DIMENSION_MAX_INCL 0xFFFFFF
 
 // wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
