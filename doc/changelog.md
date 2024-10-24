@@ -11,6 +11,8 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `base.hasher_bitvec256`.
 - Added `base.hasher_u32` `update!` and `checksum_u32` methods.
 - Added `base.hasher_u64`.
+- Added `base.range_ie_i32`.
+- Added `base.rect_ie_i32`.
 - Added `compact_retaining` and `dst_history_retain_length`.
 - Added `example/toy-aux-image`.
 - Added `example/mzcat`.
