@@ -592,6 +592,7 @@ struct {
   bool braille_art_dark_mode;
   bool braille_art_light_mode;
   bool demo;
+  bool natural_size;
   int resize;
 } g_flags = {0};
 
@@ -603,10 +604,14 @@ static const char* g_usage =
     "    -B or -braille-art-dark-mode (use white-on-black Braille art)\n"
     "    -b or -braille-art-light-mode (use black-on-white Braille art)\n"
     "    -demo (dump the built-in demonstration images)\n"
-    "    -r or -resize=N (resize to fit in N×N, N≤1024; -r means N=64)\n";
+    "    -n use the image's natural size; this overrides -resize=N\n"
+    "    -resize=N (resize to fit in N×N, N≤1024); if neither this\n"
+    "        or -n is given, the default is -resize=64\n";
 
 const char*  //
 parse_flags(int argc, char** argv) {
+  g_flags.resize = 64;
+
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
     char* arg = argv[c];
@@ -643,8 +648,8 @@ parse_flags(int argc, char** argv) {
       g_flags.demo = true;
       continue;
     }
-    if (!strcmp(arg, "r")) {
-      g_flags.resize = 64;
+    if (!strcmp(arg, "n")) {
+      g_flags.natural_size = true;
       continue;
     }
     if (!strncmp(arg, "resize=", 7)) {
@@ -845,14 +850,15 @@ handle(const char* filename,
 
   char resize_info_string[64];
   resize_info_string[0] = 0;
-  if (g_flags.resize <= 0) {
+  int target_resize_wh = g_flags.natural_size ? 0 : g_flags.resize;
+  if (target_resize_wh <= 0) {
     // No-op.
   } else if ((src_w <= 0) || (src_h <= 0)) {
     snprintf(resize_info_string, sizeof(resize_info_string), " → 0×0");
   } else {
     int resize_w = src_w;
     int resize_h = src_h;
-    if (!resize_wh(&resize_w, &resize_h, g_flags.resize)) {
+    if (!resize_wh(&resize_w, &resize_h, target_resize_wh)) {
       stbi_image_free(src_pixels);
       return;
     }
@@ -881,8 +887,8 @@ handle(const char* filename,
   uint8_t* pixels = src_pixels;
   int w = src_w;
   int h = src_h;
-  if (g_flags.resize > 0) {
-    dst_pixels = resize(&w, &h, src_pixels, g_flags.resize, bytes_per_pixel);
+  if (target_resize_wh > 0) {
+    dst_pixels = resize(&w, &h, src_pixels, target_resize_wh, bytes_per_pixel);
     if (!dst_pixels) {
       stbi_image_free(src_pixels);
       printf("\n");
