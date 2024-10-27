@@ -18,8 +18,13 @@ package main
 // Usage: go run print-jpeg-markers.go foo.jpeg
 
 import (
+	"flag"
 	"fmt"
 	"os"
+)
+
+var (
+	xFlag = flag.Bool("x", false, "print extra information parsed from marker payloads")
 )
 
 func main() {
@@ -30,10 +35,12 @@ func main() {
 }
 
 func main1() error {
-	if len(os.Args) < 2 {
+	flag.Parse()
+	args := flag.Args()
+	if len(args) != 1 {
 		return fmt.Errorf("usage: progname filename.jpeg")
 	}
-	src, err := os.ReadFile(os.Args[1])
+	src, err := os.ReadFile(args[0])
 	if err != nil {
 		return err
 	}
@@ -66,6 +73,9 @@ func main1() error {
 		if (payloadLength < 2) || (pos < 0) || (pos > len(src)) {
 			return posError(pos, len(src))
 		}
+		if *xFlag {
+			parse(marker, src[pos+2-payloadLength:pos])
+		}
 
 		if marker != 0xDA { // SOS (Start Of Scan) marker.
 			continue
@@ -88,6 +98,217 @@ func main1() error {
 func posError(pos int, lenSrc int) error {
 	return fmt.Errorf("bad JPEG, pos = 0x%08X = %10d, len(src) = 0x%08X = %10d",
 		pos, pos, lenSrc, lenSrc)
+}
+
+func parse(marker byte, payload []byte) {
+	if ((0xE0 <= marker) && (marker <= 0xEF)) || (marker == 0xFE) {
+		n := len(payload)
+		if n > 16 {
+			n = 16
+		}
+		buf := [16]byte{}
+		for i := range buf {
+			buf[i] = '.'
+			if i >= len(payload) {
+				continue
+			} else if c := payload[i]; (0x20 <= c) && (c < 0x7F) {
+				buf[i] = c
+			}
+		}
+		fmt.Printf("#                                    contents[..%2d]      %s\n", n, buf[:n])
+	}
+
+	switch marker {
+	case 0xC0, 0xC1, 0xC2:
+		parseSOF(marker, payload)
+	case 0xC4:
+		parseDHT(marker, payload)
+	case 0xDA:
+		parseSOS(marker, payload)
+	case 0xDB:
+		parseDQT(marker, payload)
+
+		// For APPN markers, see https://exiftool.org/TagNames/JPEG.html
+	case 0xE0:
+		if hasPrefix(payload, "JFIF\x00") {
+			parseJFIF(marker, payload)
+		}
+	case 0xE1:
+		if hasPrefix(payload, "Exif\x00\x00") {
+			parseExif(marker, payload)
+		} else if hasPrefix(payload, "http://ns.adobe.com/xap/1.0/\x00") {
+			parseXMP(marker, payload)
+		} else if hasPrefix(payload, "http://ns.adobe.com/xmp/extension/\x00") {
+			parseExtendedXMP(marker, payload)
+		}
+	case 0xE2:
+		if hasPrefix(payload, "ICC_PROFILE\x00") {
+			parseICC(marker, payload)
+		}
+	case 0xED:
+		if hasPrefix(payload, "Photoshop 3.0") {
+			parsePhotoshop(marker, payload)
+		}
+	case 0xEE:
+		if hasPrefix(payload, "Adobe") {
+			parseAdobe(marker, payload)
+		}
+	}
+}
+
+func parseDHT(marker byte, payload []byte) {
+	for len(payload) > 17 {
+		c := payload[0] >> 4
+		h := payload[0] & 15
+		if (c > 1) || (h > 3) {
+			return
+		}
+		payload = payload[1:]
+
+		totalCount := 0
+		for _, count := range payload[:16] {
+			totalCount += int(count)
+		}
+		payload = payload[16:]
+
+		if len(payload) < totalCount {
+			return
+		}
+		payload = payload[totalCount:]
+
+		which := 'D'
+		if c > 0 {
+			which = 'A'
+		}
+		fmt.Printf("#                                    h_identifier        %cC | %X\n", which, h)
+	}
+}
+
+func parseDQT(marker byte, payload []byte) {
+	for len(payload) > 0 {
+		qIdent := payload[0] & 15
+		if qIdent > 3 {
+			return
+		}
+		bytesPerElement := 1 + (int(payload[0]) >> 4)
+		if bytesPerElement > 2 {
+			return
+		}
+		n := (64 * bytesPerElement) + 1
+		if len(payload) < n {
+			return
+		}
+		payload = payload[n:]
+		fmt.Printf("#                                    q_identifier        %02X\n", qIdent)
+	}
+}
+
+func parseSOF(marker byte, payload []byte) {
+	numComponents := 0
+	switch lp := len(payload); lp {
+	case 9, 12, 15, 18:
+		numComponents = (lp - 6) / 3
+	default:
+		return
+	}
+
+	h := (uint32(payload[1]) << 8) | uint32(payload[2])
+	w := (uint32(payload[3]) << 8) | uint32(payload[4])
+	isRGB := ""
+	if (numComponents == 3) &&
+		(payload[6] == 'R') && (payload[9] == 'G') && (payload[12] == 'B') {
+		isRGB = " (RGB)"
+	}
+
+	cTable := [4]byte{}
+	sTable := [4]byte{}
+	qTable := [4]byte{}
+	for i := 0; i < numComponents; i++ {
+		cTable[i] = payload[(3*i)+6]
+		sTable[i] = payload[(3*i)+7]
+		qTable[i] = payload[(3*i)+8]
+	}
+
+	fmt.Printf("#                                    width               0x%04X = %5d\n", w, w)
+	fmt.Printf("#                                    height              0x%04X = %5d\n", h, h)
+	fmt.Printf("#                                    bit_depth           %d\n", payload[0])
+	fmt.Printf("#                                    num_components      %d\n", numComponents)
+	fmt.Printf("#                                    c_identifiers       % 02X%s\n", cTable[:numComponents], isRGB)
+	fmt.Printf("#                                    subsampling H|V     % 02X\n", sTable[:numComponents])
+	fmt.Printf("#                                    q_selectors         % 02X\n", qTable[:numComponents])
+}
+
+func parseSOS(marker byte, payload []byte) {
+	numComponents := 0
+	switch lp := len(payload); lp {
+	case 6, 8, 10, 12:
+		numComponents = (lp - 4) / 2
+	default:
+		return
+	}
+	if numComponents != int(payload[0]) {
+		return
+	}
+
+	cTable := [4]byte{}
+	hTable := [4]byte{}
+	for i := 0; i < numComponents; i++ {
+		cTable[i] = payload[(2*i)+1]
+		hTable[i] = payload[(2*i)+2]
+	}
+
+	progSS := payload[(2*numComponents)+1] & 63
+	progSE := payload[(2*numComponents)+2] & 63
+	progAH := payload[(2*numComponents)+3] >> 4
+	progAL := payload[(2*numComponents)+3] & 15
+
+	fmt.Printf("#                                    num_components      %d\n", numComponents)
+	fmt.Printf("#                                    c_selectors         % 02X\n", cTable[:numComponents])
+	fmt.Printf("#                                    h_selectors D|A     % 02X\n", hTable[:numComponents])
+	fmt.Printf("#                                    progression         s: %2d, %2d; a: %2d, %2d\n", progSS, progSE, progAH, progAL)
+}
+
+func parseAdobe(marker byte, payload []byte) {
+	if len(payload) < 12 {
+		return
+	}
+	transform := "RGB or CMYK"
+	switch payload[11] {
+	case 1:
+		transform = "YCC"
+	case 2:
+		transform = "YCCK"
+	}
+	fmt.Printf("#                                    transform           %s\n", transform)
+}
+
+func parseExif(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func parseExtendedXMP(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func parseICC(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func parseJFIF(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func parsePhotoshop(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func parseXMP(marker byte, payload []byte) {
+	// Not implemented.
+}
+
+func hasPrefix(s []byte, prefix string) bool {
+	return (len(s) >= len(prefix)) &&
+		(string(s[:len(prefix)]) == prefix)
 }
 
 var names = [256]string{
