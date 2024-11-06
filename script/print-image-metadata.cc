@@ -396,7 +396,7 @@ redirect:
       case WUFFS_BASE__FOURCC__QOI:
         dec = wuffs_qoi__decoder::alloc_as__wuffs_base__image_decoder();
         break;
-      case WUFFS_BASE__FOURCC__TARGA:
+      case WUFFS_BASE__FOURCC__TGA:
         dec = wuffs_targa__decoder::alloc_as__wuffs_base__image_decoder();
         break;
       case WUFFS_BASE__FOURCC__TH:
