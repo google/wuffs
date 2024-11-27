@@ -20,7 +20,7 @@ cbor:   test/data/*.cbor
 gif:    test/data/*.gif   test/data/artificial-gif/*.gif
 gzip:   test/data/*.gz
 jpeg:   test/data/*.jpeg  ../libjpeg_turbo_corpus/*.jpg
-json:   test/data/*.json  ../rapidjson_corpus/*  ../simdjson_corpus/*  ../JSONTestSuite/test_*/*.json
+json:   test/data/*.json  ../simdjson_corpus/*  ../JSONTestSuite/test_*/*.json
 png:    test/data/*.png   test/data/artificial-png/*.png  ../pngsuite_corpus/*.png
 targa:  test/data/*.tga
 wbmp:   test/data/*.wbmp
