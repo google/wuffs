@@ -104,7 +104,7 @@ the overall decoding is "banana".
     000170  0x00AA  .       0xFA    0b_1111_1010
     000171  0x00AB  .       0xB7    0b_1011_0111  lcode:  110  literal 'n'
     000172  0x00AC  .       0xF9    0b_...._.001
-    000172  0x00AC  .       0xF9    0b_1111_1...  lcode:  256  length=3
+    000172  0x00AC  .       0xF9    0b_1111_1...  lcode:  257  length=3
     000173  0x00AD  .       0xB3    0b_.011_0011
     000173  0x00AD  .       0xB3    0b_1..._....  dcode:    1  distance=2
     000174  0x00AE  .       0xFE    0b_...._...0
