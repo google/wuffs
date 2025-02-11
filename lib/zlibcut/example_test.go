@@ -21,7 +21,7 @@ import (
 	"github.com/google/wuffs/lib/zlibcut"
 )
 
-func ExampleCut() {
+func Example() {
 	const sonnet18 = "" +
 		"Shall I compare thee to a summer’s day?\n" +
 		"Thou art more lovely and more temperate.\n" +

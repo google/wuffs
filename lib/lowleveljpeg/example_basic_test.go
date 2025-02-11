@@ -21,10 +21,10 @@ import (
 	"github.com/google/wuffs/lib/lowleveljpeg"
 )
 
-// Example_Basic demonstrates creating an opaque RGBA image and saving it as a
+// Example_basic demonstrates creating an opaque RGBA image and saving it as a
 // JPEG. It uses 4:2:0 chroma subsampling, the most popular choice for colorful
 // (not gray) JPEG images.
-func Example_Basic() {
+func Example_basic() {
 	const width, height = 40, 30
 	src := image.NewRGBA(image.Rect(0, 0, width, height))
 

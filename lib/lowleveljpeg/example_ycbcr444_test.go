@@ -21,10 +21,10 @@ import (
 	"github.com/google/wuffs/lib/lowleveljpeg"
 )
 
-// Example_YCbCr444 demonstrates loading an RGB PNG, converting to YCbCr and to
+// Example_yCbCr444 demonstrates loading an RGB PNG, converting to YCbCr and to
 // DCT space and saving as a 4:4:4 JPEG. Multiple JPEG outputs from the one PNG
 // input demonstrate making further transforms during conversion.
-func Example_YCbCr444() {
+func Example_yCbCr444() {
 	// levels holds a rough, ad hoc measure of a coefficient's frequency, in
 	// DCT space. Low (or high) levels[i] mean low (or high) frequency.
 	//

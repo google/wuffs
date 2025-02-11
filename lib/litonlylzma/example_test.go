@@ -17,7 +17,7 @@ import (
 	"github.com/google/wuffs/lib/litonlylzma"
 )
 
-func ExampleRoundTripLZMA() {
+func Example_roundTripLZMA() {
 	original := []byte("Hello world.\n")
 	compressed, err := litonlylzma.FileFormatLZMA.Encode(nil, original)
 	if err != nil {
@@ -45,7 +45,7 @@ func ExampleRoundTripLZMA() {
 	// Hello world.
 }
 
-func ExampleRoundTripXz() {
+func Example_roundTripXz() {
 	original := []byte("Hello world.\n")
 	compressed, err := litonlylzma.FileFormatXz.Encode(nil, original)
 	if err != nil {
