@@ -604,7 +604,8 @@ static const char* g_usage =
     "    -B or -braille-art-dark-mode (use white-on-black Braille art)\n"
     "    -b or -braille-art-light-mode (use black-on-white Braille art)\n"
     "    -demo (dump the built-in demonstration images)\n"
-    "    -n use the image's natural size; this overrides -resize=N\n"
+    "    -n or -natural-size (use each image's natural size); this\n"
+    "        overrides -resize=N\n"
     "    -resize=N (resize to fit in N×N, N≤1024); if neither this\n"
     "        or -n is given, the default is -resize=64\n";
 
@@ -648,7 +649,7 @@ parse_flags(int argc, char** argv) {
       g_flags.demo = true;
       continue;
     }
-    if (!strcmp(arg, "n")) {
+    if (!strcmp(arg, "n") || !strcmp(arg, "natural-size")) {
       g_flags.natural_size = true;
       continue;
     }
