@@ -32,11 +32,55 @@ func main1() error {
 	w := &bytes.Buffer{}
 	w.WriteString(header)
 
+	genUpsampleFrom(w)
+	w.WriteString("\n")
 	genHardCodedDHTSegments(w)
 	w.WriteString("\n")
 	genHuffmanBitWriters(w)
 
 	return os.WriteFile("data.go", w.Bytes(), 0644)
+}
+
+func genUpsampleFrom(w *bytes.Buffer) {
+	w.WriteString("// UpsampleFrom produces one 16×16 quad-block from one 8×8 block.\n")
+	w.WriteString("//\n")
+	w.WriteString("// It uses a triangle filter.\n")
+	w.WriteString("func (dst *QuadBlockU8) UpsampleFrom(src *BlockU8) {\n")
+	w.WriteString("\tif (dst == nil) || (src == nil) {\n\t\treturn\n\t}\n")
+	for y := 0; y < 16; y++ {
+		for x := 0; x < 16; x++ {
+			d := (y << 4) | x
+
+			s0 := ((y >> 1) << 3) | (x >> 1)
+			sx := ((x & 1) * 2) - 1
+			sy := ((y & 1) * 16) - 8
+
+			// Handle corners.
+			if ((x == 0x00) || (x == 0x0F)) && ((y == 0x00) || (y == 0x0F)) {
+				fmt.Fprintf(w, "\tdst[0x%02X] = src[0x%02X]\n", d, s0)
+				continue
+			}
+
+			// Handle top and bottom edges.
+			if (y == 0x00) || (y == 0x0F) {
+				fmt.Fprintf(w, "\tdst[0x%02X] = uint8(((3 * uint32(src[0x%02X])) + uint32(src[0x%02X]) + 2) / 4)\n", d, s0, s0+sx)
+				continue
+			}
+
+			// Handle left and right edges.
+			if (x == 0x00) || (x == 0x0F) {
+				fmt.Fprintf(w, "\tdst[0x%02X] = uint8(((3 * uint32(src[0x%02X])) + uint32(src[0x%02X]) + 2) / 4)\n", d, s0, s0+sy)
+				continue
+			}
+
+			fmt.Fprintf(w, "\tdst[0x%02X] = uint8(("+
+				"(9 * uint32(src[0x%02X])) + "+
+				"(3 * uint32(src[0x%02X])) + "+
+				"(3 * uint32(src[0x%02X])) + "+
+				"uint32(src[0x%02X]) + 8) / 16)\n", d, s0, s0+sx, s0+sy, s0+sx+sy)
+		}
+	}
+	w.WriteString("}\n")
 }
 
 func fillInPlaceholderPayloadLength(payload []byte) {

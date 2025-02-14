@@ -147,8 +147,15 @@ func (dst *Array6BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int)
 	dst[2] = tmp[2][0]
 	dst[3] = tmp[3][0]
 
-	downsample8x8(&dst[4], &tmp[0][1], &tmp[1][1], &tmp[2][1], &tmp[3][1])
-	downsample8x8(&dst[5], &tmp[0][2], &tmp[1][2], &tmp[2][2], &tmp[3][2])
+	downsample4x4(dst[4][0x00:], &tmp[0][1])
+	downsample4x4(dst[4][0x04:], &tmp[1][1])
+	downsample4x4(dst[4][0x20:], &tmp[2][1])
+	downsample4x4(dst[4][0x24:], &tmp[3][1])
+
+	downsample4x4(dst[5][0x00:], &tmp[0][2])
+	downsample4x4(dst[5][0x04:], &tmp[1][2])
+	downsample4x4(dst[5][0x20:], &tmp[2][2])
+	downsample4x4(dst[5][0x24:], &tmp[3][2])
 }
 
 // fillRightAndDown copies the right and bottom edge values to the full 8×8 block.
@@ -212,25 +219,32 @@ func fillRightAndDown(b *BlockU8, topLeftX int, topLeftY int, bottomRightX int, 
 	}
 }
 
-// downsample8x8 reduces four 8×8 blocks to one 8×8 block.
-func downsample8x8(dst *BlockU8, src0 *BlockU8, src1 *BlockU8, src2 *BlockU8, src3 *BlockU8) {
-	downsample4x4(dst[0x00:], src0)
-	downsample4x4(dst[0x04:], src1)
-	downsample4x4(dst[0x20:], src2)
-	downsample4x4(dst[0x24:], src3)
-}
-
 // downsample4x4 reduces one 8×8 block to one 4×4 sub-block.
 func downsample4x4(dst []uint8, src *BlockU8) {
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
-			d := (8 * y) + (1 * x)
-			s := (16 * y) + (2 * x)
+			d := (y << 3) | (x << 0)
+			s := (y << 4) | (x << 1)
 			dst[d] = uint8((2 +
-				uint32(src[s+0]) +
-				uint32(src[s+1]) +
-				uint32(src[s+8]) +
-				uint32(src[s+9])) / 4)
+				uint32(src[s+0x00]) +
+				uint32(src[s+0x01]) +
+				uint32(src[s+0x08]) +
+				uint32(src[s+0x09])) / 4)
+		}
+	}
+}
+
+// DownsampleFrom reduces one 16×16 quad-block to one 8×8 block.
+func (dst *BlockU8) DownsampleFrom(src *QuadBlockU8) {
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			d := (y << 3) | (x << 0)
+			s := (y << 5) | (x << 1)
+			dst[d] = uint8((2 +
+				uint32(src[s+0x00]) +
+				uint32(src[s+0x01]) +
+				uint32(src[s+0x10]) +
+				uint32(src[s+0x11])) / 4)
 		}
 	}
 }

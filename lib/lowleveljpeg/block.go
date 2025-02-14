@@ -20,7 +20,8 @@ func ifElse(condition bool, whenTrue int64, whenFalse int64) int64 {
 
 const (
 	fmtHex = "0123456789ABCDEF"
-	fmtSep = "       \n" // 7 spaces and then a new line.
+	fmtSep = "       \n"         // 7 spaces and then a new line.
+	fmtS16 = "               \n" // 15 spaces and then a new line.
 )
 
 const (
@@ -221,6 +222,23 @@ func (b *BlockI16) IsValid() bool {
 		}
 	}
 	return true
+}
+
+// QuadBlockU8 is like a BlockU8 but it is 16×16 instead of 8×8.
+//
+// It is indexed in XY (not DCT) space. If b is a QuadBlockU8 then b[0] is the
+// top-left corner and b[16] is one pixel below that.
+type QuadBlockU8 [256]uint8
+
+// String returns b in human-readable form.
+func (b QuadBlockU8) String() string {
+	buf := [256 * 3]byte{}
+	for i, value := range b {
+		buf[(3*i)+0] = fmtHex[15&(value>>0x04)]
+		buf[(3*i)+1] = fmtHex[15&(value>>0x00)]
+		buf[(3*i)+2] = fmtS16[15&i]
+	}
+	return string(buf[:])
 }
 
 // These are "1 / 2" and  "1 / (2 * √2)" as 16.16 fixed point values.
