@@ -16,7 +16,10 @@ package lowleveljpeg
 //
 // It uses a triangle filter.
 func (dst *QuadBlockU8) UpsampleFrom(src *BlockU8) {
-	if (dst == nil) || (src == nil) {
+	if dst == nil {
+		return
+	} else if src == nil {
+		dst.SetToNeutral()
 		return
 	}
 	dst[0x00] = src[0x00]

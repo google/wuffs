@@ -46,7 +46,7 @@ func genUpsampleFrom(w *bytes.Buffer) {
 	w.WriteString("//\n")
 	w.WriteString("// It uses a triangle filter.\n")
 	w.WriteString("func (dst *QuadBlockU8) UpsampleFrom(src *BlockU8) {\n")
-	w.WriteString("\tif (dst == nil) || (src == nil) {\n\t\treturn\n\t}\n")
+	w.WriteString("\tif dst == nil {\n\t\treturn\n\t} else if src == nil {\n\t\tdst.SetToNeutral()\n\t\treturn\n\t}\n")
 	for y := 0; y < 16; y++ {
 		for x := 0; x < 16; x++ {
 			d := (y << 4) | x

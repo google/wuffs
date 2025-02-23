@@ -54,6 +54,9 @@ func (b BlockU8) String() string {
 
 // SetToNeutral sets each element to BlockU8NeutralValue.
 func (b *BlockU8) SetToNeutral() {
+	if b == nil {
+		return
+	}
 	for i := range b {
 		b[i] = BlockU8NeutralValue
 	}
@@ -139,8 +142,26 @@ func (b BlockI16) String() string {
 	return string(buf[:])
 }
 
+// Abs returns the elementwise absolute value of b.
+func (b *BlockI16) Abs() (ret BlockI16) {
+	if b == nil {
+		return ret
+	}
+	for i, v := range b {
+		if v < 0 {
+			ret[i] = -v
+		} else {
+			ret[i] = +v
+		}
+	}
+	return ret
+}
+
 // SetToNeutral sets each element to BlockI16NeutralValue.
 func (b *BlockI16) SetToNeutral() {
+	if b == nil {
+		return
+	}
 	for i := range b {
 		b[i] = BlockI16NeutralValue
 	}
@@ -239,6 +260,16 @@ func (b QuadBlockU8) String() string {
 		buf[(3*i)+2] = fmtS16[15&i]
 	}
 	return string(buf[:])
+}
+
+// SetToNeutral sets each element to BlockU8NeutralValue.
+func (b *QuadBlockU8) SetToNeutral() {
+	if b == nil {
+		return
+	}
+	for i := range b {
+		b[i] = BlockU8NeutralValue
+	}
 }
 
 // These are "1 / 2" and  "1 / (2 * √2)" as 16.16 fixed point values.

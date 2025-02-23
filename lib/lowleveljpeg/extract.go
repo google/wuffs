@@ -236,6 +236,12 @@ func downsample4x4(dst []uint8, src *BlockU8) {
 
 // DownsampleFrom reduces one 16×16 quad-block to one 8×8 block.
 func (dst *BlockU8) DownsampleFrom(src *QuadBlockU8) {
+	if dst == nil {
+		return
+	} else if src == nil {
+		dst.SetToNeutral()
+		return
+	}
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 8; x++ {
 			d := (y << 3) | (x << 0)
