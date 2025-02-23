@@ -41,6 +41,7 @@ var FourCCs = [...][2]string{
 	{"GIF ", "Graphics Interchange Format"},
 	{"GZ  ", "GNU Zip"},
 	{"HEIF", "High Efficiency Image File"},
+	{"HNSM", "Handsum"},
 	{"HTML", "Hypertext Markup Language"},
 	{"ICCP", "International Color Consortium Profile"},
 	{"ICO ", "Icon"},

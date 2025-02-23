@@ -169,6 +169,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x504E4720, "\x03\x89\x50\x4E\x47"},          // PNG
       {+0x54482020, "\x02\xC3\xBE\xFE"},              // TH
       {+0x585A2020, "\x04\xFD\x37\x7A\x58\x5A"},      // XZ
+      {+0x484E534D, "\x01\xFE\xD7"},                  // HANDSUM
       {+0x4A504547, "\x01\xFF\xD8"},                  // JPEG
   };
   static const size_t table_len = sizeof(table) / sizeof(table[0]);
