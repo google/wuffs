@@ -55,6 +55,7 @@ to enable.
 - `ETC2:      BASE`
 - `GIF:       BASE`
 - `GZIP:      BASE, CRC32, DEFLATE`
+- `HANDSUM:   BASE`
 - `JPEG:      BASE`
 - `JSON:      BASE`
 - `LZIP:      BASE, CRC32, LZMA`

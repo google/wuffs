@@ -87,6 +87,7 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__BMP
   //  - WUFFS_BASE__FOURCC__ETC2
   //  - WUFFS_BASE__FOURCC__GIF
+  //  - WUFFS_BASE__FOURCC__HNSM
   //  - WUFFS_BASE__FOURCC__JPEG
   //  - WUFFS_BASE__FOURCC__NIE
   //  - WUFFS_BASE__FOURCC__NPBM

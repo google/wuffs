@@ -62,6 +62,7 @@
 #define WUFFS_CONFIG__MODULE__ETC2
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__GZIP
+#define WUFFS_CONFIG__MODULE__HANDSUM
 #define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
@@ -118,6 +119,9 @@ handle_image_decoder(wuffs_base__io_buffer src,
       break;
     case WUFFS_BASE__FOURCC__GIF:
       dec = wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();
+      break;
+    case WUFFS_BASE__FOURCC__HNSM:
+      dec = wuffs_handsum__decoder::alloc_as__wuffs_base__image_decoder();
       break;
     case WUFFS_BASE__FOURCC__JPEG:
       dec = wuffs_jpeg__decoder::alloc_as__wuffs_base__image_decoder();

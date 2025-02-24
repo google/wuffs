@@ -68,6 +68,7 @@ that Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__ETC2
 #define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__HANDSUM
 #define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
@@ -184,6 +185,7 @@ union {
   wuffs_bmp__decoder bmp;
   wuffs_etc2__decoder etc2;
   wuffs_gif__decoder gif;
+  wuffs_handsum__decoder handsum;
   wuffs_netpbm__decoder netpbm;
   wuffs_nie__decoder nie;
   wuffs_png__decoder png;
@@ -414,6 +416,16 @@ initialize_image_decoder() {
       g_image_decoder =
           wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.gif);
+      return NULL;
+
+    case WUFFS_BASE__FOURCC__HNSM:
+      status = wuffs_handsum__decoder__initialize(
+          &g_potential_decoders.handsum, sizeof g_potential_decoders.handsum,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.handsum);
       return NULL;
 
     case WUFFS_BASE__FOURCC__NIE:

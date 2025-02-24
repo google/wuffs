@@ -19,6 +19,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `get_quirk(key: u32) u64`.
 - Added `std/crc64`.
 - Added `std/etc2`.
+- Added `std/handsum`.
 - Added `std/jpeg`.
 - Added `std/lzip`.
 - Added `std/lzma`.

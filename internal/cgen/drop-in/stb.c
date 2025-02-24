@@ -91,6 +91,11 @@ wuffs_drop_in__stb__make_decoder(   //
         return wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder();
 #endif
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__HANDSUM)
+      case WUFFS_BASE__FOURCC__HNSM:
+        return wuffs_handsum__decoder__alloc_as__wuffs_base__image_decoder();
+#endif
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__JPEG)
       case WUFFS_BASE__FOURCC__JPEG:
         return wuffs_jpeg__decoder__alloc_as__wuffs_base__image_decoder();

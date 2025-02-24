@@ -48,6 +48,7 @@ OK. 076cb375 test/data/bricks-color.bmp
 OK. bdbbfadb test/data/bricks-color.etc1.pkm
 OK. 41e6110e test/data/bricks-color.etc1s.pkm
 OK. 5670f263 test/data/bricks-color.etc2.pkm
+OK. 16e19d11 test/data/bricks-color.handsum
 OK. 72a1f9cc test/data/bricks-color.jpeg
 OK. 076cb375 test/data/bricks-color.lossless.webp
 OK. 9d451b1c test/data/bricks-color.lossy.webp
@@ -121,6 +122,7 @@ OK. ed4b78fc test/data/hippopotamus.regular.gif
 OK. dcbb225a test/data/hippopotamus.regular.png
 BAD e4c5926b test/data/hippopotamus.regular.truncated.png
 OK. f6bb81e2 test/data/mona-lisa.21x32.etc2.pkm
+OK. e93a8448 test/data/mona-lisa.21x32.handsum
 OK. 012ce4cf test/data/mona-lisa.21x32.png
 OK. 0a22e689 test/data/mona-lisa.21x32.q50.jpeg
 OK. 059ecb80 test/data/mona-lisa.21x32.q90.jpeg
