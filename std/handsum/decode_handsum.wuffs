@@ -39,9 +39,14 @@ pub struct decoder? implements base.image_decoder(
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
+        bit_offset : base.u16,
+
+        coeffs : array[40] base.u16,
+
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
+        bits    : array[64] base.u8,
         buffers : array[2] array[32] array[128] base.u8,
 )
 
@@ -161,7 +166,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status : base.status
+    var status   : base.status
+    var num_read : base.u32
+    var which    : base.u32[..= 1]
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -181,8 +188,37 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return status
     }
 
-    this.from_src_to_pixels?(src: args.src)
-    status = this.from_pixels_to_dst!(dst: args.dst, which: 0)
+    while num_read < 45 {
+        num_read ~mod+= args.src.limited_copy_u32_to_slice!(
+                up_to: 45 - num_read,
+                s: this.bits[num_read ..])
+        if num_read < 45 {
+            yield? base."$short read"
+        }
+    }
+
+    this.bit_offset = 0
+    this.decode_block!(which: 0, y_offset: 0, x_offset: 4 * 0)
+    this.decode_block!(which: 0, y_offset: 0, x_offset: 4 * 8)
+    this.decode_block!(which: 0, y_offset: 8, x_offset: 4 * 0)
+    this.decode_block!(which: 0, y_offset: 8, x_offset: 4 * 8)
+    this.decode_block!(which: 1, y_offset: 0, x_offset: 1)
+    this.decode_block!(which: 1, y_offset: 0, x_offset: 2)
+    this.smooth_luma_block_seams!()
+    this.upsample_chroma!()
+    this.convert_ycc_to_bgr!()
+    this.upsample_bgr!()
+
+    which = 1
+    if this.width < 32 {
+        which = 0
+        this.scale_1d_horizontal!()
+    } else if this.height < 32 {
+        which = 0
+        this.scale_1d_vertical!()
+    }
+
+    status = this.from_pixels_to_dst!(dst: args.dst, which: which)
     if not status.is_ok() {
         return status
     }
@@ -190,26 +226,440 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     this.call_sequence = 0x60
 }
 
-pri func decoder.from_src_to_pixels?(src: base.io_reader) {
+// decode_block calls decode_coeffs and then performs an Inverse Discrete
+// Cosine Transform. The IDCT algorithm is equivalent to the lowleveljpeg Go
+// package's BlockU8.InverseDCTFrom code, although Handsum only needs to go up
+// to (5, 5) in DCT space, instead of (8, 8).
+pri func decoder.decode_block!(which: base.u32[..= 1], y_offset: base.u32[..= 8], x_offset: base.u32[..= 32]) {
     var y : base.u32
     var x : base.u32
+    var v : base.u32
+    var u : base.u32
 
-    // TODO: actually implement the format. For now, fill in a placeholder
-    // blue-green gradient.
+    var alphas_sum_32   : base.u64
+    var half_alpha_v_16 : base.u64
+    var half_alpha_u_16 : base.u64
+    var alphas_16       : base.u64
+    var c_32            : base.u64
+    var c_16            : base.u64
+    var result_0        : base.u64
+
+    this.decode_coeffs!()
+
+    y = 0
+    while y < 8 {
+        x = 0
+        while x < 8,
+                inv y < 8,
+        {
+            alphas_sum_32 = 0
+
+            v = 0
+            while v < 5,
+                    inv y < 8,
+                    inv x < 8,
+            {
+                half_alpha_v_16 = FIXED_POINT_INV_2_SQRT_2 as base.u64
+                if v <> 0 {
+                    half_alpha_v_16 = FIXED_POINT_HALF as base.u64
+                }
+
+                u = 0
+                while u < 5,
+                        inv y < 8,
+                        inv x < 8,
+                        inv v < 5,
+                {
+                    half_alpha_u_16 = FIXED_POINT_INV_2_SQRT_2 as base.u64
+                    if u <> 0 {
+                        half_alpha_u_16 = FIXED_POINT_HALF as base.u64
+                    }
+
+                    alphas_16 = this.util.sign_extend_rshift_u64(
+                            a: (half_alpha_v_16 ~mod* half_alpha_u_16) ~mod+ (1 << 15),
+                            n: 16)
+
+                    c_32 = this.util.sign_extend_convert_u32_u64(a: COSINES[(((2 * x) + 1) * u) & 31]) ~mod*
+                            this.util.sign_extend_convert_u32_u64(a: COSINES[(((2 * y) + 1) * v) & 31])
+
+                    c_16 = this.util.sign_extend_rshift_u64(
+                            a: c_32 ~mod+ (1 << 15),
+                            n: 16)
+
+                    alphas_sum_32 ~mod+= (alphas_16 ~mod* c_16) ~mod*
+                            this.util.sign_extend_convert_u16_u64(
+                            a: this.coeffs[(8 * v) + u])
+
+                    u += 1
+                }
+                v += 1
+            }
+
+            result_0 = this.util.sign_extend_rshift_u64(
+                    a: alphas_sum_32 ~mod+ (1 << 31),
+                    n: 32)
+
+            this.buffers[args.which][args.y_offset + y][args.x_offset + (4 * x)] =
+                    BIAS_AND_CLAMP[result_0 & 1023]
+
+            x += 1
+        }
+        y += 1
+    }
+}
+
+pri func decoder.decode_coeffs!() {
+    var bo     : base.u32
+    var nibble : base.u8[..= 15]
+    var i      : base.u32
+
+    bo = this.bit_offset as base.u32
+
+    nibble = (this.bits[(bo >> 3) & 63] >> (bo & 4)) & 15
+    this.coeffs[0] = ((nibble as base.u16) ~mod- 8) ~mod* 128
+    bo ~mod+= 4
+
+    i = 1
+    while i < 15 {
+        nibble = (this.bits[(bo >> 3) & 63] >> (bo & 4)) & 15
+        this.coeffs[ZIGZAG[i]] = ((nibble as base.u16) ~mod- 8) ~mod* 16
+        bo ~mod+= 4
+
+        i += 1
+    }
+
+    this.bit_offset = (bo & 0xFFFF) as base.u16
+}
+
+pri func decoder.smooth_luma_block_seams!() {
+    var i  : base.u32
+    var p0 : base.u8
+    var p1 : base.u8
+    var y0 : base.u32[..= 15]
+    var y1 : base.u32[..= 15]
+    var x0 : base.u32[..= 15]
+    var x1 : base.u32[..= 15]
+
+    var v0 : base.u32[..= 255]
+    var v1 : base.u32[..= 255]
+
+    var w0 : base.u32[..= 255]
+    var w1 : base.u32[..= 255]
+
+    var v77 : base.u32[..= 255]
+    var v78 : base.u32[..= 255]
+    var v88 : base.u32[..= 255]
+    var v87 : base.u32[..= 255]
+
+    var w77 : base.u32[..= 255]
+    var w78 : base.u32[..= 255]
+    var w88 : base.u32[..= 255]
+    var w87 : base.u32[..= 255]
+
+    i = 0
+    while i <= 54 {
+        p0 = SMOOTHING_PAIRS[i + 0]
+        p1 = SMOOTHING_PAIRS[i + 1]
+        y0 = (p0 >> 4) as base.u32
+        y1 = (p1 >> 4) as base.u32
+        x0 = (p0 & 15) as base.u32
+        x1 = (p1 & 15) as base.u32
+
+        v0 = this.buffers[0][y0][x0 * 4] as base.u32
+        v1 = this.buffers[0][y1][x1 * 4] as base.u32
+
+        w0 = ((3 * v0) + v1 + 2) / 4
+        w1 = ((3 * v1) + v0 + 2) / 4
+
+        this.buffers[0][y0][x0 * 4] = w0 as base.u8
+        this.buffers[0][y1][x1 * 4] = w1 as base.u8
+
+        i += 2
+    }
+
+    v77 = this.buffers[0][7][7 * 4] as base.u32
+    v78 = this.buffers[0][7][8 * 4] as base.u32
+    v88 = this.buffers[0][8][8 * 4] as base.u32
+    v87 = this.buffers[0][8][7 * 4] as base.u32
+
+    w77 = ((9 * v77) + (3 * v78) + v88 + (3 * v87) + 8) / 16
+    w78 = ((9 * v78) + (3 * v88) + v87 + (3 * v77) + 8) / 16
+    w88 = ((9 * v88) + (3 * v87) + v77 + (3 * v78) + 8) / 16
+    w87 = ((9 * v87) + (3 * v77) + v78 + (3 * v88) + 8) / 16
+
+    this.buffers[0][7][7 * 4] = w77 as base.u8
+    this.buffers[0][7][8 * 4] = w78 as base.u8
+    this.buffers[0][8][8 * 4] = w88 as base.u8
+    this.buffers[0][8][7 * 4] = w87 as base.u8
+}
+
+pri func decoder.upsample_chroma!() {
+    var y  : base.u32
+    var dy : base.u32
+    var y0 : base.u32[..= 7]
+    var y1 : base.u32[..= 7]
+    var x  : base.u32
+    var dx : base.u32
+    var x0 : base.u32[..= 7]
+    var x1 : base.u32[..= 7]
+
+    y = 0
+    while y < 16 {
+        dy = (((y & 1) * 2) ~mod- 1)
+        y0 = y >> 1
+        y1 = CLAMP_7[(y0 ~mod+ dy) & 31] as base.u32
+
+        x = 0
+        while x < 16,
+                inv y < 16,
+        {
+            dx = (((x & 1) * 2) ~mod- 1)
+            x0 = x >> 1
+            x1 = CLAMP_7[(x0 ~mod+ dx) & 31] as base.u32
+
+            this.buffers[0][y][(4 * x) + 1] = ((
+                    ((this.buffers[1][y0][(4 * x0) + 1] as base.u32) * 9) +
+                    ((this.buffers[1][y0][(4 * x1) + 1] as base.u32) * 3) +
+                    ((this.buffers[1][y1][(4 * x0) + 1] as base.u32) * 3) +
+                    (this.buffers[1][y1][(4 * x1) + 1] as base.u32) + 8) / 16) as base.u8
+
+            this.buffers[0][y][(4 * x) + 2] = ((
+                    ((this.buffers[1][y0][(4 * x0) + 2] as base.u32) * 9) +
+                    ((this.buffers[1][y0][(4 * x1) + 2] as base.u32) * 3) +
+                    ((this.buffers[1][y1][(4 * x0) + 2] as base.u32) * 3) +
+                    (this.buffers[1][y1][(4 * x1) + 2] as base.u32) + 8) / 16) as base.u8
+
+            x += 1
+        }
+        y += 1
+    }
+}
+
+pri func decoder.upsample_bgr!() {
+    var y  : base.u32
+    var dy : base.u32
+    var y0 : base.u32[..= 15]
+    var y1 : base.u32[..= 15]
+    var x  : base.u32
+    var dx : base.u32
+    var x0 : base.u32[..= 15]
+    var x1 : base.u32[..= 15]
 
     y = 0
     while y < 32 {
+        dy = (((y & 1) * 2) ~mod- 1)
+        y0 = y >> 1
+        y1 = CLAMP_15[(y0 ~mod+ dy) & 63] as base.u32
+
         x = 0
         while x < 32,
                 inv y < 32,
         {
-            this.buffers[0][y][(4 * x) + 0] = (x * 8) as base.u8
-            this.buffers[0][y][(4 * x) + 1] = (y * 8) as base.u8
-            this.buffers[0][y][(4 * x) + 2] = 0x00
-            this.buffers[0][y][(4 * x) + 3] = 0xFF
+            dx = (((x & 1) * 2) ~mod- 1)
+            x0 = x >> 1
+            x1 = CLAMP_15[(x0 ~mod+ dx) & 63] as base.u32
+
+            this.buffers[1][y][(4 * x) + 0] = ((
+                    ((this.buffers[0][y0][(4 * x0) + 0] as base.u32) * 9) +
+                    ((this.buffers[0][y0][(4 * x1) + 0] as base.u32) * 3) +
+                    ((this.buffers[0][y1][(4 * x0) + 0] as base.u32) * 3) +
+                    (this.buffers[0][y1][(4 * x1) + 0] as base.u32) + 8) / 16) as base.u8
+
+            this.buffers[1][y][(4 * x) + 1] = ((
+                    ((this.buffers[0][y0][(4 * x0) + 1] as base.u32) * 9) +
+                    ((this.buffers[0][y0][(4 * x1) + 1] as base.u32) * 3) +
+                    ((this.buffers[0][y1][(4 * x0) + 1] as base.u32) * 3) +
+                    (this.buffers[0][y1][(4 * x1) + 1] as base.u32) + 8) / 16) as base.u8
+
+            this.buffers[1][y][(4 * x) + 2] = ((
+                    ((this.buffers[0][y0][(4 * x0) + 2] as base.u32) * 9) +
+                    ((this.buffers[0][y0][(4 * x1) + 2] as base.u32) * 3) +
+                    ((this.buffers[0][y1][(4 * x0) + 2] as base.u32) * 3) +
+                    (this.buffers[0][y1][(4 * x1) + 2] as base.u32) + 8) / 16) as base.u8
+
+            this.buffers[1][y][(4 * x) + 3] = 0xFF
+
             x += 1
         }
         y += 1
+    }
+}
+
+pri func decoder.convert_ycc_to_bgr!() {
+    var y   : base.u32
+    var x   : base.u32
+    var yy1 : base.u32
+    var cb1 : base.u32
+    var cr1 : base.u32
+    var r   : base.u32
+    var g   : base.u32
+    var b   : base.u32
+
+    y = 0
+    while y < 16 {
+        x = 0
+        while x < 16,
+                inv y < 16,
+        {
+            // This conversion algorithm is the same as the one used by
+            // src/image/color/ycbcr.go in Go's standard library.
+
+            yy1 = (this.buffers[0][y][(4 * x) + 0] as base.u32) * 0x1_0101
+            cb1 = (this.buffers[0][y][(4 * x) + 1] as base.u32) ~mod- 0x80
+            cr1 = (this.buffers[0][y][(4 * x) + 2] as base.u32) ~mod- 0x80
+
+            r = yy1 ~mod+ (91881 ~mod* cr1)
+            if (r & 0xFF00_0000) == 0 {
+                r >>= 16
+            } else {
+                r = 0xFFFF_FFFF ^ this.util.sign_extend_rshift_u32(a: r, n: 31)
+            }
+
+            g = yy1 ~mod- ((22554 ~mod* cb1) ~mod+ (46802 ~mod* cr1))
+            if (g & 0xFF00_0000) == 0 {
+                g >>= 16
+            } else {
+                g = 0xFFFF_FFFF ^ this.util.sign_extend_rshift_u32(a: g, n: 31)
+            }
+
+            b = yy1 ~mod+ (116130 ~mod* cb1)
+            if (b & 0xFF00_0000) == 0 {
+                b >>= 16
+            } else {
+                b = 0xFFFF_FFFF ^ this.util.sign_extend_rshift_u32(a: b, n: 31)
+            }
+
+            this.buffers[0][y][(4 * x) + 0] = (b & 0xFF) as base.u8
+            this.buffers[0][y][(4 * x) + 1] = (g & 0xFF) as base.u8
+            this.buffers[0][y][(4 * x) + 2] = (r & 0xFF) as base.u8
+
+            x += 1
+        }
+        y += 1
+    }
+}
+
+pri func decoder.scale_1d_horizontal!() {
+    var y         : base.u32
+    var dstx      : base.u32[..= 31]
+    var srcx      : base.u32
+    var acc0      : base.u32
+    var acc1      : base.u32
+    var acc2      : base.u32
+    var s0        : base.u32[..= 0xFF]
+    var s1        : base.u32[..= 0xFF]
+    var s2        : base.u32[..= 0xFF]
+    var remainder : base.u32[..= 32]
+    var partial   : base.u32[..= 32]
+
+    y = 0
+    while y < 32 {
+        dstx = 0
+        srcx = 0
+        acc0 = 0
+        acc1 = 0
+        acc2 = 0
+        remainder = 32
+        while srcx < 32,
+                inv y < 32,
+        {
+            s0 = this.buffers[1][y][(4 * srcx) + 0] as base.u32
+            s1 = this.buffers[1][y][(4 * srcx) + 1] as base.u32
+            s2 = this.buffers[1][y][(4 * srcx) + 2] as base.u32
+
+            if remainder > this.width {
+                remainder -= this.width
+                acc0 ~mod+= this.width * s0
+                acc1 ~mod+= this.width * s1
+                acc2 ~mod+= this.width * s2
+
+            } else {
+                assert this.width >= remainder via "a >= b: b <= a"()
+
+                acc0 ~mod+= remainder * s0
+                acc1 ~mod+= remainder * s1
+                acc2 ~mod+= remainder * s2
+
+                this.buffers[0][y][(4 * dstx) + 0] = (((acc0 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][y][(4 * dstx) + 1] = (((acc1 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][y][(4 * dstx) + 2] = (((acc2 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][y][(4 * dstx) + 3] = 0xFF
+                dstx = (dstx + 1) & 31
+
+                partial = this.width - remainder
+
+                acc0 = partial * s0
+                acc1 = partial * s1
+                acc2 = partial * s2
+
+                remainder = 32 - partial
+            }
+
+            srcx += 1
+        }
+        y += 1
+    }
+}
+
+pri func decoder.scale_1d_vertical!() {
+    var x         : base.u32
+    var dsty      : base.u32[..= 31]
+    var srcy      : base.u32
+    var acc0      : base.u32
+    var acc1      : base.u32
+    var acc2      : base.u32
+    var s0        : base.u32[..= 0xFF]
+    var s1        : base.u32[..= 0xFF]
+    var s2        : base.u32[..= 0xFF]
+    var remainder : base.u32[..= 32]
+    var partial   : base.u32[..= 32]
+
+    x = 0
+    while x < 32 {
+        dsty = 0
+        srcy = 0
+        acc0 = 0
+        acc1 = 0
+        acc2 = 0
+        remainder = 32
+        while srcy < 32,
+                inv x < 32,
+        {
+            s0 = this.buffers[1][srcy][(4 * x) + 0] as base.u32
+            s1 = this.buffers[1][srcy][(4 * x) + 1] as base.u32
+            s2 = this.buffers[1][srcy][(4 * x) + 2] as base.u32
+
+            if remainder > this.height {
+                remainder -= this.height
+                acc0 ~mod+= this.height * s0
+                acc1 ~mod+= this.height * s1
+                acc2 ~mod+= this.height * s2
+
+            } else {
+                assert this.height >= remainder via "a >= b: b <= a"()
+
+                acc0 ~mod+= remainder * s0
+                acc1 ~mod+= remainder * s1
+                acc2 ~mod+= remainder * s2
+
+                this.buffers[0][dsty][(4 * x) + 0] = (((acc0 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][dsty][(4 * x) + 1] = (((acc1 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][dsty][(4 * x) + 2] = (((acc2 ~mod+ 16) / 32) & 0xFF) as base.u8
+                this.buffers[0][dsty][(4 * x) + 3] = 0xFF
+                dsty = (dsty + 1) & 31
+
+                partial = this.height - remainder
+
+                acc0 = partial * s0
+                acc1 = partial * s1
+                acc2 = partial * s2
+
+                remainder = 32 - partial
+            }
+
+            srcy += 1
+        }
+        x += 1
     }
 }
 
@@ -302,3 +752,170 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 pub func decoder.workbuf_len() base.range_ii_u64 {
     return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
 }
+
+pri const CLAMP_7 : roarray[32] base.u8[..= 7] = [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]
+
+pri const CLAMP_15 : roarray[64] base.u8[..= 15] = [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]
+
+// For commentary on these constants below, see the lib/handsum and
+// lib/lowleveljpeg Go packages.
+
+pri const ZIGZAG : roarray[15] base.u8[..= 39] = [
+        0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4,
+]
+
+pri const SMOOTHING_PAIRS : roarray[56] base.u8 = [
+        0x07, 0x08,
+        0x17, 0x18,
+        0x27, 0x28,
+        0x37, 0x38,
+        0x47, 0x48,
+        0x57, 0x58,
+        0x67, 0x68,
+
+        0x70, 0x80,
+        0x71, 0x81,
+        0x72, 0x82,
+        0x73, 0x83,
+        0x74, 0x84,
+        0x75, 0x85,
+        0x76, 0x86,
+
+        0x79, 0x89,
+        0x7A, 0x8A,
+        0x7B, 0x8B,
+        0x7C, 0x8C,
+        0x7D, 0x8D,
+        0x7E, 0x8E,
+        0x7F, 0x8F,
+
+        0x97, 0x98,
+        0xA7, 0xA8,
+        0xB7, 0xB8,
+        0xC7, 0xC8,
+        0xD7, 0xD8,
+        0xE7, 0xE8,
+        0xF7, 0xF8,
+]
+
+pri const FIXED_POINT_HALF         : base.u16 = 0x8000
+pri const FIXED_POINT_INV_2_SQRT_2 : base.u16 = 0x5A82
+
+pri const COSINES : roarray[32] base.u32 = [
+        0x0001_0000,
+        0x0000_FB14,
+        0x0000_EC83,
+        0x0000_D4DB,
+        0x0000_B504,
+        0x0000_8E39,
+        0x0000_61F7,
+        0x0000_31F1,
+        0x0000_0000,
+        0xFFFF_CE0F,
+        0xFFFF_9E09,
+        0xFFFF_71C7,
+        0xFFFF_4AFC,
+        0xFFFF_2B25,
+        0xFFFF_137D,
+        0xFFFF_04EC,
+        0xFFFF_0000,
+        0xFFFF_04EC,
+        0xFFFF_137D,
+        0xFFFF_2B25,
+        0xFFFF_4AFC,
+        0xFFFF_71C7,
+        0xFFFF_9E09,
+        0xFFFF_CE0F,
+        0x0000_0000,
+        0x0000_31F1,
+        0x0000_61F7,
+        0x0000_8E39,
+        0x0000_B504,
+        0x0000_D4DB,
+        0x0000_EC83,
+        0x0000_FB14,
+]
+
+pri const BIAS_AND_CLAMP : roarray[1024] base.u8 = [
+        0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
+        0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F,
+        0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF,
+        0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF,
+        0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF,
+        0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF,
+        0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF,
+        0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF,
+
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+        0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,
+        0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F,
+        0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F,
+        0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F,
+]

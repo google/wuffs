@@ -75,7 +75,7 @@ test_wuffs_handsum_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.handsum", 0, SIZE_MAX, 32, 24, 0xFF00B8F8);
+      "test/data/bricks-color.handsum", 0, SIZE_MAX, 32, 24, 0xFF571218);
 }
 
 const char*  //
