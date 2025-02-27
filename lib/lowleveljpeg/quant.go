@@ -68,6 +68,25 @@ const (
 	// SetToStandardValues' quality parameter. It matches libjpeg's default
 	// both in terms of numerical value and in behavior.
 	DefaultQuality = 75
+
+	// MinimumBaselineQuality is lowest quality level where both the cjpeg
+	// program (from the libjpeg C project) and this Go package will agree on
+	// the exact quantization factors.
+	//
+	// It's still valid to pass a SetToStandardValues quality parameter value
+	// below 24. But when doing so, passing the equivalent to cjpeg will print
+	// a JTRC_16BIT_TABLES warning: "quantization tables are too coarse for
+	// baseline JPEG". cjpeg will therefore produce extended (instead of
+	// baseline) JPEGs, using 2 bytes (instead of 1 byte) per quantization
+	// factor, allowing factors above 0xFF.
+	//
+	// This Go package will instead clamp such quantization factors to 0xFF.
+	//
+	// Both approaches are viable, producing valid JPEGs. This Go package, like
+	// the Go standard library's image/jpeg package, simply chooses to always
+	// produce baseline (instead of extended) JPEGs, for best compatibility
+	// with other JPEG decoders.
+	MinimumBaselineQuality = 24
 )
 
 // SetToStandardValues sets b to one of two standard quantization tables
