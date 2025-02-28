@@ -23915,8 +23915,14 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x4C5A4950, "\x04\x4C\x5A\x49\x50\x01"},      // LZIP
       {+0x54494646, "\x03\x4D\x4D\x00\x2A"},          // TIFF (big-endian)
       {+0x45544332, "\x03\x50\x4B\x4D\x20"},          // ETC2 (*.pkm)
+      {+0x4E50424D, "\x02\x50\x35\x09"},              // NPBM (P5; *.pgm)
       {+0x4E50424D, "\x02\x50\x35\x0A"},              // NPBM (P5; *.pgm)
+      {+0x4E50424D, "\x02\x50\x35\x0D"},              // NPBM (P5; *.pgm)
+      {+0x4E50424D, "\x02\x50\x35\x20"},              // NPBM (P5; *.pgm)
+      {+0x4E50424D, "\x02\x50\x36\x09"},              // NPBM (P6; *.ppm)
       {+0x4E50424D, "\x02\x50\x36\x0A"},              // NPBM (P6; *.ppm)
+      {+0x4E50424D, "\x02\x50\x36\x0D"},              // NPBM (P6; *.ppm)
+      {+0x4E50424D, "\x02\x50\x36\x20"},              // NPBM (P6; *.ppm)
       {-0x52494646, "\x03\x52\x49\x46\x46"},          // RIFF
       {+0x4C5A4D41, "\x04\x5D\x00\x10\x00\x00"},      // LZMA
       {+0x4C5A4D41, "\x02\x5D\x00\x00"},              // LZMA
@@ -64486,7 +64492,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
       uint8_t t_2 = *iop_a_src++;
       v_c8 = t_2;
     }
-    if (v_c8 != 10u) {
+    if ((v_c8 != 32u) &&
+        (v_c8 != 9u) &&
+        (v_c8 != 10u) &&
+        (v_c8 != 13u)) {
       status = wuffs_base__make_status(wuffs_netpbm__error__bad_header);
       goto exit;
     }
@@ -64500,7 +64509,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_3 = *iop_a_src++;
         v_c8 = t_3;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u)) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         continue;
       } else if (v_c8 == 35u) {
         while (true) {
@@ -64535,7 +64547,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_5 = *iop_a_src++;
         v_c8 = t_5;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u)) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         break;
       } else if ((v_c8 < 48u) || (57u < v_c8)) {
         status = wuffs_base__make_status(wuffs_netpbm__error__bad_header);
@@ -64558,7 +64573,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_6 = *iop_a_src++;
         v_c8 = t_6;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u)) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         continue;
       } else if (v_c8 == 35u) {
         while (true) {
@@ -64593,9 +64611,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_8 = *iop_a_src++;
         v_c8 = t_8;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u) || (v_c8 == 13u)) {
-        continue;
-      } else if (v_c8 == 10u) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         break;
       } else if ((v_c8 < 48u) || (57u < v_c8)) {
         status = wuffs_base__make_status(wuffs_netpbm__error__bad_header);
@@ -64618,7 +64637,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_9 = *iop_a_src++;
         v_c8 = t_9;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u)) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         continue;
       } else if (v_c8 == 35u) {
         while (true) {
@@ -64653,9 +64675,10 @@ wuffs_netpbm__decoder__do_decode_image_config(
         uint8_t t_11 = *iop_a_src++;
         v_c8 = t_11;
       }
-      if ((v_c8 == 32u) || (v_c8 == 9u) || (v_c8 == 13u)) {
-        continue;
-      } else if (v_c8 == 10u) {
+      if ((v_c8 == 32u) ||
+          (v_c8 == 9u) ||
+          (v_c8 == 10u) ||
+          (v_c8 == 13u)) {
         break;
       } else if ((v_c8 < 48u) || (57u < v_c8)) {
         status = wuffs_base__make_status(wuffs_netpbm__error__bad_header);

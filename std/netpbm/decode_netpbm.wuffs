@@ -83,14 +83,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     c8 = args.src.read_u8?()
-    if c8 <> 0x0A {
+    if (c8 <> ' ') and (c8 <> 0x09) and (c8 <> 0x0A) and (c8 <> 0x0D) {
         return "#bad header"
     }
 
     // Decode width.
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             continue
         } else if c8 == '#' {
             // Consume a "#...\n" comment.
@@ -109,7 +109,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             break
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
@@ -124,7 +124,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     // Decode height.
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             continue
         } else if c8 == '#' {
             // Consume a "#...\n" comment.
@@ -143,9 +143,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
-            continue
-        } else if c8 == 0x0A {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             break
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
@@ -160,7 +158,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     // Decode max_value.
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             continue
         } else if c8 == '#' {
             // Consume a "#...\n" comment.
@@ -179,9 +177,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
     while true {
         c8 = args.src.read_u8?()
-        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
-            continue
-        } else if c8 == 0x0A {
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0A) or (c8 == 0x0D) {
             break
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
