@@ -64,8 +64,17 @@ var (
 	ErrUnsupportedFileVersion = errors.New("handsum: unsupported file version")
 )
 
+// EncodeOptions are optional arguments to Encode. The zero value is valid and
+// means to use the default configuration.
+//
+// There are no fields for now, but there may be some in the future.
+type EncodeOptions struct {
+}
+
 // Encode writes src to w in the Handsum format.
-func Encode(w io.Writer, src image.Image) error {
+//
+// options may be nil, which means to use the default configuration.
+func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 	if (w == nil) || (src == nil) {
 		return ErrBadArgument
 	}

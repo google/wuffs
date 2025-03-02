@@ -105,7 +105,7 @@ func encode(inFile *os.File) error {
 	if err != nil {
 		return err
 	}
-	return handsum.Encode(os.Stdout, src)
+	return handsum.Encode(os.Stdout, src, nil)
 }
 
 func roundtrip(inFile *os.File) error {
@@ -114,7 +114,7 @@ func roundtrip(inFile *os.File) error {
 		return err
 	}
 	buf := &bytes.Buffer{}
-	err = handsum.Encode(buf, src)
+	err = handsum.Encode(buf, src, nil)
 	if err != nil {
 		return err
 	}
