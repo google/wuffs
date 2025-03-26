@@ -1,0 +1,48 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "authors": [
+      {
+        "name": "@VCS_SBOM_AUTHORS@"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:github/google/wuffs@@VCS_TAG@",
+      "cpe": "cpe:2.3:a:google:wuffs:@VCS_TAG@:*:*:*:*:*:*:*",
+      "name": "Wuffs",
+      "version": "@VCS_VERSION@",
+      "description": "A memory-safe programming language for Wrangling Untrusted File Formats Safely",
+      "authors": [
+        {
+          "name": "@VCS_AUTHORS@"
+        }
+      ],
+      "supplier": {
+        "name": "Google"
+      },
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        },
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/google/wuffs"
+        }
+      ]
+    }
+  ]
+}
