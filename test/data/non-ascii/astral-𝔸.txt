@@ -1,0 +1,7 @@
+𝔸 U+1D538 MATHEMATICAL DOUBLE-STRUCK CAPITAL A. UTF-8: [F0 9D 94 B8].
+
+This code point is outside of the Unicode BMP (Basic Multilingual Plane), but
+its Unicode Category is Lu (Letter, uppercase), so it is still a valid file
+path in terms of pkg.go.dev and its golang.org/x/mod/module package:
+
+https://github.com/golang/mod/blob/dc121ce20ffab6bb810a0f231cfa9c24d3e51b29/module/module.go#L293
