@@ -9384,7 +9384,6 @@ struct wuffs_deflate__decoder__struct {
 
 extern const char wuffs_etc2__error__bad_header[];
 extern const char wuffs_etc2__error__truncated_input[];
-extern const char wuffs_etc2__error__unsupported_etc2_file[];
 
 // ---------------- Public Consts
 
@@ -9570,6 +9569,8 @@ struct wuffs_etc2__decoder__struct {
     uint32_t p_decode_frame;
     uint32_t p_do_decode_frame;
     uint32_t p_from_src_to_colors;
+    wuffs_base__empty_struct (*choosy_from_colors_to_buffer)(
+        wuffs_etc2__decoder* self);
   } private_impl;
 
   struct {
@@ -43577,7 +43578,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
 
 const char wuffs_etc2__error__bad_header[] = "#etc2: bad header";
 const char wuffs_etc2__error__truncated_input[] = "#etc2: truncated input";
-const char wuffs_etc2__error__unsupported_etc2_file[] = "#etc2: unsupported ETC2 file";
 
 // ---------------- Private Consts
 
@@ -43840,6 +43840,11 @@ wuffs_etc2__decoder__from_colors_to_buffer(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer__choosy_default(
+    wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
 wuffs_etc2__decoder__decode_t_mode(
     wuffs_etc2__decoder* self,
     uint64_t a_bits,
@@ -43879,6 +43884,42 @@ WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_etc2__decoder__from_alphas_to_buffer(
     wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_r11u(
+    wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_r11s(
+    wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_rg11u(
+    wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_rg11s(
+    wuffs_etc2__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_unsigned(
+    wuffs_etc2__decoder* self,
+    uint32_t a_input,
+    uint32_t a_dst_bytes_per_pixel,
+    uint32_t a_offset_adjustment);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_signed(
+    wuffs_etc2__decoder* self,
+    uint32_t a_input,
+    uint32_t a_dst_bytes_per_pixel,
+    uint32_t a_offset_adjustment);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -43964,6 +44005,8 @@ wuffs_etc2__decoder__initialize(
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
   }
+
+  self->private_impl.choosy_from_colors_to_buffer = &wuffs_etc2__decoder__from_colors_to_buffer__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__image_decoder.vtable_name =
@@ -44111,6 +44154,7 @@ wuffs_etc2__decoder__do_decode_image_config(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t v_c32 = 0;
+  uint32_t v_i = 0;
   uint16_t v_rounded_up_width = 0;
   uint16_t v_rounded_up_height = 0;
 
@@ -44205,14 +44249,37 @@ wuffs_etc2__decoder__do_decode_image_config(
       self->private_impl.f_pixfmt = 2164295816u;
     } else if ((v_c32 == 67121202u) || (v_c32 == 184561714u)) {
       self->private_impl.f_pixfmt = 2197850248u;
-    } else if ((v_c32 & 65535u) == 12338u) {
-      status = wuffs_base__make_status(wuffs_etc2__error__unsupported_etc2_file);
-      goto exit;
+    } else if (v_c32 == 83898418u) {
+      self->private_impl.f_pixfmt = 536870923u;
+      self->private_impl.choosy_from_colors_to_buffer = (
+          &wuffs_etc2__decoder__from_colors_to_buffer_r11u);
+    } else if (v_c32 == 100675634u) {
+      self->private_impl.f_pixfmt = 2164308923u;
+      self->private_impl.choosy_from_colors_to_buffer = (
+          &wuffs_etc2__decoder__from_colors_to_buffer_rg11u);
+    } else if (v_c32 == 117452850u) {
+      self->private_impl.f_pixfmt = 536870923u;
+      self->private_impl.choosy_from_colors_to_buffer = (
+          &wuffs_etc2__decoder__from_colors_to_buffer_r11s);
+    } else if (v_c32 == 134230066u) {
+      self->private_impl.f_pixfmt = 2164308923u;
+      self->private_impl.choosy_from_colors_to_buffer = (
+          &wuffs_etc2__decoder__from_colors_to_buffer_rg11s);
     } else {
       status = wuffs_base__make_status(wuffs_etc2__error__bad_header);
       goto exit;
     }
     self->private_impl.f_srgb = ((v_c32 >> 24u) >= 9u);
+    if (self->private_impl.f_pixfmt == 2164308923u) {
+      v_i = 0u;
+      while (v_i <= 4088u) {
+        self->private_data.f_buffer[(v_i + 0u)] = 0u;
+        self->private_data.f_buffer[(v_i + 1u)] = 0u;
+        self->private_data.f_buffer[(v_i + 6u)] = 255u;
+        self->private_data.f_buffer[(v_i + 7u)] = 255u;
+        v_i += 8u;
+      }
+    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint16_t t_2;
@@ -44616,6 +44683,7 @@ wuffs_etc2__decoder__do_decode_frame(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t v_remaining = 0;
+  uint32_t v_max_nbb = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_do_decode_frame;
@@ -44656,7 +44724,11 @@ wuffs_etc2__decoder__do_decode_frame(
     self->private_impl.f_dst_y = 0u;
     v_remaining = (((self->private_impl.f_width + 3u) / 4u) * ((self->private_impl.f_height + 3u) / 4u));
     while (v_remaining > 0u) {
-      self->private_impl.f_num_buffered_blocks = wuffs_base__u32__min(v_remaining, 64u);
+      v_max_nbb = 64u;
+      if ((self->private_impl.f_pixfmt == 536870923u) || (self->private_impl.f_pixfmt == 2164308923u)) {
+        v_max_nbb = 32u;
+      }
+      self->private_impl.f_num_buffered_blocks = wuffs_base__u32__min(v_remaining, v_max_nbb);
       if (v_remaining < self->private_impl.f_num_buffered_blocks) {
         status = wuffs_base__make_status(wuffs_base__error__too_much_data);
         goto exit;
@@ -44730,7 +44802,7 @@ wuffs_etc2__decoder__from_src_to_colors(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (v_bi < self->private_impl.f_num_buffered_blocks) {
-      if (self->private_impl.f_pixfmt == 2164295816u) {
+      if ((self->private_impl.f_pixfmt == 2164295816u) || (self->private_impl.f_pixfmt == 2164308923u)) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
           uint64_t t_0;
@@ -44818,6 +44890,13 @@ wuffs_etc2__decoder__from_src_to_colors(
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_etc2__decoder__from_colors_to_buffer(
+    wuffs_etc2__decoder* self) {
+  return (*self->private_impl.choosy_from_colors_to_buffer)(self);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer__choosy_default(
     wuffs_etc2__decoder* self) {
   uint32_t v_bi = 0;
   uint64_t v_color = 0;
@@ -45226,6 +45305,190 @@ wuffs_etc2__decoder__from_alphas_to_buffer(
   return wuffs_base__make_empty_struct();
 }
 
+// -------- func etc2.decoder.from_colors_to_buffer_r11u
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_r11u(
+    wuffs_etc2__decoder* self) {
+  wuffs_etc2__decoder__from_colors_to_buffer_unsigned(self, 1u, 2u, 0u);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer_r11s
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_r11s(
+    wuffs_etc2__decoder* self) {
+  wuffs_etc2__decoder__from_colors_to_buffer_signed(self, 1u, 2u, 0u);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer_rg11u
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_rg11u(
+    wuffs_etc2__decoder* self) {
+  wuffs_etc2__decoder__from_colors_to_buffer_unsigned(self, 0u, 8u, 4u);
+  wuffs_etc2__decoder__from_colors_to_buffer_unsigned(self, 1u, 8u, 2u);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer_rg11s
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_rg11s(
+    wuffs_etc2__decoder* self) {
+  wuffs_etc2__decoder__from_colors_to_buffer_signed(self, 0u, 8u, 4u);
+  wuffs_etc2__decoder__from_colors_to_buffer_signed(self, 1u, 8u, 2u);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer_unsigned
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_unsigned(
+    wuffs_etc2__decoder* self,
+    uint32_t a_input,
+    uint32_t a_dst_bytes_per_pixel,
+    uint32_t a_offset_adjustment) {
+  uint32_t v_nbb = 0;
+  uint32_t v_bi = 0;
+  uint64_t v_color = 0;
+  uint32_t v_c0 = 0;
+  uint32_t v_multiplier = 0;
+  uint32_t v_which = 0;
+  uint32_t v_offset = 0;
+  uint32_t v_y = 0;
+  uint32_t v_x = 0;
+  uint32_t v_shift = 0;
+  uint32_t v_delta = 0;
+  uint32_t v_c11 = 0;
+  uint32_t v_c16 = 0;
+  uint32_t v_o = 0;
+
+  v_nbb = wuffs_base__u32__min(self->private_impl.f_num_buffered_blocks, 32u);
+  while (v_bi < v_nbb) {
+    if (a_input == 0u) {
+      v_color = self->private_data.f_alphas[v_bi];
+    } else {
+      v_color = self->private_data.f_colors[v_bi];
+    }
+    v_c0 = ((((uint32_t)((v_color >> 56u))) * 8u) + 4u);
+    v_multiplier = ((uint32_t)(((v_color >> 52u) & 15u)));
+    v_multiplier *= 8u;
+    if (v_multiplier == 0u) {
+      v_multiplier = 1u;
+    }
+    v_which = ((uint32_t)(((v_color >> 48u) & 15u)));
+    v_offset = ((4u * a_dst_bytes_per_pixel * v_bi) + a_offset_adjustment);
+    v_y = 0u;
+    while (v_y < 4u) {
+      v_x = 0u;
+      while (v_x < 4u) {
+        v_shift = ((((v_x ^ 3u) * 4u) | (v_y ^ 3u)) * 3u);
+        v_delta = ((uint32_t)(v_multiplier * WUFFS_ETC2__ALPHA_MODIFIERS[v_which][(7u & (v_color >> v_shift))]));
+        v_c11 = ((uint32_t)(v_c0 + v_delta));
+        if (v_c11 >= 2147483648u) {
+          v_c11 = 0u;
+        } else if (v_c11 > 2047u) {
+          v_c11 = 2047u;
+        }
+        v_c16 = ((v_c11 << 5u) | (v_c11 >> 6u));
+        v_o = (v_offset + (v_x * a_dst_bytes_per_pixel) + (v_y * 1024u));
+        self->private_data.f_buffer[(v_o + 0u)] = ((uint8_t)((v_c16 >> 0u)));
+        self->private_data.f_buffer[(v_o + 1u)] = ((uint8_t)((v_c16 >> 8u)));
+        v_x += 1u;
+      }
+      v_y += 1u;
+    }
+    v_bi += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.from_colors_to_buffer_signed
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__from_colors_to_buffer_signed(
+    wuffs_etc2__decoder* self,
+    uint32_t a_input,
+    uint32_t a_dst_bytes_per_pixel,
+    uint32_t a_offset_adjustment) {
+  uint32_t v_nbb = 0;
+  uint32_t v_bi = 0;
+  uint64_t v_color = 0;
+  uint32_t v_c0 = 0;
+  uint32_t v_multiplier = 0;
+  uint32_t v_which = 0;
+  uint32_t v_offset = 0;
+  uint32_t v_y = 0;
+  uint32_t v_x = 0;
+  uint32_t v_shift = 0;
+  uint32_t v_delta = 0;
+  uint32_t v_c11 = 0;
+  uint32_t v_c16 = 0;
+  uint32_t v_o = 0;
+
+  v_nbb = wuffs_base__u32__min(self->private_impl.f_num_buffered_blocks, 32u);
+  while (v_bi < v_nbb) {
+    if (a_input == 0u) {
+      v_color = self->private_data.f_alphas[v_bi];
+    } else {
+      v_color = self->private_data.f_colors[v_bi];
+    }
+    v_c0 = (((uint32_t)((v_color >> 56u))) * 8u);
+    if (v_c0 < 1024u) {
+    } else if (v_c0 == 1024u) {
+      v_c0 = 4294966280u;
+    } else {
+      v_c0 -= 2048u;
+    }
+    v_multiplier = ((uint32_t)(((v_color >> 52u) & 15u)));
+    v_multiplier *= 8u;
+    if (v_multiplier == 0u) {
+      v_multiplier = 1u;
+    }
+    v_which = ((uint32_t)(((v_color >> 48u) & 15u)));
+    v_offset = ((4u * a_dst_bytes_per_pixel * v_bi) + a_offset_adjustment);
+    v_y = 0u;
+    while (v_y < 4u) {
+      v_x = 0u;
+      while (v_x < 4u) {
+        v_shift = ((((v_x ^ 3u) * 4u) | (v_y ^ 3u)) * 3u);
+        v_delta = ((uint32_t)(v_multiplier * WUFFS_ETC2__ALPHA_MODIFIERS[v_which][(7u & (v_color >> v_shift))]));
+        v_c11 = ((uint32_t)(v_c0 + v_delta));
+        if (v_c11 <= 1023u) {
+        } else if (v_c11 < 2147483648u) {
+          v_c11 = 1023u;
+        } else if (v_c11 < 4294966273u) {
+          v_c11 = 4294966273u;
+        }
+        if (v_c11 < 2147483648u) {
+          v_c16 = (((uint32_t)(v_c11 << 5u)) | (v_c11 >> 5u));
+        } else {
+          v_c11 = ((uint32_t)(0u - v_c11));
+          v_c16 = (((uint32_t)(v_c11 << 5u)) | (v_c11 >> 5u));
+          v_c16 = ((uint32_t)(0u - v_c16));
+        }
+        v_c16 ^= 32768u;
+        v_o = (v_offset + (v_x * a_dst_bytes_per_pixel) + (v_y * 1024u));
+        self->private_data.f_buffer[(v_o + 0u)] = ((uint8_t)((v_c16 >> 0u)));
+        self->private_data.f_buffer[(v_o + 1u)] = ((uint8_t)((v_c16 >> 8u)));
+        v_x += 1u;
+      }
+      v_y += 1u;
+    }
+    v_bi += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
 // -------- func etc2.decoder.from_buffer_to_dst
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -45233,6 +45496,7 @@ static wuffs_base__status
 wuffs_etc2__decoder__from_buffer_to_dst(
     wuffs_etc2__decoder* self,
     wuffs_base__pixel_buffer* a_dst) {
+  uint32_t v_src_bytes_per_pixel = 0;
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
   uint32_t v_dst_bytes_per_pixel = 0;
@@ -45248,6 +45512,13 @@ wuffs_etc2__decoder__from_buffer_to_dst(
   uint64_t v_i = 0;
   uint32_t v_num_src_pixels = 0;
 
+  if (self->private_impl.f_pixfmt == 536870923u) {
+    v_src_bytes_per_pixel = 2u;
+  } else if (self->private_impl.f_pixfmt == 2164308923u) {
+    v_src_bytes_per_pixel = 8u;
+  } else {
+    v_src_bytes_per_pixel = 4u;
+  }
   v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
   v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
   if ((v_dst_bits_per_pixel & 7u) != 0u) {
@@ -45269,13 +45540,21 @@ wuffs_etc2__decoder__from_buffer_to_dst(
     }
     v_dy = 0u;
     while (v_dy < 4u) {
-      v_si = ((1024u * v_dy) + (16u * v_bi));
-      v_sj = ((1024u * v_dy) + 1024u);
+      if (v_src_bytes_per_pixel == 4u) {
+        v_si = ((1024u * v_dy) + (16u * v_bi));
+        v_sj = ((1024u * v_dy) + 1024u);
+      } else if (v_src_bytes_per_pixel < 4u) {
+        v_si = ((1024u * v_dy) + (8u * v_bi));
+        v_sj = ((1024u * v_dy) + 256u);
+      } else {
+        v_si = ((1024u * v_dy) + (32u * (v_bi & 31u)));
+        v_sj = ((1024u * v_dy) + 1024u);
+      }
       if (v_si < v_sj) {
         v_src = wuffs_base__make_slice_u8_ij(self->private_data.f_buffer, v_si, v_sj);
       }
-      if (((uint64_t)((4u * v_rem_x))) < ((uint64_t)(v_src.len))) {
-        v_src = wuffs_base__slice_u8__subslice_j(v_src, ((uint64_t)((4u * v_rem_x))));
+      if (((uint64_t)((v_src_bytes_per_pixel * v_rem_x))) < ((uint64_t)(v_src.len))) {
+        v_src = wuffs_base__slice_u8__subslice_j(v_src, ((uint64_t)((v_src_bytes_per_pixel * v_rem_x))));
       }
       if (((uint32_t)(self->private_impl.f_dst_y + v_dy)) >= self->private_impl.f_height) {
         break;
@@ -45290,9 +45569,9 @@ wuffs_etc2__decoder__from_buffer_to_dst(
       }
       v_dy += 1u;
     }
-    v_num_src_pixels = (((uint32_t)(((uint64_t)(v_src.len)))) / 4u);
+    v_num_src_pixels = (((uint32_t)(((uint64_t)(v_src.len)))) / v_src_bytes_per_pixel);
     self->private_impl.f_dst_x += v_num_src_pixels;
-    v_bi += ((v_num_src_pixels + 3u) / 4u);
+    v_bi += (((uint32_t)(v_num_src_pixels + 3u)) / 4u);
   }
   return wuffs_base__make_status(NULL);
 }

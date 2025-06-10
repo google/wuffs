@@ -41,7 +41,6 @@
 
 pub status "#bad header"
 pub status "#truncated input"
-pub status "#unsupported ETC2 file"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -93,6 +92,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
     var c32               : base.u32
+    var i                 : base.u32
     var rounded_up_width  : base.u16
     var rounded_up_height : base.u16
 
@@ -116,12 +116,33 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     } else if (c32 == '20\x00\x04'le) or  // ETC2  RGBA1.
             (c32 == '20\x00\x0B'le) {  //    ETC2 sRGBA1.
         this.pixfmt = base.PIXEL_FORMAT__BGRA_BINARY
-    } else if (c32 & 0xFFFF) == '20'le {
-        return "#unsupported ETC2 file"
+    } else if (c32 == '20\x00\x05'le) {  //  ETC2  R11U.
+        this.pixfmt = base.PIXEL_FORMAT__Y_16LE
+        choose from_colors_to_buffer = [from_colors_to_buffer_r11u]
+    } else if (c32 == '20\x00\x06'le) {  //  ETC2  RG11U.
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+        choose from_colors_to_buffer = [from_colors_to_buffer_rg11u]
+    } else if (c32 == '20\x00\x07'le) {  //  ETC2  R11S.
+        this.pixfmt = base.PIXEL_FORMAT__Y_16LE
+        choose from_colors_to_buffer = [from_colors_to_buffer_r11s]
+    } else if (c32 == '20\x00\x08'le) {  //  ETC2  RG11S.
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+        choose from_colors_to_buffer = [from_colors_to_buffer_rg11s]
     } else {
         return "#bad header"
     }
     this.srgb = (c32 >> 24) >= 0x09
+
+    if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+        i = 0
+        while i <= (4096 - 8) {
+            this.buffer[i + 0] = 0x00
+            this.buffer[i + 1] = 0x00
+            this.buffer[i + 6] = 0xFF
+            this.buffer[i + 7] = 0xFF
+            i += 8
+        }
+    }
 
     rounded_up_width = args.src.read_u16be?()
     rounded_up_height = args.src.read_u16be?()
@@ -214,6 +235,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
     var remaining : base.u32[..= 0x1000_0000]
+    var max_nbb   : base.u32[..= 64]
     var status    : base.status
 
     if this.call_sequence == 0x40 {
@@ -239,7 +261,12 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
     remaining = ((this.width + 3) / 4) * ((this.height + 3) / 4)
     while remaining > 0 {
-        this.num_buffered_blocks = remaining.min(no_more_than: 64)
+        max_nbb = 64
+        if ((this.pixfmt == base.PIXEL_FORMAT__Y_16LE)) or
+                (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) {
+            max_nbb = 32
+        }
+        this.num_buffered_blocks = remaining.min(no_more_than: max_nbb)
         if remaining < this.num_buffered_blocks {
             return base."#too much data"
         }
@@ -264,7 +291,8 @@ pri func decoder.from_src_to_colors?(src: base.io_reader) {
 
     while bi < this.num_buffered_blocks {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
-        if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL {
+        if (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL) or
+                (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) {
             this.alphas[bi] = args.src.read_u64be?()
         }
         this.colors[bi] = args.src.read_u64be?()
@@ -272,7 +300,9 @@ pri func decoder.from_src_to_colors?(src: base.io_reader) {
     }
 }
 
-pri func decoder.from_colors_to_buffer!() {
+pri func decoder.from_colors_to_buffer!(),
+        choosy,
+{
     var bi    : base.u32[..= 64]
     var color : base.u64
     var r0    : base.u32
@@ -781,7 +811,172 @@ pri func decoder.from_alphas_to_buffer!() {
     }
 }
 
+pri func decoder.from_colors_to_buffer_r11u!() {
+    this.from_colors_to_buffer_unsigned!(input: 1, dst_bytes_per_pixel: 2, offset_adjustment: 0)
+}
+
+pri func decoder.from_colors_to_buffer_r11s!() {
+    this.from_colors_to_buffer_signed!(input: 1, dst_bytes_per_pixel: 2, offset_adjustment: 0)
+}
+
+pri func decoder.from_colors_to_buffer_rg11u!() {
+    this.from_colors_to_buffer_unsigned!(input: 0, dst_bytes_per_pixel: 8, offset_adjustment: 4)
+    this.from_colors_to_buffer_unsigned!(input: 1, dst_bytes_per_pixel: 8, offset_adjustment: 2)
+}
+
+pri func decoder.from_colors_to_buffer_rg11s!() {
+    this.from_colors_to_buffer_signed!(input: 0, dst_bytes_per_pixel: 8, offset_adjustment: 4)
+    this.from_colors_to_buffer_signed!(input: 1, dst_bytes_per_pixel: 8, offset_adjustment: 2)
+}
+
+pri func decoder.from_colors_to_buffer_unsigned!(input: base.u32[..= 1], dst_bytes_per_pixel: base.u32[..= 8], offset_adjustment: base.u32[..= 4]) {
+    var nbb        : base.u32[..= 32]
+    var bi         : base.u32[..= 32]
+    var color      : base.u64
+    var c0         : base.u32
+    var multiplier : base.u32[..= 120]
+    var which      : base.u32[..= 15]
+    var offset     : base.u32[..= 996]
+    var y          : base.u32
+    var x          : base.u32
+    var shift      : base.u32[..= 45]
+    var delta      : base.u32
+    var c11        : base.u32
+    var c16        : base.u32
+    var o          : base.u32[..= 4092]
+
+    nbb = this.num_buffered_blocks.min(no_more_than: 32)
+    while bi < nbb {
+        assert bi < 32 via "a < b: a < c; c <= b"(c: nbb)
+        if args.input == 0 {
+            color = this.alphas[bi]
+        } else {
+            color = this.colors[bi]
+        }
+
+        c0 = (((color >> 56) as base.u32) * 8) + 4
+        multiplier = ((color >> 52) & 0x0F) as base.u32
+        multiplier *= 8
+        if multiplier == 0 {
+            multiplier = 1
+        }
+        which = ((color >> 48) & 0x0F) as base.u32
+
+        offset = (4 * args.dst_bytes_per_pixel * bi) + args.offset_adjustment
+        y = 0
+        while y < 4,
+                inv bi < 32,
+        {
+            x = 0
+            while x < 4,
+                    inv bi < 32,
+                    inv y < 4,
+            {
+                shift = (((x ^ 3) * 4) | (y ^ 3)) * 3
+                delta = multiplier ~mod* ALPHA_MODIFIERS[which][7 & (color >> shift)]
+                c11 = c0 ~mod+ delta
+                if c11 >= 0x8000_0000 {
+                    c11 = 0
+                    assert c11 <= 2047
+                } else if c11 > 2047 {
+                    c11 = 2047
+                    assert c11 <= 2047
+                }
+                c16 = (c11 << 5) | (c11 >> 6)
+                o = offset + (x * args.dst_bytes_per_pixel) + (y * 1024)
+                this.buffer[o + 0] = ((c16 >> 0) & 0xFF) as base.u8
+                this.buffer[o + 1] = ((c16 >> 8) & 0xFF) as base.u8
+                x += 1
+            }
+            y += 1
+        }
+
+        bi += 1
+    }
+}
+
+pri func decoder.from_colors_to_buffer_signed!(input: base.u32[..= 1], dst_bytes_per_pixel: base.u32[..= 8], offset_adjustment: base.u32[..= 4]) {
+    var nbb        : base.u32[..= 32]
+    var bi         : base.u32[..= 32]
+    var color      : base.u64
+    var c0         : base.u32
+    var multiplier : base.u32[..= 120]
+    var which      : base.u32[..= 15]
+    var offset     : base.u32[..= 996]
+    var y          : base.u32
+    var x          : base.u32
+    var shift      : base.u32[..= 45]
+    var delta      : base.u32
+    var c11        : base.u32
+    var c16        : base.u32
+    var o          : base.u32[..= 4092]
+
+    nbb = this.num_buffered_blocks.min(no_more_than: 32)
+    while bi < nbb {
+        assert bi < 32 via "a < b: a < c; c <= b"(c: nbb)
+        if args.input == 0 {
+            color = this.alphas[bi]
+        } else {
+            color = this.colors[bi]
+        }
+
+        c0 = ((color >> 56) as base.u32) * 8
+        if c0 < (0x80 * 8) {
+            // No-op.
+        } else if c0 == (0x80 * 8) {
+            c0 = 0xFFFF_FC08
+        } else {
+            c0 ~mod-= (0x100 * 8)
+        }
+        multiplier = ((color >> 52) & 0x0F) as base.u32
+        multiplier *= 8
+        if multiplier == 0 {
+            multiplier = 1
+        }
+        which = ((color >> 48) & 0x0F) as base.u32
+
+        offset = (4 * args.dst_bytes_per_pixel * bi) + args.offset_adjustment
+        y = 0
+        while y < 4,
+                inv bi < 32,
+        {
+            x = 0
+            while x < 4,
+                    inv bi < 32,
+                    inv y < 4,
+            {
+                shift = (((x ^ 3) * 4) | (y ^ 3)) * 3
+                delta = multiplier ~mod* ALPHA_MODIFIERS[which][7 & (color >> shift)]
+                c11 = c0 ~mod+ delta
+                if c11 <= 0x0000_03FF {  //       0x0000_03FF is +1023.
+                    // No-op.
+                } else if c11 < 0x8000_0000 {
+                    c11 = 0x0000_03FF
+                } else if c11 < 0xFFFF_FC01 {  // 0xFFFF_FC01 is -1023.
+                    c11 = 0xFFFF_FC01
+                }
+                if c11 < 0x8000_0000 {
+                    c16 = (c11 ~mod<< 5) | (c11 >> 5)
+                } else {
+                    c11 = 0 ~mod- c11
+                    c16 = (c11 ~mod<< 5) | (c11 >> 5)
+                    c16 = 0 ~mod- c16
+                }
+                c16 ^= 0x8000
+                o = offset + (x * args.dst_bytes_per_pixel) + (y * 1024)
+                this.buffer[o + 0] = ((c16 >> 0) & 0xFF) as base.u8
+                this.buffer[o + 1] = ((c16 >> 8) & 0xFF) as base.u8
+                x += 1
+            }
+            y += 1
+        }
+
+        bi += 1
+    }
+}
+
 pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
+    var src_bytes_per_pixel : base.u32[..= 8]
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
     var dst_bytes_per_pixel : base.u32[..= 32]
@@ -797,6 +992,17 @@ pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
     var i                   : base.u64
     var num_src_pixels      : base.u32
 
+    if this.pixfmt == base.PIXEL_FORMAT__Y_16LE {
+        src_bytes_per_pixel = 2
+        assert src_bytes_per_pixel > 0
+    } else if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+        src_bytes_per_pixel = 8
+        assert src_bytes_per_pixel > 0
+    } else {
+        src_bytes_per_pixel = 4
+        assert src_bytes_per_pixel > 0
+    }
+
     // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
     // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
     dst_pixfmt = args.dst.pixel_format()
@@ -808,7 +1014,9 @@ pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
     dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     tab = args.dst.plane(p: 0)
 
-    while bi < this.num_buffered_blocks {
+    while bi < this.num_buffered_blocks,
+            inv src_bytes_per_pixel > 0,
+    {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
 
         if this.width <= this.dst_x {
@@ -824,15 +1032,24 @@ pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
 
         dy = 0
         while dy < 4,
+                inv src_bytes_per_pixel > 0,
                 inv bi < 64,
         {
-            si = (1024 * dy) + (16 * bi)
-            sj = (1024 * dy) + (16 * 64)
+            if src_bytes_per_pixel == 4 {
+                si = (1024 * dy) + (16 * bi)
+                sj = (1024 * dy) + (16 * 64)  // 64 is max_nbb.
+            } else if src_bytes_per_pixel < 4 {
+                si = (1024 * dy) + (8 * bi)
+                sj = (1024 * dy) + (8 * 32)  //  32 is max_nbb.
+            } else {
+                si = (1024 * dy) + (32 * (bi & 31))
+                sj = (1024 * dy) + (32 * 32)  // 32 is max_nbb.
+            }
             if si < sj {
                 src = this.buffer[si .. sj]
             }
-            if ((4 * rem_x) as base.u64) < src.length() {
-                src = src[.. (4 * rem_x) as base.u64]
+            if ((src_bytes_per_pixel * rem_x) as base.u64) < src.length() {
+                src = src[.. (src_bytes_per_pixel * rem_x) as base.u64]
             }
 
             if (this.dst_y ~mod+ dy) >= this.height {
@@ -854,9 +1071,9 @@ pri func decoder.from_buffer_to_dst!(dst: ptr base.pixel_buffer) base.status {
             dy += 1
         }
 
-        num_src_pixels = ((src.length() & 0xFFFF_FFFF) as base.u32) / 4
+        num_src_pixels = ((src.length() & 0xFFFF_FFFF) as base.u32) / src_bytes_per_pixel
         this.dst_x ~mod+= num_src_pixels
-        bi ~mod+= (num_src_pixels + 3) / 4
+        bi ~mod+= (num_src_pixels ~mod+ 3) / 4
     }
 
     return ok
