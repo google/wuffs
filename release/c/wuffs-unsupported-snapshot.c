@@ -9574,8 +9574,7 @@ struct wuffs_etc2__decoder__struct {
   } private_impl;
 
   struct {
-    uint64_t f_alphas[64];
-    uint64_t f_colors[64];
+    uint64_t f_colors[2][64];
     uint8_t f_buffer[4096];
 
     struct {
@@ -44830,7 +44829,7 @@ wuffs_etc2__decoder__from_src_to_colors(
               *scratch |= ((uint64_t)(num_bits_0));
             }
           }
-          self->private_data.f_alphas[v_bi] = t_0;
+          self->private_data.f_colors[0u][v_bi] = t_0;
         }
       }
       {
@@ -44860,7 +44859,7 @@ wuffs_etc2__decoder__from_src_to_colors(
             *scratch |= ((uint64_t)(num_bits_1));
           }
         }
-        self->private_data.f_colors[v_bi] = t_1;
+        self->private_data.f_colors[1u][v_bi] = t_1;
       }
       v_bi += 1u;
     }
@@ -44911,7 +44910,7 @@ wuffs_etc2__decoder__from_colors_to_buffer__choosy_default(
   bool v_flip = false;
 
   while (v_bi < self->private_impl.f_num_buffered_blocks) {
-    v_color = self->private_data.f_colors[v_bi];
+    v_color = self->private_data.f_colors[1u][v_bi];
     v_diff = ((v_color & 8589934592u) != 0u);
     v_tran = ( ! v_diff && (self->private_impl.f_pixfmt == 2197850248u));
     if ( ! v_diff && (self->private_impl.f_pixfmt != 2197850248u)) {
@@ -45283,7 +45282,7 @@ wuffs_etc2__decoder__from_alphas_to_buffer(
   uint32_t v_o = 0;
 
   while (v_bi < self->private_impl.f_num_buffered_blocks) {
-    v_alpha = self->private_data.f_alphas[v_bi];
+    v_alpha = self->private_data.f_colors[0u][v_bi];
     v_a0 = ((uint32_t)((v_alpha >> 56u)));
     v_multiplier = ((uint32_t)(((v_alpha >> 52u) & 15u)));
     v_which = ((uint32_t)(((v_alpha >> 48u) & 15u)));
@@ -45373,11 +45372,7 @@ wuffs_etc2__decoder__from_colors_to_buffer_unsigned(
 
   v_nbb = wuffs_base__u32__min(self->private_impl.f_num_buffered_blocks, 32u);
   while (v_bi < v_nbb) {
-    if (a_input == 0u) {
-      v_color = self->private_data.f_alphas[v_bi];
-    } else {
-      v_color = self->private_data.f_colors[v_bi];
-    }
+    v_color = self->private_data.f_colors[a_input][v_bi];
     v_c0 = ((((uint32_t)((v_color >> 56u))) * 8u) + 4u);
     v_multiplier = ((uint32_t)(((v_color >> 52u) & 15u)));
     v_multiplier *= 8u;
@@ -45437,11 +45432,7 @@ wuffs_etc2__decoder__from_colors_to_buffer_signed(
 
   v_nbb = wuffs_base__u32__min(self->private_impl.f_num_buffered_blocks, 32u);
   while (v_bi < v_nbb) {
-    if (a_input == 0u) {
-      v_color = self->private_data.f_alphas[v_bi];
-    } else {
-      v_color = self->private_data.f_colors[v_bi];
-    }
+    v_color = self->private_data.f_colors[a_input][v_bi];
     v_c0 = (((uint32_t)((v_color >> 56u))) * 8u);
     if (v_c0 < 1024u) {
     } else if (v_c0 == 1024u) {

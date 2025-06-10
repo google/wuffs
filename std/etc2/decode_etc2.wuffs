@@ -63,8 +63,13 @@ pub struct decoder? implements base.image_decoder(
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
-        alphas : array[64] base.u64,
-        colors : array[64] base.u64,
+        // Usually, with 8 (instead of 16) bytes per block, colors[0] is unused
+        // and colors[1] holds color codes.
+        //
+        // For RGBA8, colors[0] and colors[1] hold alpha and color codes.
+        //
+        // For RG11U / RG11S, colors[0] and colors[1] hold red and green codes.
+        colors : array[2] array[64] base.u64,
 
         // buffer holds 64 blocks. Each block is 4×4 pixels, 64 bytes.
         buffer : array[4096] base.u8,
@@ -293,9 +298,9 @@ pri func decoder.from_src_to_colors?(src: base.io_reader) {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
         if (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL) or
                 (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) {
-            this.alphas[bi] = args.src.read_u64be?()
+            this.colors[0][bi] = args.src.read_u64be?()
         }
-        this.colors[bi] = args.src.read_u64be?()
+        this.colors[1][bi] = args.src.read_u64be?()
         bi += 1
     }
 }
@@ -317,7 +322,7 @@ pri func decoder.from_colors_to_buffer!(),
 
     while bi < this.num_buffered_blocks {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
-        color = this.colors[bi]
+        color = this.colors[1][bi]
 
         diff = (color & 0x2_0000_0000) <> 0
         tran = (not diff) and (this.pixfmt == base.PIXEL_FORMAT__BGRA_BINARY)
@@ -782,7 +787,7 @@ pri func decoder.from_alphas_to_buffer!() {
 
     while bi < this.num_buffered_blocks {
         assert bi < 64 via "a < b: a < c; c <= b"(c: this.num_buffered_blocks)
-        alpha = this.alphas[bi]
+        alpha = this.colors[0][bi]
 
         a0 = (alpha >> 56) as base.u32
         multiplier = ((alpha >> 52) & 0x0F) as base.u32
@@ -848,11 +853,7 @@ pri func decoder.from_colors_to_buffer_unsigned!(input: base.u32[..= 1], dst_byt
     nbb = this.num_buffered_blocks.min(no_more_than: 32)
     while bi < nbb {
         assert bi < 32 via "a < b: a < c; c <= b"(c: nbb)
-        if args.input == 0 {
-            color = this.alphas[bi]
-        } else {
-            color = this.colors[bi]
-        }
+        color = this.colors[args.input][bi]
 
         c0 = (((color >> 56) as base.u32) * 8) + 4
         multiplier = ((color >> 52) & 0x0F) as base.u32
@@ -914,11 +915,7 @@ pri func decoder.from_colors_to_buffer_signed!(input: base.u32[..= 1], dst_bytes
     nbb = this.num_buffered_blocks.min(no_more_than: 32)
     while bi < nbb {
         assert bi < 32 via "a < b: a < c; c <= b"(c: nbb)
-        if args.input == 0 {
-            color = this.alphas[bi]
-        } else {
-            color = this.colors[bi]
-        }
+        color = this.colors[args.input][bi]
 
         c0 = ((color >> 56) as base.u32) * 8
         if c0 < (0x80 * 8) {
