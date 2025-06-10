@@ -318,6 +318,10 @@ test_wuffs_pixel_swizzler_swizzle() {
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y_16BE,
       },
       {
+          .color = 0xFF444444,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y_16LE,
+      },
+      {
           .color = 0x55444444,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL,
       },
