@@ -95,6 +95,7 @@ that Wuffs decodes to just JPEG, for smaller binaries and faster compiles.
 // the implicit destination pixel format is BGRA_PREMUL.
 #define WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST
 #define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL_4X16LE
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -126,10 +127,11 @@ static const char* g_usage =
     "Usage: convert-to-nia -flags < src.img > dst.nia\n"
     "\n"
     "Flags:\n"
-    "    -1      -first-frame-only\n"
+    "    -1      -output-nie or -first-frame-only\n"
     "    -d      -output-crc32-digest\n"
     "    -p      -output-netpbm\n"
     "    -u      -output-uncompressed-png\n"
+    "    -16     -bit-depth-16\n"
     "            -fail-if-unsandboxed\n"
     "\n"
     "convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG\n"
@@ -138,6 +140,8 @@ static const char* g_usage =
     "\n"
     "NIA/NIE is a trivial animated/still image file format, specified at\n"
     "https://github.com/google/wuffs/blob/main/doc/spec/nie-spec.md\n"
+    "\n"
+    "Using -1 produces NIE (still) instead of NIA (animated).\n"
     "\n"
     "Using -d produces just the CRC-32/IEEE digest of the NIA form. Storing\n"
     "shorter hashes is cheaper than storing complete NIA files but comparing\n"
@@ -149,6 +153,13 @@ static const char* g_usage =
     "\n"
     "Using -u produces PNG output that's relatively large for PNG but still\n"
     "perfectly valid, suitable for piping to tools like cwebp or pngcrush.\n"
+    "\n"
+    "No more than one of -1, -d, -p or -u should be used.\n"
+    "\n"
+    "Using -16 produces 16 bits per channel. For NIA/NIE output, this is the\n"
+    "\"bn8\" version-and-configuration in the spec.\n"
+    "\n"
+    "Combining -u and -16 is unsupported.\n"
     "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
@@ -201,8 +212,6 @@ wuffs_crc32__ieee_hasher g_digest_hasher;
 
 // ----
 
-#define BYTES_PER_PIXEL 4
-
 #ifndef MAX_DIMENSION
 #define MAX_DIMENSION 65535
 #endif
@@ -241,15 +250,19 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
+  bool bit_depth_16;
   bool fail_if_unsandboxed;
-  bool first_frame_only;
   bool output_crc32_digest;
   bool output_netpbm;
+  bool output_nia_or_crc32_digest;  // Implicitly set.
+  bool output_nie;
   bool output_uncompressed_png;
 } g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
+  uint64_t num_one_of = 0;
+
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
     char* arg = argv[c];
@@ -274,45 +287,42 @@ parse_flags(int argc, char** argv) {
       g_flags.fail_if_unsandboxed = true;
       continue;
     }
-    if (!strcmp(arg, "1") || !strcmp(arg, "first-frame-only")) {
-      g_flags.first_frame_only = true;
+    if (!strcmp(arg, "1") || !strcmp(arg, "output-nie") ||
+        !strcmp(arg, "first-frame-only")) {
+      num_one_of++;
+      g_flags.output_nie = true;
       continue;
     }
     if (!strcmp(arg, "d") || !strcmp(arg, "output-crc32-digest")) {
-      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
-          g_flags.output_uncompressed_png) {
-        return "main: multiple --output-etc flags";
-      }
+      num_one_of++;
       g_flags.output_crc32_digest = true;
       continue;
     }
     if (!strcmp(arg, "p") || !strcmp(arg, "output-netpbm")) {
-      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
-          g_flags.output_uncompressed_png) {
-        return "main: multiple --output-etc flags";
-      }
+      num_one_of++;
       g_flags.output_netpbm = true;
       continue;
     }
     if (!strcmp(arg, "u") || !strcmp(arg, "output-uncompressed-png")) {
-      if (g_flags.output_crc32_digest || g_flags.output_netpbm ||
-          g_flags.output_uncompressed_png) {
-        return "main: multiple --output-etc flags";
-      }
+      num_one_of++;
       g_flags.output_uncompressed_png = true;
+      continue;
+    }
+    if (!strcmp(arg, "16") || !strcmp(arg, "bit-depth-16")) {
+      g_flags.bit_depth_16 = true;
       continue;
     }
 
     return g_usage;
   }
 
-  if (!g_flags.first_frame_only) {
-    // No-op.
-  } else if (g_flags.output_crc32_digest ||  //
-             g_flags.output_netpbm ||        //
-             g_flags.output_uncompressed_png) {
+  if (num_one_of > 1) {
     return g_usage;
+  } else if (g_flags.output_uncompressed_png && g_flags.bit_depth_16) {
+    return "main: combining -u and -16 is unsupported";
   }
+  g_flags.output_nia_or_crc32_digest =
+      (num_one_of == 0) || g_flags.output_crc32_digest;
 
   g_flags.remaining_argc = argc - c;
   g_flags.remaining_argv = argv + c;
@@ -595,10 +605,12 @@ redirect:
       break;
   }
 
-  // Override the image's native pixel format to be BGRA_NONPREMUL.
-  wuffs_base__pixel_config__set(&g_image_config.pixcfg,
-                                WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
-                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
+  // Override the image's native pixel format to be BGRA_NONPREMULish.
+  wuffs_base__pixel_config__set(
+      &g_image_config.pixcfg,
+      (g_flags.bit_depth_16 ? WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+                            : WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
 
   // Configure the work buffer.
   uint64_t workbuf_len =
@@ -608,13 +620,14 @@ redirect:
   }
   g_workbuf_slice.len = workbuf_len;
 
+  uint64_t bytes_per_pixel = g_flags.bit_depth_16 ? 8 : 4;
   // Configure the pixel buffer and (if there's capacity) its backup buffer.
   uint64_t num_pixels = ((uint64_t)w) * ((uint64_t)h);
-  if (g_pixbuf_slice.len < (num_pixels * BYTES_PER_PIXEL)) {
+  if (g_pixbuf_slice.len < (num_pixels * bytes_per_pixel)) {
     return "main: image is too large (to configure pixel buffer)";
   }
   size_t old_pixbuf_slice_len = g_pixbuf_slice.len;
-  g_pixbuf_slice.len = num_pixels * BYTES_PER_PIXEL;
+  g_pixbuf_slice.len = num_pixels * bytes_per_pixel;
   size_t pixbuf_array_remaining = old_pixbuf_slice_len - g_pixbuf_slice.len;
   if (pixbuf_array_remaining >= g_pixbuf_slice.len) {
     g_pixbuf_backup_slice.ptr = g_pixbuf_slice.ptr + g_pixbuf_slice.len;
@@ -627,7 +640,7 @@ redirect:
   TRY(wuffs_base__status__message(&status));
 
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
-  if ((tab.width != (g_width * BYTES_PER_PIXEL)) || (tab.height != g_height)) {
+  if ((tab.width != (g_width * bytes_per_pixel)) || (tab.height != g_height)) {
     return "main: inconsistent pixel buffer dimensions";
   }
 
@@ -643,16 +656,30 @@ fill_rectangle(wuffs_base__rect_ie_u32 rect,
   if (rect.max_excl_y > g_height) {
     rect.max_excl_y = g_height;
   }
-  uint32_t nonpremul =
-      wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(color);
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
 
-  for (uint32_t y = rect.min_incl_y; y < rect.max_excl_y; y++) {
-    uint8_t* p =
-        tab.ptr + (y * tab.stride) + (rect.min_incl_x * BYTES_PER_PIXEL);
-    for (uint32_t x = rect.min_incl_x; x < rect.max_excl_x; x++) {
-      wuffs_base__poke_u32le__no_bounds_check(p, nonpremul);
-      p += BYTES_PER_PIXEL;
+  if (g_flags.bit_depth_16) {
+    uint64_t nonpremul64 =
+        wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(color);
+
+    for (uint32_t y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+      uint8_t* p = tab.ptr + (y * tab.stride) + (rect.min_incl_x * 8);
+      for (uint32_t x = rect.min_incl_x; x < rect.max_excl_x; x++) {
+        wuffs_base__poke_u64le__no_bounds_check(p, nonpremul64);
+        p += 8;
+      }
+    }
+
+  } else {
+    uint32_t nonpremul32 =
+        wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(color);
+
+    for (uint32_t y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+      uint8_t* p = tab.ptr + (y * tab.stride) + (rect.min_incl_x * 4);
+      for (uint32_t x = rect.min_incl_x; x < rect.max_excl_x; x++) {
+        wuffs_base__poke_u32le__no_bounds_check(p, nonpremul32);
+        p += 4;
+      }
     }
   }
 }
@@ -660,9 +687,12 @@ fill_rectangle(wuffs_base__rect_ie_u32 rect,
 void  //
 print_nix_header(uint32_t magic_u32le) {
   static const uint32_t version1_bn4_u32le = 0x346E62FF;
+  static const uint32_t version1_bn8_u32le = 0x386E62FF;
+  uint32_t version_and_config =
+      g_flags.bit_depth_16 ? version1_bn8_u32le : version1_bn4_u32le;
   uint8_t data[16];
   wuffs_base__poke_u32le__no_bounds_check(data + 0x00, magic_u32le);
-  wuffs_base__poke_u32le__no_bounds_check(data + 0x04, version1_bn4_u32le);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x04, version_and_config);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x08, g_width);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x0C, g_height);
   ignore_return_value(write_to_stdout(&data[0], 16));
@@ -671,8 +701,9 @@ print_nix_header(uint32_t magic_u32le) {
 void  //
 print_netpbm_header() {
   char data[256];
-  int n = snprintf(data, sizeof(data), "P%c\n%" PRIu32 " %" PRIu32 "\n255\n",
-                   (g_pixfmt_is_gray ? '5' : '6'), g_width, g_height);
+  int n = snprintf(data, sizeof(data), "P%c\n%" PRIu32 " %" PRIu32 "\n%d\n",
+                   (g_pixfmt_is_gray ? '5' : '6'), g_width, g_height,
+                   (g_flags.bit_depth_16 ? 65535 : 255));
   ignore_return_value(write_to_stdout(&data[0], n));
 }
 
@@ -703,21 +734,43 @@ print_netpbm_frame() {
   g_num_printed_frames++;
   uint8_t data[4096];
   size_t o = 0;
-  const size_t o_increment = g_pixfmt_is_gray ? 1 : 3;
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
-  for (size_t y = 0; y < tab.height; y++) {
-    const uint8_t* row = tab.ptr + (y * tab.stride);
-    for (size_t x = 0; x < tab.width; x += 4) {
-      data[o + 0] = row[x + 2];
-      data[o + 1] = row[x + 1];
-      data[o + 2] = row[x + 0];
-      o += o_increment;
-      if ((o + 3) > sizeof(data)) {
-        ignore_return_value(write_to_stdout(&data[0], o));
-        o = 0;
+
+  if (g_flags.bit_depth_16) {
+    const size_t o_increment = g_pixfmt_is_gray ? 2 : 6;
+    for (size_t y = 0; y < tab.height; y++) {
+      const uint8_t* row = tab.ptr + (y * tab.stride);
+      for (size_t x = 0; x < tab.width; x += 8) {
+        data[o + 0] = row[x + 5];
+        data[o + 1] = row[x + 4];
+        data[o + 2] = row[x + 3];
+        data[o + 3] = row[x + 2];
+        data[o + 4] = row[x + 1];
+        data[o + 5] = row[x + 0];
+        o += o_increment;
+        if ((o + 6) > sizeof(data)) {
+          ignore_return_value(write_to_stdout(&data[0], o));
+          o = 0;
+        }
+      }
+    }
+  } else {
+    const size_t o_increment = g_pixfmt_is_gray ? 1 : 3;
+    for (size_t y = 0; y < tab.height; y++) {
+      const uint8_t* row = tab.ptr + (y * tab.stride);
+      for (size_t x = 0; x < tab.width; x += 4) {
+        data[o + 0] = row[x + 2];
+        data[o + 1] = row[x + 1];
+        data[o + 2] = row[x + 0];
+        o += o_increment;
+        if ((o + 3) > sizeof(data)) {
+          ignore_return_value(write_to_stdout(&data[0], o));
+          o = 0;
+        }
       }
     }
   }
+
   if (o > 0) {
     ignore_return_value(write_to_stdout(&data[0], o));
     o = 0;
@@ -734,6 +787,9 @@ my_uncompng_write_func(void* context,
 
 bool  //
 print_uncompressed_png_frame() {
+  if (g_flags.bit_depth_16) {
+    return false;
+  }
   uint32_t pixfmt = 0;
   if (g_pixfmt_is_gray) {
     pixfmt = UNCOMPNG__PIXEL_FORMAT__YXXX;
@@ -876,19 +932,17 @@ convert_frames() {
         wuffs_base__image_decoder__num_animation_loops(g_image_decoder);
 
     // Print a complete NIE frame (and surrounding bytes, for NIA).
-    if (g_flags.output_netpbm) {
+    if (g_flags.output_nia_or_crc32_digest) {
+      print_nia_duration(total_duration);
+      print_nie_frame();
+      print_nia_padding();
+    } else if (g_flags.output_nie) {
+      print_nie_frame();
+    } else if (g_flags.output_netpbm) {
       print_netpbm_frame();
     } else if (g_flags.output_uncompressed_png) {
       if (!print_uncompressed_png_frame()) {
         return "main: PNG encoding failed";
-      }
-    } else {
-      if (!g_flags.first_frame_only) {
-        print_nia_duration(total_duration);
-      }
-      print_nie_frame();
-      if (!g_flags.first_frame_only) {
-        print_nia_padding();
       }
     }
 
@@ -897,8 +951,7 @@ convert_frames() {
       return wuffs_base__status__message(&df_status);
     } else if (decode_frame_io_error_message != NULL) {
       return decode_frame_io_error_message;
-    } else if (g_flags.first_frame_only || g_flags.output_netpbm ||
-               g_flags.output_uncompressed_png) {
+    } else if (!g_flags.output_nia_or_crc32_digest) {
       return NULL;
     }
 
@@ -946,16 +999,13 @@ main1(int argc, char** argv) {
 
   TRY(load_image_type());
   TRY(load_image_config());
-  if (g_flags.output_netpbm) {
-    print_netpbm_header();
-  } else if (g_flags.output_uncompressed_png) {
-    // No-op.
-  } else if (!g_flags.first_frame_only) {
+  if (g_flags.output_nia_or_crc32_digest) {
     print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
+  } else if (g_flags.output_netpbm) {
+    print_netpbm_header();
   }
   const char* ret = convert_frames();
-  if (!g_flags.first_frame_only && !g_flags.output_netpbm &&
-      !g_flags.output_uncompressed_png) {
+  if (g_flags.output_nia_or_crc32_digest) {
     print_nia_footer();
   }
   return ret;
