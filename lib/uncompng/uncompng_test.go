@@ -28,9 +28,17 @@ func encodeImage(w io.Writer, src image.Image) error {
 	case *image.Gray:
 		return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth8, ColorTypeGray)
 
+	case *image.Gray16:
+		return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth16, ColorTypeGray)
+
 	case *image.RGBA:
 		if src.Opaque() {
 			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth8, ColorTypeRGBX)
+		}
+
+	case *image.RGBA64:
+		if src.Opaque() {
+			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth16, ColorTypeRGBX)
 		}
 
 	case *image.NRGBA:
@@ -38,6 +46,13 @@ func encodeImage(w io.Writer, src image.Image) error {
 			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth8, ColorTypeRGBX)
 		} else {
 			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth8, ColorTypeNRGBA)
+		}
+
+	case *image.NRGBA64:
+		if src.Opaque() {
+			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth16, ColorTypeRGBX)
+		} else {
+			return e.Encode(w, src.Pix, b.Dx(), b.Dy(), src.Stride, Depth16, ColorTypeNRGBA)
 		}
 	}
 
@@ -50,9 +65,15 @@ func getPix(m image.Image) []byte {
 	switch m := m.(type) {
 	case *image.Gray:
 		return m.Pix
+	case *image.Gray16:
+		return m.Pix
 	case *image.RGBA:
 		return m.Pix
+	case *image.RGBA64:
+		return m.Pix
 	case *image.NRGBA:
+		return m.Pix
+	case *image.NRGBA64:
 		return m.Pix
 	}
 	return nil
@@ -60,6 +81,8 @@ func getPix(m image.Image) []byte {
 
 func TestRoundTrip(tt *testing.T) {
 	testCases := []string{
+		"36.png",
+		"49.png",
 		"bricks-color.png",
 		"bricks-gray.png",
 		"harvesters.png",

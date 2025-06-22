@@ -159,8 +159,6 @@ static const char* g_usage =
     "Using -16 produces 16 bits per channel. For NIA/NIE output, this is the\n"
     "\"bn8\" version-and-configuration in the spec.\n"
     "\n"
-    "Combining -u and -16 is unsupported.\n"
-    "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
     "sandbox, regardless of whether this flag was set.";
@@ -318,8 +316,6 @@ parse_flags(int argc, char** argv) {
 
   if (num_one_of > 1) {
     return g_usage;
-  } else if (g_flags.output_uncompressed_png && g_flags.bit_depth_16) {
-    return "main: combining -u and -16 is unsupported";
   }
   g_flags.output_nia_or_crc32_digest =
       (num_one_of == 0) || g_flags.output_crc32_digest;
@@ -787,16 +783,17 @@ my_uncompng_write_func(void* context,
 
 bool  //
 print_uncompressed_png_frame() {
-  if (g_flags.bit_depth_16) {
-    return false;
-  }
   uint32_t pixfmt = 0;
   if (g_pixfmt_is_gray) {
-    pixfmt = UNCOMPNG__PIXEL_FORMAT__YXXX;
+    pixfmt = g_flags.bit_depth_16 ? UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE
+                                  : UNCOMPNG__PIXEL_FORMAT__YXXX;
   } else if (wuffs_base__pixel_buffer__is_opaque(&g_pixbuf)) {
-    pixfmt = UNCOMPNG__PIXEL_FORMAT__BGRX;
+    pixfmt = g_flags.bit_depth_16 ? UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE
+                                  : UNCOMPNG__PIXEL_FORMAT__BGRX;
   } else {
-    pixfmt = UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL;
+    pixfmt = g_flags.bit_depth_16
+                 ? UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+                 : UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL;
   }
 
   uint32_t w = wuffs_base__pixel_config__width(&g_pixbuf.pixcfg);

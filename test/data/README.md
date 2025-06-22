@@ -38,6 +38,9 @@ The non-ascii directory holds trivial UTF-8 (but not ASCII) text files.
 
 ---
 
+`36.png` and `49.png` are simple, artificially generated images. The generation
+script is `gen-36-49.go` from https://github.com/nigeltao/etc2
+
 `DCI-P3-D65.icc` comes from
 [color.org](https://www.color.org/chardata/rgb/DCIP3.xalter).
 `DCI-P3-D65.icc.zlib` is a zlib-compresion of that, created by Go's standard

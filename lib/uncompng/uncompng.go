@@ -51,25 +51,27 @@ import (
 type ColorType byte
 
 const (
-	// ColorTypeGray means 1 byte per pixel.
+	// ColorTypeGray means 1 byte per pixel (or 2 for Depth16, big-endian).
 	//
-	// This matches Go's image.Gray.Pix layout.
+	// This matches Go's image.Gray.Pix (or Gray16, for Depth16) layout.
 	ColorTypeGray = ColorType(1)
 
-	// ColorTypeRGBX means 4 bytes per pixel. Red, Green, Blue and the 4th
-	// channel is ignored.
+	// ColorTypeRGBX means 4 bytes per pixel (or 8 for Depth16, big-endian).
+	// Red, Green, Blue and the 4th channel is ignored.
 	//
-	// This matches Go's image.RGBA.Pix and image.NRGBA.Pix layouts, provided
-	// that all of the pixels' alpha values are 0xFF.
+	// This matches Go's image.RGBA.Pix and image.NRGBA.Pix layouts (or RGBA64
+	// or NRGBA64, for Depth16), provided that all of the pixels' alpha values
+	// are 0xFF (or 0xFFFF, for Depth16).
 	ColorTypeRGBX = ColorType(2)
 
-	// ColorTypeRGBX means 4 bytes per pixel. Red, Green, Blue and Alpha. RGB
-	// uses non-premultiplied alpha.
+	// ColorTypeRGBX means 4 bytes per pixel (or 8 for Depth16, big-endian).
+	// Red, Green, Blue and Alpha. RGB uses non-premultiplied alpha.
 	//
-	// This matches Go's image.NRGBA.Pix layout. If all of the pixels' alpha
-	// values are 0xFF then either ColorTypeRGBX or ColorTypeNRGBA will produce
-	// the same PNG output (in terms of pixels) but smaller (ColorTypeRGBX) or
-	// larger (ColorTypeNRGBA) output in terms of byte count.
+	// This matches Go's image.NRGBA.Pix layout (or NRGBA64, for Depth16). If
+	// all of the pixels' alpha values are 0xFF (or 0xFFFF, for Depth16) then
+	// either ColorTypeRGBX or ColorTypeNRGBA will produce the same PNG output
+	// (in terms of pixels) but smaller (ColorTypeRGBX) or larger
+	// (ColorTypeNRGBA) output in terms of byte count.
 	ColorTypeNRGBA = ColorType(3)
 )
 
@@ -87,13 +89,15 @@ func (c ColorType) pngFileFormatEncoding() byte {
 }
 
 // Depth is the number of bits per channel.
-//
-// This package only supports a depth of 8. In the future, it might also
-// support a depth of 16.
 type Depth byte
 
 const (
+	// Depth8 means one byte per pixel.
 	Depth8 = Depth(8)
+
+	// Depth16 means two bytes per pixel. Values are big-endian like the Go
+	// standard library's Gray16, RGBA64 and NRGBA64 image types.
+	Depth16 = Depth(16)
 )
 
 // Encoder is an opaque type that can convert a slice of pixel data to
@@ -189,11 +193,13 @@ const (
 // Encode writes the pixel data to w. It makes no allocations above whatever
 // w.Write makes, if any.
 //
-// pix holds the pixel data, either 1 or 4 bytes per pixel depending on the
-// colorType. width and height are measured in pixels. stride is measured in
-// bytes. depth must be Depth8 although this might be relaxed in the future.
+// pix holds the pixel data, either 1 or 4 bytes per pixel (doubled for
+// Depth16) depending on the colorType. width and height are measured in
+// pixels. stride is measured in bytes. depth must be either Depth8 or Depth16.
 func (e *Encoder) Encode(w io.Writer, pix []byte, width int, height int, stride int, depth Depth, colorType ColorType) error {
-	if (width < 0) || (height < 0) || (depth != Depth8) || (colorType.pngFileFormatEncoding() == 0xFF) {
+	if (width < 0) || (height < 0) ||
+		((depth != Depth8) && (depth != Depth16)) ||
+		(colorType.pngFileFormatEncoding() == 0xFF) {
 		return errors.New("uncompng: invalid argument")
 	} else if (width > 0xFFFFFF) || (height > 0xFFFFFF) {
 		return errors.New("uncompng: unsupported image size")
@@ -214,8 +220,8 @@ func (e *Encoder) Encode(w io.Writer, pix []byte, width int, height int, stride 
 
 		row := pix[y*stride:]
 
-		switch colorType {
-		case ColorTypeGray:
+		switch ColorType(depth) | colorType {
+		case 0x08 | ColorTypeGray:
 			row = row[:1*width]
 			for x := 0; x < width; x++ {
 				if (ej + 1) > ejMax {
@@ -229,7 +235,7 @@ func (e *Encoder) Encode(w io.Writer, pix []byte, width int, height int, stride 
 				row = row[1:]
 			}
 
-		case ColorTypeRGBX:
+		case 0x08 | ColorTypeRGBX:
 			row = row[:4*width]
 			for x := 0; x < width; x++ {
 				if (ej + 3) > ejMax {
@@ -245,7 +251,7 @@ func (e *Encoder) Encode(w io.Writer, pix []byte, width int, height int, stride 
 				row = row[4:]
 			}
 
-		case ColorTypeNRGBA:
+		case 0x08 | ColorTypeNRGBA:
 			row = row[:4*width]
 			for x := 0; x < width; x++ {
 				if (ej + 4) > ejMax {
@@ -260,6 +266,61 @@ func (e *Encoder) Encode(w io.Writer, pix []byte, width int, height int, stride 
 				e.buf[ej+3] = row[3]
 				ej += 4
 				row = row[4:]
+			}
+
+		case 0x10 | ColorTypeGray:
+			row = row[:2*width]
+			for x := 0; x < width; x++ {
+				if (ej + 2) > ejMax {
+					if err := e.flush(w, ej, false); err != nil {
+						return err
+					}
+					ej = eiLater
+				}
+				e.buf[ej+0] = row[0]
+				e.buf[ej+1] = row[1]
+				ej += 2
+				row = row[2:]
+			}
+
+		case 0x10 | ColorTypeRGBX:
+			row = row[:8*width]
+			for x := 0; x < width; x++ {
+				if (ej + 6) > ejMax {
+					if err := e.flush(w, ej, false); err != nil {
+						return err
+					}
+					ej = eiLater
+				}
+				e.buf[ej+0] = row[0]
+				e.buf[ej+1] = row[1]
+				e.buf[ej+2] = row[2]
+				e.buf[ej+3] = row[3]
+				e.buf[ej+4] = row[4]
+				e.buf[ej+5] = row[5]
+				ej += 6
+				row = row[8:]
+			}
+
+		case 0x10 | ColorTypeNRGBA:
+			row = row[:8*width]
+			for x := 0; x < width; x++ {
+				if (ej + 8) > ejMax {
+					if err := e.flush(w, ej, false); err != nil {
+						return err
+					}
+					ej = eiLater
+				}
+				e.buf[ej+0] = row[0]
+				e.buf[ej+1] = row[1]
+				e.buf[ej+2] = row[2]
+				e.buf[ej+3] = row[3]
+				e.buf[ej+4] = row[4]
+				e.buf[ej+5] = row[5]
+				e.buf[ej+6] = row[6]
+				e.buf[ej+7] = row[7]
+				ej += 8
+				row = row[8:]
 			}
 		}
 	}

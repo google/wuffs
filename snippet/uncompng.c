@@ -36,16 +36,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// clang-format off
+
 // UNCOMPNG__PIXEL_FORMAT__ETC are the valid pixel_format values to pass to
 // uncompng__encode.
 //
 // These constants' values are the same as the corresponding Wuffs definitions,
 // after replacing the name's "WUFFS_BASE" prefix with "UNCOMPNG". This file is
 // stand-alone. It does not #include any Wuffs code.
-#define UNCOMPNG__PIXEL_FORMAT__Y 0x20000008
-#define UNCOMPNG__PIXEL_FORMAT__YXXX 0x30008888
-#define UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL 0x81008888
-#define UNCOMPNG__PIXEL_FORMAT__BGRX 0x90008888
+#define UNCOMPNG__PIXEL_FORMAT__Y                        0x20000008
+#define UNCOMPNG__PIXEL_FORMAT__Y_16LE                   0x2000000B
+#define UNCOMPNG__PIXEL_FORMAT__YXXX                     0x30008888
+#define UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE              0x3000BBBB
+#define UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL           0x81008888
+#define UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE    0x8100BBBB
+#define UNCOMPNG__PIXEL_FORMAT__BGRX                     0x90008888
+#define UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE              0x9000BBBB
+
+// clang-format on
 
 // UNCOMPNG__RESULT__ETC can be returned by uncompng__encode. write_func can
 // also return its own negative error codes, which are passed on.
@@ -185,23 +193,40 @@ uncompng__private_impl_initialize_buffer(uint32_t width,
   uncompng__private_impl_buffer[0x0015] = (uint8_t)(height >> 16);
   uncompng__private_impl_buffer[0x0016] = (uint8_t)(height >> 8);
   uncompng__private_impl_buffer[0x0017] = (uint8_t)(height >> 0);
-  uncompng__private_impl_buffer[0x0018] = 8;
 
+  uint8_t depth;
   uint8_t color_type;
   switch (pixel_format) {
     case UNCOMPNG__PIXEL_FORMAT__Y:
     case UNCOMPNG__PIXEL_FORMAT__YXXX:
+      depth = 8;
       color_type = 0;
       break;
     case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL:
+      depth = 8;
       color_type = 6;
       break;
     case UNCOMPNG__PIXEL_FORMAT__BGRX:
+      depth = 8;
+      color_type = 2;
+      break;
+    case UNCOMPNG__PIXEL_FORMAT__Y_16LE:
+    case UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE:
+      depth = 16;
+      color_type = 0;
+      break;
+    case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      depth = 16;
+      color_type = 6;
+      break;
+    case UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE:
+      depth = 16;
       color_type = 2;
       break;
     default:
       return;
   }
+  uncompng__private_impl_buffer[0x0018] = depth;
   uncompng__private_impl_buffer[0x0019] = color_type;
   uncompng__private_impl_buffer[0x001A] = 0;
   uncompng__private_impl_buffer[0x001B] = 0;
@@ -413,6 +438,22 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
         }
         break;
 
+      case UNCOMPNG__PIXEL_FORMAT__Y_16LE:
+        for (uint32_t x = 0; x < width; x++) {
+          if ((ej + 2) > ej_max) {
+            int err =
+                uncompng__private_impl_flush(write_func, context, ej, false);
+            if (err != 0) {
+              return err;
+            }
+            ej = ei_later;
+          }
+          uncompng__private_impl_buffer[ej++] = row[1];
+          uncompng__private_impl_buffer[ej++] = row[0];
+          row += 2;
+        }
+        break;
+
       case UNCOMPNG__PIXEL_FORMAT__YXXX:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 1) > ej_max) {
@@ -425,6 +466,22 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
           }
           uncompng__private_impl_buffer[ej++] = row[0];
           row += 4;
+        }
+        break;
+
+      case UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE:
+        for (uint32_t x = 0; x < width; x++) {
+          if ((ej + 2) > ej_max) {
+            int err =
+                uncompng__private_impl_flush(write_func, context, ej, false);
+            if (err != 0) {
+              return err;
+            }
+            ej = ei_later;
+          }
+          uncompng__private_impl_buffer[ej++] = row[1];
+          uncompng__private_impl_buffer[ej++] = row[0];
+          row += 8;
         }
         break;
 
@@ -446,6 +503,28 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
         }
         break;
 
+      case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+        for (uint32_t x = 0; x < width; x++) {
+          if ((ej + 8) > ej_max) {
+            int err =
+                uncompng__private_impl_flush(write_func, context, ej, false);
+            if (err != 0) {
+              return err;
+            }
+            ej = ei_later;
+          }
+          uncompng__private_impl_buffer[ej++] = row[5];
+          uncompng__private_impl_buffer[ej++] = row[4];
+          uncompng__private_impl_buffer[ej++] = row[3];
+          uncompng__private_impl_buffer[ej++] = row[2];
+          uncompng__private_impl_buffer[ej++] = row[1];
+          uncompng__private_impl_buffer[ej++] = row[0];
+          uncompng__private_impl_buffer[ej++] = row[7];
+          uncompng__private_impl_buffer[ej++] = row[6];
+          row += 8;
+        }
+        break;
+
       case UNCOMPNG__PIXEL_FORMAT__BGRX:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 3) > ej_max) {
@@ -460,6 +539,26 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
           uncompng__private_impl_buffer[ej++] = row[1];
           uncompng__private_impl_buffer[ej++] = row[0];
           row += 4;
+        }
+        break;
+
+      case UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE:
+        for (uint32_t x = 0; x < width; x++) {
+          if ((ej + 6) > ej_max) {
+            int err =
+                uncompng__private_impl_flush(write_func, context, ej, false);
+            if (err != 0) {
+              return err;
+            }
+            ej = ei_later;
+          }
+          uncompng__private_impl_buffer[ej++] = row[5];
+          uncompng__private_impl_buffer[ej++] = row[4];
+          uncompng__private_impl_buffer[ej++] = row[3];
+          uncompng__private_impl_buffer[ej++] = row[2];
+          uncompng__private_impl_buffer[ej++] = row[1];
+          uncompng__private_impl_buffer[ej++] = row[0];
+          row += 8;
         }
         break;
 
@@ -490,10 +589,18 @@ uncompng__encode(int (*write_func)(void* context,
     case UNCOMPNG__PIXEL_FORMAT__Y:
       bytes_per_pixel = 1u;
       break;
+    case UNCOMPNG__PIXEL_FORMAT__Y_16LE:
+      bytes_per_pixel = 2u;
+      break;
     case UNCOMPNG__PIXEL_FORMAT__YXXX:
     case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL:
     case UNCOMPNG__PIXEL_FORMAT__BGRX:
       bytes_per_pixel = 4u;
+      break;
+    case UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE:
+    case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+    case UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE:
+      bytes_per_pixel = 8u;
       break;
     default:
       return UNCOMPNG__RESULT__INVALID_ARGUMENT;
