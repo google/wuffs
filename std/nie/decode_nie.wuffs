@@ -8,9 +8,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub status "#bad frame"
 pub status "#bad header"
 pub status "#truncated input"
 pub status "#unsupported NIE file"
+pub status "#unsupported restart frame index"
 
 pri status "@internal note: short read"
 
@@ -24,6 +26,18 @@ pub struct decoder? implements base.image_decoder(
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
+
+        animated : base.bool,
+
+        nie_config : base.u32,
+
+        num_animation_loops_value : base.u32,
+
+        prev_duration : base.u64[..= 0x7FFF_FFFF_FFFF_FFFF],
+        curr_duration : base.u64[..= 0x7FFF_FFFF_FFFF_FFFF],
+
+        num_decoded_frame_configs_value : base.u64,
+        num_decoded_frames_value        : base.u64,
 
         dst_x : base.u32,
         dst_y : base.u32,
@@ -60,7 +74,11 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     a = args.src.read_u32le?()
-    if a <> 'nïE'le {
+    if a == 'nïA'le {
+        this.animated = true
+    } else if a == 'nïE'le {
+        this.animated = false
+    } else {
         return "#bad header"
     }
 
@@ -76,6 +94,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     } else {
         return "#bad header"
     }
+    this.nie_config = a
 
     a = args.src.read_u32le?()
     if a > 0x7FFF_FFFF {
@@ -119,7 +138,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-    var pixfmt : base.pixel_format
+    var pixfmt      : base.pixel_format
+    var io_position : base.u64
 
     if this.call_sequence == 0x20 {
         // No-op.
@@ -130,29 +150,101 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
             return base."#bad restart"
         }
     } else if this.call_sequence == 0x40 {
-        this.call_sequence = 0x60
-        return base."@end of data"
+        this.skip_frame?(src: args.src)
     } else {
         return base."@end of data"
     }
 
+    if this.animated {
+        this.decode_animation_info?(src: args.src)
+    }
+
     if args.dst <> nullptr {
+        io_position = args.src.position()
+        if this.animated {
+            io_position ~sat-= 24
+        }
+
         pixfmt = this.util.make_pixel_format(repr: this.pixfmt)
         args.dst.set!(bounds: this.util.make_rect_ie_u32(
                 min_incl_x: 0,
                 min_incl_y: 0,
                 max_excl_x: this.width,
                 max_excl_y: this.height),
-                duration: 0,
-                index: 0,
-                io_position: 16,
+                duration: this.curr_duration ~sat- this.prev_duration,
+                index: this.num_decoded_frame_configs_value,
+                io_position: io_position,
                 disposal: 0,
                 opaque_within_bounds: false,
                 overwrite_instead_of_blend: false,
                 background_color: pixfmt.default_background_color())
     }
 
+    this.num_decoded_frame_configs_value ~sat+= 1
     this.call_sequence = 0x40
+}
+
+pri func decoder.decode_animation_info?(src: base.io_reader) {
+    var c32 : base.u32
+    var c64 : base.u64
+
+    c64 = args.src.read_u64le?()
+    if c64 < 0x8000_0000_0000_0000 {
+        if c64 < this.curr_duration {
+            return "#bad frame"
+        }
+        this.prev_duration = this.curr_duration
+        this.curr_duration = c64
+
+    } else if (c64 >> 32) == 0x8000_0000 {
+        this.call_sequence = 0x60
+        this.num_animation_loops_value = (c64 & 0xFFFF_FFFF) as base.u32
+        return base."@end of data"
+
+    } else {
+        return "#bad frame"
+    }
+
+    c32 = args.src.read_u32le?()
+    if c32 <> 'nïE'le {
+        return "#bad frame"
+    }
+
+    c32 = args.src.read_u32le?()
+    if c32 <> this.nie_config {
+        return "#bad frame"
+    }
+
+    c32 = args.src.read_u32le?()
+    if c32 <> this.width {
+        return "#bad frame"
+    }
+
+    c32 = args.src.read_u32le?()
+    if c32 <> this.height {
+        return "#bad frame"
+    }
+}
+
+pri func decoder.skip_frame?(src: base.io_reader) {
+    var src_bytes_per_pixel : base.u64[..= 8]
+
+    if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+        src_bytes_per_pixel = 8
+    } else {
+        src_bytes_per_pixel = 4
+    }
+
+    args.src.skip?(n: src_bytes_per_pixel * (this.width as base.u64) * (this.height as base.u64))
+
+    if this.animated {
+        this.num_decoded_frames_value ~sat+= 1
+        this.call_sequence = 0x20
+    } else {
+        this.num_decoded_frames_value ~sat+= 1
+        this.call_sequence = 0x60
+        return base."@end of data"
+    }
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -169,6 +261,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
     var status : base.status
+    var c64    : base.u64
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -201,7 +294,26 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         yield? base."$short read"
     }
 
-    this.call_sequence = 0x60
+    if this.animated {
+        // If the animation has N frames, we want decoder.num_animation_loops
+        // to report the final value whether after (N+1) decode_frame_config
+        // calls or after N decode_frame calls.
+        while args.src.length() < 8,
+                post args.src.length() >= 8,
+        {
+            yield? base."$short read"
+        }
+        c64 = args.src.peek_u64le()
+        if (c64 >> 32) == 0x8000_0000 {
+            this.num_animation_loops_value = (c64 & 0xFFFF_FFFF) as base.u32
+        }
+
+        this.num_decoded_frames_value ~sat+= 1
+        this.call_sequence = 0x20
+    } else {
+        this.num_decoded_frames_value ~sat+= 1
+        this.call_sequence = 0x60
+    }
 }
 
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
@@ -291,30 +403,42 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 }
 
 pub func decoder.num_animation_loops() base.u32 {
-    return 0
+    return this.num_animation_loops_value
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
-    if this.call_sequence > 0x20 {
-        return 1
-    }
-    return 0
+    return this.num_decoded_frame_configs_value
 }
 
 pub func decoder.num_decoded_frames() base.u64 {
-    if this.call_sequence > 0x40 {
-        return 1
-    }
-    return 0
+    return this.num_decoded_frames_value
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
     if this.call_sequence < 0x20 {
         return base."#bad call sequence"
     }
-    if (args.index <> 0) or (args.io_position <> 16) {
+    if args.index <> 0 {
+        // In terms of the file format, NIA animation timings are absolute (the
+        // time since the start of the animation) instead of relative (the time
+        // since the previous frame), to allow for seek-to-timestamp via binary
+        // search. But Wuffs' decode_frame_config API returns relative frame
+        // durations. When decoding NIA frames, this is easy to provide for
+        // sequential access but a little trickier for random access.
+        //
+        // For now, we only allow restart_frame with an args.index of 0. If
+        // users really want random access restarts, we could seek to frame
+        // (args.index - 1) and calculate the relative frame duration. But
+        // until users ask for it, we won't implement that complexity.
+        return "#unsupported restart frame index"
+    } else if args.io_position <> 16 {
         return base."#bad argument"
     }
+    this.num_animation_loops_value = 0
+    this.prev_duration = 0
+    this.curr_duration = 0
+    this.num_decoded_frame_configs_value = 0
+    this.num_decoded_frames_value = 0
     this.call_sequence = 0x28
     return ok
 }

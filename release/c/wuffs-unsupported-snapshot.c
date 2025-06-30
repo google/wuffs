@@ -12790,9 +12790,11 @@ struct wuffs_netpbm__decoder__struct {
 
 // ---------------- Status Codes
 
+extern const char wuffs_nie__error__bad_frame[];
 extern const char wuffs_nie__error__bad_header[];
 extern const char wuffs_nie__error__truncated_input[];
 extern const char wuffs_nie__error__unsupported_nie_file[];
+extern const char wuffs_nie__error__unsupported_restart_frame_index[];
 
 // ---------------- Public Consts
 
@@ -12965,6 +12967,13 @@ struct wuffs_nie__decoder__struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
+    bool f_animated;
+    uint32_t f_nie_config;
+    uint32_t f_num_animation_loops_value;
+    uint64_t f_prev_duration;
+    uint64_t f_curr_duration;
+    uint64_t f_num_decoded_frame_configs_value;
+    uint64_t f_num_decoded_frames_value;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     wuffs_base__pixel_swizzler f_swizzler;
@@ -12973,6 +12982,8 @@ struct wuffs_nie__decoder__struct {
     uint32_t p_do_decode_image_config;
     uint32_t p_decode_frame_config;
     uint32_t p_do_decode_frame_config;
+    uint32_t p_decode_animation_info;
+    uint32_t p_skip_frame;
     uint32_t p_decode_frame;
     uint32_t p_do_decode_frame;
   } private_impl;
@@ -12981,6 +12992,12 @@ struct wuffs_nie__decoder__struct {
     struct {
       uint64_t scratch;
     } s_do_decode_image_config;
+    struct {
+      uint64_t scratch;
+    } s_decode_animation_info;
+    struct {
+      uint64_t scratch;
+    } s_skip_frame;
   } private_data;
 
 #ifdef __cplusplus
@@ -65871,9 +65888,11 @@ wuffs_netpbm__decoder__workbuf_len(
 
 // ---------------- Status Codes Implementations
 
+const char wuffs_nie__error__bad_frame[] = "#nie: bad frame";
 const char wuffs_nie__error__bad_header[] = "#nie: bad header";
 const char wuffs_nie__error__truncated_input[] = "#nie: truncated input";
 const char wuffs_nie__error__unsupported_nie_file[] = "#nie: unsupported NIE file";
+const char wuffs_nie__error__unsupported_restart_frame_index[] = "#nie: unsupported restart frame index";
 const char wuffs_nie__note__internal_note_short_read[] = "@nie: internal note: short read";
 
 // ---------------- Private Consts
@@ -65894,6 +65913,18 @@ static wuffs_base__status
 wuffs_nie__decoder__do_decode_frame_config(
     wuffs_nie__decoder* self,
     wuffs_base__frame_config* a_dst,
+    wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_nie__decoder__decode_animation_info(
+    wuffs_nie__decoder* self,
+    wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_nie__decoder__skip_frame(
+    wuffs_nie__decoder* self,
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -66187,7 +66218,11 @@ wuffs_nie__decoder__do_decode_image_config(
       }
       v_a = t_0;
     }
-    if (v_a != 1169146734u) {
+    if (v_a == 1102037870u) {
+      self->private_impl.f_animated = true;
+    } else if (v_a == 1169146734u) {
+      self->private_impl.f_animated = false;
+    } else {
       status = wuffs_base__make_status(wuffs_nie__error__bad_header);
       goto exit;
     }
@@ -66234,6 +66269,7 @@ wuffs_nie__decoder__do_decode_image_config(
       status = wuffs_base__make_status(wuffs_nie__error__bad_header);
       goto exit;
     }
+    self->private_impl.f_nie_config = v_a;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint32_t t_2;
@@ -66416,6 +66452,7 @@ wuffs_nie__decoder__do_decode_frame_config(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   wuffs_base__pixel_format v_pixfmt = {0};
+  uint64_t v_io_position = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -66451,14 +66488,39 @@ wuffs_nie__decoder__do_decode_frame_config(
         goto exit;
       }
     } else if (self->private_impl.f_call_sequence == 64u) {
-      self->private_impl.f_call_sequence = 96u;
-      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
-      goto ok;
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      status = wuffs_nie__decoder__skip_frame(self, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
+      if (status.repr) {
+        goto suspend;
+      }
     } else {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
+    if (self->private_impl.f_animated) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      status = wuffs_nie__decoder__decode_animation_info(self, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
+      if (status.repr) {
+        goto suspend;
+      }
+    }
     if (a_dst != NULL) {
+      v_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
+      if (self->private_impl.f_animated) {
+        wuffs_private_impl__u64__sat_sub_indirect(&v_io_position, 24u);
+      }
       v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
@@ -66467,14 +66529,15 @@ wuffs_nie__decoder__do_decode_frame_config(
           0u,
           self->private_impl.f_width,
           self->private_impl.f_height),
-          ((wuffs_base__flicks)(0u)),
-          0u,
-          16u,
+          ((wuffs_base__flicks)(wuffs_base__u64__sat_sub(self->private_impl.f_curr_duration, self->private_impl.f_prev_duration))),
+          self->private_impl.f_num_decoded_frame_configs_value,
+          v_io_position,
           0u,
           false,
           false,
           wuffs_base__pixel_format__default_background_color(&v_pixfmt));
     }
+    wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frame_configs_value, 1u);
     self->private_impl.f_call_sequence = 64u;
 
     ok:
@@ -66485,6 +66548,297 @@ wuffs_nie__decoder__do_decode_frame_config(
   goto suspend;
   suspend:
   self->private_impl.p_do_decode_frame_config = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func nie.decoder.decode_animation_info
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_nie__decoder__decode_animation_info(
+    wuffs_nie__decoder* self,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint32_t v_c32 = 0;
+  uint64_t v_c64 = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_animation_info;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      uint64_t t_0;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+        t_0 = wuffs_base__peek_u64le__no_bounds_check(iop_a_src);
+        iop_a_src += 8;
+      } else {
+        self->private_data.s_decode_animation_info.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_animation_info.scratch;
+          uint32_t num_bits_0 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
+          if (num_bits_0 == 56) {
+            t_0 = ((uint64_t)(*scratch));
+            break;
+          }
+          num_bits_0 += 8u;
+          *scratch |= ((uint64_t)(num_bits_0)) << 56;
+        }
+      }
+      v_c64 = t_0;
+    }
+    if (v_c64 < 9223372036854775808u) {
+      if (v_c64 < self->private_impl.f_curr_duration) {
+        status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+        goto exit;
+      }
+      self->private_impl.f_prev_duration = self->private_impl.f_curr_duration;
+      self->private_impl.f_curr_duration = v_c64;
+    } else if ((v_c64 >> 32u) == 2147483648u) {
+      self->private_impl.f_call_sequence = 96u;
+      self->private_impl.f_num_animation_loops_value = ((uint32_t)(v_c64));
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    } else {
+      status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+      goto exit;
+    }
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      uint32_t t_1;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+        t_1 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+        iop_a_src += 4;
+      } else {
+        self->private_data.s_decode_animation_info.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_animation_info.scratch;
+          uint32_t num_bits_1 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
+          if (num_bits_1 == 24) {
+            t_1 = ((uint32_t)(*scratch));
+            break;
+          }
+          num_bits_1 += 8u;
+          *scratch |= ((uint64_t)(num_bits_1)) << 56;
+        }
+      }
+      v_c32 = t_1;
+    }
+    if (v_c32 != 1169146734u) {
+      status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+      goto exit;
+    }
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      uint32_t t_2;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+        t_2 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+        iop_a_src += 4;
+      } else {
+        self->private_data.s_decode_animation_info.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_animation_info.scratch;
+          uint32_t num_bits_2 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_2;
+          if (num_bits_2 == 24) {
+            t_2 = ((uint32_t)(*scratch));
+            break;
+          }
+          num_bits_2 += 8u;
+          *scratch |= ((uint64_t)(num_bits_2)) << 56;
+        }
+      }
+      v_c32 = t_2;
+    }
+    if (v_c32 != self->private_impl.f_nie_config) {
+      status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+      goto exit;
+    }
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+      uint32_t t_3;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+        t_3 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+        iop_a_src += 4;
+      } else {
+        self->private_data.s_decode_animation_info.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_animation_info.scratch;
+          uint32_t num_bits_3 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_3;
+          if (num_bits_3 == 24) {
+            t_3 = ((uint32_t)(*scratch));
+            break;
+          }
+          num_bits_3 += 8u;
+          *scratch |= ((uint64_t)(num_bits_3)) << 56;
+        }
+      }
+      v_c32 = t_3;
+    }
+    if (v_c32 != self->private_impl.f_width) {
+      status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+      goto exit;
+    }
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+      uint32_t t_4;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+        t_4 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+        iop_a_src += 4;
+      } else {
+        self->private_data.s_decode_animation_info.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_animation_info.scratch;
+          uint32_t num_bits_4 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_4;
+          if (num_bits_4 == 24) {
+            t_4 = ((uint32_t)(*scratch));
+            break;
+          }
+          num_bits_4 += 8u;
+          *scratch |= ((uint64_t)(num_bits_4)) << 56;
+        }
+      }
+      v_c32 = t_4;
+    }
+    if (v_c32 != self->private_impl.f_height) {
+      status = wuffs_base__make_status(wuffs_nie__error__bad_frame);
+      goto exit;
+    }
+
+    ok:
+    self->private_impl.p_decode_animation_info = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_animation_info = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func nie.decoder.skip_frame
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_nie__decoder__skip_frame(
+    wuffs_nie__decoder* self,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint64_t v_src_bytes_per_pixel = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_skip_frame;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_pixfmt == 2164308923u) {
+      v_src_bytes_per_pixel = 8u;
+    } else {
+      v_src_bytes_per_pixel = 4u;
+    }
+    self->private_data.s_skip_frame.scratch = (v_src_bytes_per_pixel * ((uint64_t)(self->private_impl.f_width)) * ((uint64_t)(self->private_impl.f_height)));
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (self->private_data.s_skip_frame.scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_skip_frame.scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+      iop_a_src = io2_a_src;
+      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+      goto suspend;
+    }
+    iop_a_src += self->private_data.s_skip_frame.scratch;
+    if (self->private_impl.f_animated) {
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frames_value, 1u);
+      self->private_impl.f_call_sequence = 32u;
+    } else {
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frames_value, 1u);
+      self->private_impl.f_call_sequence = 96u;
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+
+    ok:
+    self->private_impl.p_skip_frame = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_skip_frame = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
 
   goto exit;
   exit:
@@ -66583,6 +66937,18 @@ wuffs_nie__decoder__do_decode_frame(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
+  uint64_t v_c64 = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
 
   uint32_t coro_susp_point = self->private_impl.p_do_decode_frame;
   switch (coro_susp_point) {
@@ -66590,8 +66956,14 @@ wuffs_nie__decoder__do_decode_frame(
 
     if (self->private_impl.f_call_sequence == 64u) {
     } else if (self->private_impl.f_call_sequence < 64u) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       status = wuffs_nie__decoder__do_decode_frame_config(self, NULL, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
       if (status.repr) {
         goto suspend;
       }
@@ -66618,7 +66990,13 @@ wuffs_nie__decoder__do_decode_frame(
       goto ok;
     }
     while (true) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
       v_status = wuffs_nie__decoder__swizzle(self, a_dst, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
       if (wuffs_base__status__is_ok(&v_status)) {
         break;
       } else if (v_status.repr != wuffs_nie__note__internal_note_short_read) {
@@ -66634,7 +67012,21 @@ wuffs_nie__decoder__do_decode_frame(
       status = wuffs_base__make_status(wuffs_base__suspension__short_read);
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
     }
-    self->private_impl.f_call_sequence = 96u;
+    if (self->private_impl.f_animated) {
+      while (((uint64_t)(io2_a_src - iop_a_src)) < 8u) {
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      }
+      v_c64 = wuffs_base__peek_u64le__no_bounds_check(iop_a_src);
+      if ((v_c64 >> 32u) == 2147483648u) {
+        self->private_impl.f_num_animation_loops_value = ((uint32_t)(v_c64));
+      }
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frames_value, 1u);
+      self->private_impl.f_call_sequence = 32u;
+    } else {
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frames_value, 1u);
+      self->private_impl.f_call_sequence = 96u;
+    }
 
     ok:
     self->private_impl.p_do_decode_frame = 0;
@@ -66647,6 +67039,10 @@ wuffs_nie__decoder__do_decode_frame(
 
   goto exit;
   exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
   return status;
 }
 
@@ -66786,7 +67182,7 @@ wuffs_nie__decoder__num_animation_loops(
     return 0;
   }
 
-  return 0u;
+  return self->private_impl.f_num_animation_loops_value;
 }
 
 // -------- func nie.decoder.num_decoded_frame_configs
@@ -66803,10 +67199,7 @@ wuffs_nie__decoder__num_decoded_frame_configs(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 32u) {
-    return 1u;
-  }
-  return 0u;
+  return self->private_impl.f_num_decoded_frame_configs_value;
 }
 
 // -------- func nie.decoder.num_decoded_frames
@@ -66823,10 +67216,7 @@ wuffs_nie__decoder__num_decoded_frames(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 64u) {
-    return 1u;
-  }
-  return 0u;
+  return self->private_impl.f_num_decoded_frames_value;
 }
 
 // -------- func nie.decoder.restart_frame
@@ -66850,9 +67240,16 @@ wuffs_nie__decoder__restart_frame(
   if (self->private_impl.f_call_sequence < 32u) {
     return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
   }
-  if ((a_index != 0u) || (a_io_position != 16u)) {
+  if (a_index != 0u) {
+    return wuffs_base__make_status(wuffs_nie__error__unsupported_restart_frame_index);
+  } else if (a_io_position != 16u) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
+  self->private_impl.f_num_animation_loops_value = 0u;
+  self->private_impl.f_prev_duration = 0u;
+  self->private_impl.f_curr_duration = 0u;
+  self->private_impl.f_num_decoded_frame_configs_value = 0u;
+  self->private_impl.f_num_decoded_frames_value = 0u;
   self->private_impl.f_call_sequence = 40u;
   return wuffs_base__make_status(NULL);
 }

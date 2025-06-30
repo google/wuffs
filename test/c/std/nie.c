@@ -132,6 +132,150 @@ test_wuffs_nie_decode_frame_config() {
   return NULL;
 }
 
+const char*  //
+do_test_wuffs_nie_decode_animation(bool call_decode_frame) {
+  wuffs_nie__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_nie__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/crude-flag.nia"));
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+
+  {
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    CHECK_STATUS("decode_image_config",
+                 wuffs_nie__decoder__decode_image_config(&dec, &ic, &src));
+    if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr !=
+        WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL) {
+      RETURN_FAIL("pixel_format: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr,
+                  WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
+    }
+
+    if (wuffs_base__pixel_config__width(&ic.pixcfg) != 3) {
+      RETURN_FAIL("width: have %" PRIu32 ", want 3",
+                  wuffs_base__pixel_config__width(&ic.pixcfg));
+    }
+    if (wuffs_base__pixel_config__height(&ic.pixcfg) != 2) {
+      RETURN_FAIL("height: have %" PRIu32 ", want 2",
+                  wuffs_base__pixel_config__height(&ic.pixcfg));
+    }
+
+    wuffs_base__pixel_config__set(&ic.pixcfg,
+                                  WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+                                  WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, 3, 2);
+
+    CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                       &pb, &ic.pixcfg, g_pixel_slice_u8));
+  }
+
+  for (int i = 0; true; i++) {
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+    wuffs_base__status status =
+        wuffs_nie__decoder__decode_frame_config(&dec, &fc, &src);
+    if (i >= 2) {
+      if (status.repr != wuffs_base__note__end_of_data) {
+        RETURN_FAIL("decode_frame_config: have \"%s\", want \"%s\"",
+                    status.repr, wuffs_base__note__end_of_data);
+      }
+      break;
+    }
+    CHECK_STATUS("decode_frame_config", status);
+
+    {
+      uint32_t have = wuffs_nie__decoder__num_decoded_frame_configs(&dec);
+      uint32_t want = i + 1u;
+      if (have != want) {
+        RETURN_FAIL("num_decoded_frame_configs: have %" PRIu32
+                    ", want %" PRIu32,
+                    have, want);
+      }
+    }
+
+    {
+      uint32_t have = wuffs_nie__decoder__num_decoded_frames(&dec);
+      uint32_t want = i;
+      if (have != want) {
+        RETURN_FAIL("num_decoded_frames: have %" PRIu32 ", want %" PRIu32, have,
+                    want);
+      }
+    }
+
+    {
+      static const uint64_t wants[] = {0x10, 0x40};
+      uint64_t have = wuffs_base__frame_config__io_position(&fc);
+      uint64_t want = wants[i];
+      if (have != want) {
+        RETURN_FAIL("io_position: have %" PRIu64 ", want %" PRIu64, have, want);
+      }
+    }
+
+    {
+      static const uint64_t wants[] = {
+          1 * WUFFS_BASE__FLICKS_PER_SECOND,
+          2 * WUFFS_BASE__FLICKS_PER_SECOND,
+      };
+      uint64_t have = wuffs_base__frame_config__duration(&fc);
+      uint64_t want = wants[i];
+      if (have != want) {
+        RETURN_FAIL("duration: have %" PRIu64 ", want %" PRIu64, have, want);
+      }
+    }
+
+    if (!call_decode_frame) {
+      continue;
+    }
+
+    CHECK_STATUS("decode_frame",
+                 wuffs_nie__decoder__decode_frame(
+                     &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC,
+                     wuffs_base__empty_slice_u8(), NULL));
+
+    {
+      static const wuffs_base__color_u32_argb_premul wants[] = {
+          0xFF0000FFu,  // Blue.
+          0xFF00FF00u,  // Green.
+      };
+      wuffs_base__color_u32_argb_premul have =
+          wuffs_base__pixel_buffer__color_u32_at(&pb, 0, 0);
+      wuffs_base__color_u32_argb_premul want = wants[i];
+      if (have != want) {
+        RETURN_FAIL("color: have 0x%08" PRIX32 ", want 0x%08" PRIX32, have,
+                    want);
+      }
+    }
+
+    {
+      uint32_t have = wuffs_nie__decoder__num_animation_loops(&dec);
+      uint32_t want = (i >= 1) ? 10 : 0;
+      if (have != want) {
+        RETURN_FAIL("num_animation_loops: have %" PRIu32 ", want %" PRIu32,
+                    have, want);
+      }
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_nie_decode_animation_sans_decode_frame() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_nie_decode_animation(false);
+}
+
+const char*  //
+test_wuffs_nie_decode_animation_with_decode_frame() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_nie_decode_animation(true);
+}
+
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -156,6 +300,8 @@ test_wuffs_nie_decode_frame_config() {
 
 proc g_tests[] = {
 
+    test_wuffs_nie_decode_animation_sans_decode_frame,
+    test_wuffs_nie_decode_animation_with_decode_frame,
     test_wuffs_nie_decode_frame_config,
     test_wuffs_nie_decode_interface,
     test_wuffs_nie_decode_truncated_input,
