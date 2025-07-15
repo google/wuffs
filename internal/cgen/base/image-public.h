@@ -231,6 +231,26 @@ wuffs_base__color_u64_argb_premul__as__color_u8_gray(uint64_t argb_premul) {
   return (uint8_t)(weighted_average >> 24);
 }
 
+static inline uint64_t  //
+wuffs_base__color_u64_argb_premul__as__color_u64_argb_nonpremul(
+    uint64_t argb_premul) {
+  uint64_t a = 0xFFFF & (argb_premul >> 48);
+  if (a == 0xFFFF) {
+    return argb_premul;
+  } else if (a == 0) {
+    return 0;
+  }
+
+  uint64_t r = 0xFFFF & (argb_premul >> 32);
+  r = (r * 0xFFFF) / a;
+  uint64_t g = 0xFFFF & (argb_premul >> 16);
+  g = (g * 0xFFFF) / a;
+  uint64_t b = 0xFFFF & (argb_premul >> 0);
+  b = (b * 0xFFFF) / a;
+
+  return (a << 48) | (r << 32) | (g << 16) | (b << 0);
+}
+
 static inline uint8_t  //
 wuffs_base__color_u64_argb_nonpremul__as__color_u8_gray(
     uint64_t argb_nonpremul) {
