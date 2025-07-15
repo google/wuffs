@@ -11,7 +11,6 @@
 pub status "#bad frame"
 pub status "#bad header"
 pub status "#truncated input"
-pub status "#unsupported NIE file"
 pub status "#unsupported restart frame index"
 
 pri status "@internal note: short read"
@@ -88,9 +87,9 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     } else if a == '\xFFbn8'le {
         this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
     } else if a == '\xFFbp4'le {
-        return "#unsupported NIE file"
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_PREMUL
     } else if a == '\xFFbp8'le {
-        return "#unsupported NIE file"
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_PREMUL_4X16LE
     } else {
         return "#bad header"
     }
@@ -229,7 +228,8 @@ pri func decoder.decode_animation_info?(src: base.io_reader) {
 pri func decoder.skip_frame?(src: base.io_reader) {
     var src_bytes_per_pixel : base.u64[..= 8]
 
-    if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+    if (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) or
+            (this.pixfmt == base.PIXEL_FORMAT__BGRA_PREMUL_4X16LE) {
         src_bytes_per_pixel = 8
     } else {
         src_bytes_per_pixel = 4
@@ -356,7 +356,8 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
         if i >= dst.length() {
             src_bytes_per_pixel = 4
             assert src_bytes_per_pixel > 0
-            if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+            if (this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) or
+                    (this.pixfmt == base.PIXEL_FORMAT__BGRA_PREMUL_4X16LE) {
                 src_bytes_per_pixel = 8
                 assert src_bytes_per_pixel > 0
             }

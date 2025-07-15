@@ -12813,7 +12813,6 @@ struct wuffs_netpbm__decoder__struct {
 extern const char wuffs_nie__error__bad_frame[];
 extern const char wuffs_nie__error__bad_header[];
 extern const char wuffs_nie__error__truncated_input[];
-extern const char wuffs_nie__error__unsupported_nie_file[];
 extern const char wuffs_nie__error__unsupported_restart_frame_index[];
 
 // ---------------- Public Consts
@@ -66756,7 +66755,6 @@ wuffs_netpbm__decoder__workbuf_len(
 const char wuffs_nie__error__bad_frame[] = "#nie: bad frame";
 const char wuffs_nie__error__bad_header[] = "#nie: bad header";
 const char wuffs_nie__error__truncated_input[] = "#nie: truncated input";
-const char wuffs_nie__error__unsupported_nie_file[] = "#nie: unsupported NIE file";
 const char wuffs_nie__error__unsupported_restart_frame_index[] = "#nie: unsupported restart frame index";
 const char wuffs_nie__note__internal_note_short_read[] = "@nie: internal note: short read";
 
@@ -67125,11 +67123,9 @@ wuffs_nie__decoder__do_decode_image_config(
     } else if (v_a == 946758399u) {
       self->private_impl.f_pixfmt = 2164308923u;
     } else if (v_a == 879780607u) {
-      status = wuffs_base__make_status(wuffs_nie__error__unsupported_nie_file);
-      goto exit;
+      self->private_impl.f_pixfmt = 2181073032u;
     } else if (v_a == 946889471u) {
-      status = wuffs_base__make_status(wuffs_nie__error__unsupported_nie_file);
-      goto exit;
+      self->private_impl.f_pixfmt = 2181086139u;
     } else {
       status = wuffs_base__make_status(wuffs_nie__error__bad_header);
       goto exit;
@@ -67672,7 +67668,7 @@ wuffs_nie__decoder__skip_frame(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_pixfmt == 2164308923u) {
+    if ((self->private_impl.f_pixfmt == 2164308923u) || (self->private_impl.f_pixfmt == 2181086139u)) {
       v_src_bytes_per_pixel = 8u;
     } else {
       v_src_bytes_per_pixel = 4u;
@@ -67967,7 +67963,7 @@ wuffs_nie__decoder__swizzle(
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
     if (v_i >= ((uint64_t)(v_dst.len))) {
       v_src_bytes_per_pixel = 4u;
-      if (self->private_impl.f_pixfmt == 2164308923u) {
+      if ((self->private_impl.f_pixfmt == 2164308923u) || (self->private_impl.f_pixfmt == 2181086139u)) {
         v_src_bytes_per_pixel = 8u;
       }
       v_n = (((uint64_t)(io2_a_src - iop_a_src)) / ((uint64_t)(v_src_bytes_per_pixel)));
