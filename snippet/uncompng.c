@@ -22,6 +22,9 @@
 //
 // It is a C port of the github.com/google/wuffs/lib/uncompng library. The
 // original Go code has much more comments about the algorithmic details.
+//
+// There's an example program (using this library) at
+// https://nigeltao.github.io/blog/2025/uncompressed-png.html
 
 #ifndef UNCOMPNG_INCLUDE_GUARD
 #define UNCOMPNG_INCLUDE_GUARD
@@ -71,15 +74,18 @@
 // entirety of the (data_ptr, data_len) slice. data_len will never exceed
 // UNCOMPNG__DATA_LEN__INCL_MAX.
 //
-// write_func should return zero for success or non-zero for failure (which is
+// It returns zero on success, a positive number (an UNCOMPNG__RESULT__ETC
+// constant) on library failures or a negative number on write_func failures.
+//
+// write_func should return zero for success or negative for failure (which is
 // passed back to the uncompng__encode caller). Returning a positive number is
 // not recommended, as that may clash with UNCOMPNG__RESULT__ETC values.
 //
 // The context argument is unused other than being an opaque value that is
 // forwarded on to write_func.
 //
-// Pixel data is in the (pixel_ptr, pixel_len) slice, either 1 or 4 bytes per
-// pixel depending on the pixel_format. width and height are measured in
+// Pixel data is in the (pixel_ptr, pixel_len) slice, either 1, 2, 4 or 8 bytes
+// per pixel depending on the pixel_format. width and height are measured in
 // pixels. stride, the pointer difference between rows, is measured in bytes.
 //
 // This function is not thread-safe.
