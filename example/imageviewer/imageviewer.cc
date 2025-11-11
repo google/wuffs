@@ -322,10 +322,10 @@ load_image(const char* filename) {
   g_pixbuf = res.pixbuf;
 
   if (res.error_message.empty()) {
-    printf("%s: ok (%" PRIu32 " x %" PRIu32 ")\n", adj_filename, g_width,
+    printf("%s ok (%" PRIu32 " x %" PRIu32 ")\n", adj_filename, g_width,
            g_height);
   } else {
-    printf("%s: %s\n", adj_filename, res.error_message.c_str());
+    printf("%s %s\n", adj_filename, res.error_message.c_str());
   }
   return res.pixbuf.pixcfg.is_valid();
 }
