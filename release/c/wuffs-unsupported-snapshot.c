@@ -91648,7 +91648,7 @@ wuffs_drop_in__stb__make_decoder(   //
 
 // --------
 
-static void*                         //
+static stbi_uc*                      //
 wuffs_drop_in__stb__load1(           //
     wuffs_base__io_buffer* srcbuf,   //
     stbi_io_callbacks const* clbk,   //
@@ -91709,16 +91709,17 @@ wuffs_drop_in__stb__load1(           //
     return NULL;
   }
   wuffs_base__slice_u8 workbuf =
-      wuffs_base__make_slice_u8(workbuf_ptr, (size_t)workbuf_len);
+      wuffs_base__make_slice_u8((uint8_t*)workbuf_ptr, (size_t)workbuf_len);
 
-  wuffs_base__pixel_config pc = ((wuffs_base__pixel_config){});
+  wuffs_base__pixel_config pc = wuffs_base__null_pixel_config();
   wuffs_base__pixel_config__set(&pc, dst_pixfmt,
                                 WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
 
-  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  wuffs_base__pixel_buffer pb = wuffs_base__null_pixel_buffer();
   {
     wuffs_base__status status = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, &pc, wuffs_base__make_slice_u8(pixbuf_ptr, (size_t)pixbuf_len));
+        &pb, &pc,
+        wuffs_base__make_slice_u8((uint8_t*)pixbuf_ptr, (size_t)pixbuf_len));
     if (status.repr) {
       free(workbuf_ptr);
       free(pixbuf_ptr);
@@ -91749,10 +91750,10 @@ wuffs_drop_in__stb__load1(           //
   }
 
   free(workbuf_ptr);
-  return pixbuf_ptr;
+  return (stbi_uc*)pixbuf_ptr;
 }
 
-static void*                        //
+static stbi_uc*                     //
 wuffs_drop_in__stb__load0(          //
     wuffs_base__io_buffer* srcbuf,  //
     stbi_io_callbacks const* clbk,  //
@@ -91787,7 +91788,7 @@ wuffs_drop_in__stb__load0(          //
     return NULL;
   }
 
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__image_config ic = wuffs_base__null_image_config();
   stbi_uc* ret = wuffs_drop_in__stb__load1(
       srcbuf, clbk, user, dec, &ic, dst_pixfmt, desired_channels, info_only);
   free(dec);
@@ -91831,8 +91832,9 @@ stbi_info_from_memory(                //
     wuffs_drop_in__stb__g_failure_reason = "empty buffer";
     return 0;
   }
-  wuffs_base__io_buffer srcbuf =
-      wuffs_base__ptr_u8__reader((uint8_t*)(stbi_uc*)buffer, (size_t)len, true);
+  wuffs_base__io_buffer srcbuf = wuffs_base__ptr_u8__reader(
+      wuffs_base__strip_const_from_u8_ptr((const uint8_t*)buffer), (size_t)len,
+      true);
   wuffs_drop_in__stb__load0(&srcbuf, NULL, NULL, x, y, comp, 1, 1);
   return wuffs_drop_in__stb__g_failure_reason == NULL;
 }
@@ -91853,8 +91855,9 @@ stbi_load_from_memory(                     //
     wuffs_drop_in__stb__g_failure_reason = "empty buffer";
     return NULL;
   }
-  wuffs_base__io_buffer srcbuf =
-      wuffs_base__ptr_u8__reader((uint8_t*)(stbi_uc*)buffer, (size_t)len, true);
+  wuffs_base__io_buffer srcbuf = wuffs_base__ptr_u8__reader(
+      wuffs_base__strip_const_from_u8_ptr((const uint8_t*)buffer), (size_t)len,
+      true);
   return wuffs_drop_in__stb__load0(&srcbuf, NULL, NULL, x, y, channels_in_file,
                                    desired_channels, 0);
 }
