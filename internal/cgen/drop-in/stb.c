@@ -190,6 +190,32 @@ wuffs_drop_in__stb__load1(           //
     return NULL;
   }
 
+  if (desired_channels == 0 && dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__INVALID) {
+    wuffs_base__pixel_format src_pixfmt =
+        wuffs_base__pixel_config__pixel_format(&ic->pixcfg);
+    uint32_t n_color = wuffs_base__pixel_format__coloration(&src_pixfmt);
+    uint32_t n_alpha = wuffs_base__pixel_format__transparency(&src_pixfmt) !=
+                       WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE;
+    desired_channels = (int)(n_color + n_alpha);
+    switch (desired_channels) {
+    case 1:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__Y;
+      break;
+    case 2:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL;
+      break;
+    case 3:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__RGB;
+      break;
+    case 4:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL;
+      break;
+    default:
+      wuffs_drop_in__stb__g_failure_reason = "unsupported format conversion";
+      return NULL;
+    }
+  }
+
   uint64_t pixbuf_len = (uint64_t)w * (uint64_t)h * (uint64_t)desired_channels;
   uint64_t workbuf_len = wuffs_base__image_decoder__workbuf_len(dec).max_incl;
 #if SIZE_MAX < 0xFFFFFFFFFFFFFFFFull
@@ -267,8 +293,14 @@ wuffs_drop_in__stb__load0(          //
     int info_only) {
   uint32_t dst_pixfmt = 0;
   switch (desired_channels) {
+    case 0:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__INVALID;
+      break;
     case 1:
       dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__Y;
+      break;
+    case 2:
+      dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL;
       break;
     case 3:
       dst_pixfmt = WUFFS_BASE__PIXEL_FORMAT__RGB;
@@ -337,7 +369,7 @@ stbi_info_from_memory(                //
   wuffs_base__io_buffer srcbuf = wuffs_base__ptr_u8__reader(
       wuffs_base__strip_const_from_u8_ptr((const uint8_t*)buffer), (size_t)len,
       true);
-  wuffs_drop_in__stb__load0(&srcbuf, NULL, NULL, x, y, comp, 1, 1);
+  wuffs_drop_in__stb__load0(&srcbuf, NULL, NULL, x, y, comp, 0, 1);
   return wuffs_drop_in__stb__g_failure_reason == NULL;
 }
 
@@ -379,7 +411,7 @@ stbi_info_from_callbacks(             //
   }
   wuffs_base__io_buffer srcbuf =
       wuffs_base__ptr_u8__writer((uint8_t*)iobuf_ptr, 65536u);
-  wuffs_drop_in__stb__load0(&srcbuf, clbk, user, x, y, comp, 1, 1);
+  wuffs_drop_in__stb__load0(&srcbuf, clbk, user, x, y, comp, 0, 1);
   free(iobuf_ptr);
   return wuffs_drop_in__stb__g_failure_reason == NULL;
 }
@@ -503,7 +535,7 @@ stbi_info_from_file(                  //
   clbk.read = &wuffs_drop_in__stb__file_callbacks__read;
   clbk.skip = &wuffs_drop_in__stb__file_callbacks__skip;
   clbk.eof = &wuffs_drop_in__stb__file_callbacks__eof;
-  wuffs_drop_in__stb__load0(&srcbuf, &clbk, f, x, y, comp, 1, 1);
+  wuffs_drop_in__stb__load0(&srcbuf, &clbk, f, x, y, comp, 0, 1);
   free(iobuf_ptr);
   return wuffs_drop_in__stb__g_failure_reason == NULL;
 }
