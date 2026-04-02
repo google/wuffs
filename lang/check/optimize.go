@@ -82,6 +82,25 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 			if n != nil && (n.Cmp(advance) >= 0) {
 				retOK = true
 			}
+
+			// OK if i is (base + c1) and j is (base + c2) with
+			// the same base expression, and ((c2 - c1) >= advance).
+			if !retOK && (i.Operator() == t.IDXBinaryPlus) {
+				iBase, iConst := i.LHS().AsExpr(), i.RHS().AsExpr().ConstValue()
+				if iConst == nil {
+					iBase, iConst = i.RHS().AsExpr(), i.LHS().AsExpr().ConstValue()
+				}
+				jBase, jConst := j.LHS().AsExpr(), j.RHS().AsExpr().ConstValue()
+				if jConst == nil {
+					jBase, jConst = j.RHS().AsExpr(), j.LHS().AsExpr().ConstValue()
+				}
+				if (iConst != nil) && (jConst != nil) && iBase.Eq(jBase) {
+					n := big.NewInt(0).Sub(jConst, iConst)
+					if n.Cmp(advance) >= 0 {
+						retOK = true
+					}
+				}
+			}
 		}
 	}
 

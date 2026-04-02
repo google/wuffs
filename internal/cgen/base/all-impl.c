@@ -164,6 +164,8 @@ const uint32_t wuffs_private_impl__pixel_format__bits_per_channel[16] = {
 
 // ¡ INSERT base/pixconv-submodule-x86-avx2.c.
 
+// ¡ INSERT base/pixconv-submodule-arm-neon.c.
+
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
         // defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)

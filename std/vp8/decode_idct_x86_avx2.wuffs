@@ -1,0 +1,324 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 4x4 inverse DCT pair, AVX2 version processing 2 adjacent blocks
+// simultaneously. Lower 128-bit lane = block A, upper 128-bit lane = block B.
+// The butterfly operates independently per lane, doubling throughput.
+//
+// Uses the same mulhi_epi16 trick as the SSE4.2 version: K = k + 65536, so
+//   (x * K) >> 16 = mulhi(x, k) + x
+// with k1 = 20091 (cos) and k2 = 35468 as u16 = -30068 as i16 (sin).
+
+pri func decoder.idct_add_pair_x86_avx2!(dst: slice base.u8, stride: base.u32,
+        coeff_offset_a: base.u32[..= 384], coeff_offset_b: base.u32[..= 384]),
+        choose cpu_arch >= x86_avx2,
+{
+    var util128 : base.x86_sse42_utility
+    var util256 : base.x86_avx2_utility
+
+    var k1      : base.x86_m256i
+    var k2      : base.x86_m256i
+    var k_4     : base.x86_m256i
+    var k_0_128 : base.x86_m128i
+
+    var row0 : base.x86_m256i
+    var row1 : base.x86_m256i
+    var row2 : base.x86_m256i
+    var row3 : base.x86_m256i
+
+    var la : base.x86_m128i
+    var lb : base.x86_m128i
+
+    var a  : base.x86_m256i
+    var b  : base.x86_m256i
+    var c  : base.x86_m256i
+    var d  : base.x86_m256i
+    var c1 : base.x86_m256i
+    var c2 : base.x86_m256i
+    var c3 : base.x86_m256i
+    var c4 : base.x86_m256i
+    var d1 : base.x86_m256i
+    var d2 : base.x86_m256i
+    var d3 : base.x86_m256i
+    var d4 : base.x86_m256i
+
+    var tr0 : base.x86_m256i
+    var tr1 : base.x86_m256i
+    var tr2 : base.x86_m256i
+    var tr3 : base.x86_m256i
+    var ts0 : base.x86_m256i
+    var ts1 : base.x86_m256i
+    var ts2 : base.x86_m256i
+    var ts3 : base.x86_m256i
+
+    var oa : base.x86_m128i
+    var ob : base.x86_m128i
+
+    var off_a : base.u32[..= 384]
+    var off_b : base.u32[..= 384]
+    var i     : base.u32
+
+    off_a = args.coeff_offset_a
+    off_b = args.coeff_offset_b
+
+    k1 = util256.make_m256i_repeat_u16(a: 20091)
+    k2 = util256.make_m256i_repeat_u16(a: 35468)
+    k_4 = util256.make_m256i_repeat_u16(a: 4)
+    k_0_128 = util128.make_m128i_zeroes()
+
+    // Load 4 rows from both blocks. Each row: load 4 i32, pack to i16,
+    // combine lanes [A | B].
+
+    // Row 0.
+    assert off_a <= (off_a + 4) via "a <= (a + b): 0 <= b"(b: 4)
+    assert off_b <= (off_b + 4) via "a <= (a + b): 0 <= b"(b: 4)
+    la = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_a .. off_a + 4])._mm_packs_epi32(b: k_0_128)
+    lb = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_b .. off_b + 4])._mm_packs_epi32(b: k_0_128)
+    row0 = la._mm256_castsi128_si256()._mm256_inserti128_si256(b: lb, imm8: 1)
+
+    // Row 1.
+    assert (off_a + 4) <= (off_a + 8) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off_b + 4) <= (off_b + 8) via "a <= (a + b): 0 <= b"(b: 4)
+    la = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_a + 4 .. off_a + 8])._mm_packs_epi32(b: k_0_128)
+    lb = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_b + 4 .. off_b + 8])._mm_packs_epi32(b: k_0_128)
+    row1 = la._mm256_castsi128_si256()._mm256_inserti128_si256(b: lb, imm8: 1)
+
+    // Row 2.
+    assert (off_a + 8) <= (off_a + 12) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off_b + 8) <= (off_b + 12) via "a <= (a + b): 0 <= b"(b: 4)
+    la = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_a + 8 .. off_a + 12])._mm_packs_epi32(b: k_0_128)
+    lb = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_b + 8 .. off_b + 12])._mm_packs_epi32(b: k_0_128)
+    row2 = la._mm256_castsi128_si256()._mm256_inserti128_si256(b: lb, imm8: 1)
+
+    // Row 3.
+    assert (off_a + 12) <= (off_a + 16) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off_b + 12) <= (off_b + 16) via "a <= (a + b): 0 <= b"(b: 4)
+    la = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_a + 12 .. off_a + 16])._mm_packs_epi32(b: k_0_128)
+    lb = util128.make_m128i_slice_u32lex4(a: this.mb_coeffs[off_b + 12 .. off_b + 16])._mm_packs_epi32(b: k_0_128)
+    row3 = la._mm256_castsi128_si256()._mm256_inserti128_si256(b: lb, imm8: 1)
+
+    // ---- Column pass (16-bit butterfly, per-lane independent) ----
+    a = row0._mm256_add_epi16(b: row2)
+    b = row0._mm256_sub_epi16(b: row2)
+
+    c1 = row1._mm256_mulhi_epi16(b: k2)
+    c2 = row3._mm256_mulhi_epi16(b: k1)
+    c3 = row1._mm256_sub_epi16(b: row3)
+    c4 = c1._mm256_sub_epi16(b: c2)
+    c = c3._mm256_add_epi16(b: c4)
+
+    d1 = row1._mm256_mulhi_epi16(b: k1)
+    d2 = row3._mm256_mulhi_epi16(b: k2)
+    d3 = row1._mm256_add_epi16(b: row3)
+    d4 = d1._mm256_add_epi16(b: d2)
+    d = d3._mm256_add_epi16(b: d4)
+
+    row0 = a._mm256_add_epi16(b: d)
+    row1 = b._mm256_add_epi16(b: c)
+    row2 = b._mm256_sub_epi16(b: c)
+    row3 = a._mm256_sub_epi16(b: d)
+
+    // ---- Transpose 4x4 i16 per lane (upper halves stay zero) ----
+    tr0 = row0._mm256_unpacklo_epi16(b: row1)
+    tr1 = row2._mm256_unpacklo_epi16(b: row3)
+    tr2 = row0._mm256_unpackhi_epi16(b: row1)
+    tr3 = row2._mm256_unpackhi_epi16(b: row3)
+    ts0 = tr0._mm256_unpacklo_epi32(b: tr1)
+    ts1 = tr0._mm256_unpackhi_epi32(b: tr1)
+    ts2 = tr2._mm256_unpacklo_epi32(b: tr3)
+    ts3 = tr2._mm256_unpackhi_epi32(b: tr3)
+    row0 = ts0._mm256_unpacklo_epi64(b: ts2)
+    row1 = ts0._mm256_unpackhi_epi64(b: ts2)
+    row2 = ts1._mm256_unpacklo_epi64(b: ts3)
+    row3 = ts1._mm256_unpackhi_epi64(b: ts3)
+
+    // ---- Row pass: butterfly with +4 rounding bias and >>3 ----
+    row0 = row0._mm256_add_epi16(b: k_4)
+
+    a = row0._mm256_add_epi16(b: row2)
+    b = row0._mm256_sub_epi16(b: row2)
+
+    c1 = row1._mm256_mulhi_epi16(b: k2)
+    c2 = row3._mm256_mulhi_epi16(b: k1)
+    c3 = row1._mm256_sub_epi16(b: row3)
+    c4 = c1._mm256_sub_epi16(b: c2)
+    c = c3._mm256_add_epi16(b: c4)
+
+    d1 = row1._mm256_mulhi_epi16(b: k1)
+    d2 = row3._mm256_mulhi_epi16(b: k2)
+    d3 = row1._mm256_add_epi16(b: row3)
+    d4 = d1._mm256_add_epi16(b: d2)
+    d = d3._mm256_add_epi16(b: d4)
+
+    row0 = a._mm256_add_epi16(b: d)._mm256_srai_epi16(imm8: 3)
+    row1 = b._mm256_add_epi16(b: c)._mm256_srai_epi16(imm8: 3)
+    row2 = b._mm256_sub_epi16(b: c)._mm256_srai_epi16(imm8: 3)
+    row3 = a._mm256_sub_epi16(b: d)._mm256_srai_epi16(imm8: 3)
+
+    // ---- Transpose again ----
+    tr0 = row0._mm256_unpacklo_epi16(b: row1)
+    tr1 = row2._mm256_unpacklo_epi16(b: row3)
+    tr2 = row0._mm256_unpackhi_epi16(b: row1)
+    tr3 = row2._mm256_unpackhi_epi16(b: row3)
+    ts0 = tr0._mm256_unpacklo_epi32(b: tr1)
+    ts1 = tr0._mm256_unpackhi_epi32(b: tr1)
+    ts2 = tr2._mm256_unpacklo_epi32(b: tr3)
+    ts3 = tr2._mm256_unpackhi_epi32(b: tr3)
+    row0 = ts0._mm256_unpacklo_epi64(b: ts2)
+    row1 = ts0._mm256_unpackhi_epi64(b: ts2)
+    row2 = ts1._mm256_unpacklo_epi64(b: ts3)
+    row3 = ts1._mm256_unpackhi_epi64(b: ts3)
+
+    // ---- Add to prediction and clamp to [0, 255] ----
+    // Extract IDCT results from 256-bit lanes to 128-bit, combine A+B in one
+    // m128i, load 8 prediction bytes, zero-extend, add, clamp, store as u64.
+
+    // Row 0.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        oa = row0._mm256_castsi256_si128()
+        ob = row0._mm256_extracti128_si256(imm8: 1)
+        la = oa._mm_unpacklo_epi64(b: ob)
+        lb = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0_128)
+        la = lb._mm_add_epi16(b: la)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 1.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        oa = row1._mm256_castsi256_si128()
+        ob = row1._mm256_extracti128_si256(imm8: 1)
+        la = oa._mm_unpacklo_epi64(b: ob)
+        lb = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0_128)
+        la = lb._mm_add_epi16(b: la)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 2.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        oa = row2._mm256_castsi256_si128()
+        ob = row2._mm256_extracti128_si256(imm8: 1)
+        la = oa._mm_unpacklo_epi64(b: ob)
+        lb = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0_128)
+        la = lb._mm_add_epi16(b: la)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 3.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        oa = row3._mm256_castsi256_si128()
+        ob = row3._mm256_extracti128_si256(imm8: 1)
+        la = oa._mm_unpacklo_epi64(b: ob)
+        lb = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0_128)
+        la = lb._mm_add_epi16(b: la)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+
+    // Clear both blocks' coefficients.
+    i = 0
+    while i < 16 {
+        assert (off_a + i) < 400 via "a < b: a < c; c <= b"(c: 400)
+        assert (off_b + i) < 400 via "a < b: a < c; c <= b"(c: 400)
+        this.mb_coeffs[off_a + i] = 0
+        this.mb_coeffs[off_b + i] = 0
+        i += 1
+    }
+}
+
+// idct_dc_add_pair_x86_avx2! adds DC-only offsets to two adjacent 4x4 blocks.
+// Pure SSE42 output: precompute combined DC in one m128i, no 256-bit ops needed.
+pri func decoder.idct_dc_add_pair_x86_avx2!(dst: slice base.u8, stride: base.u32,
+        coeff_offset_a: base.u32[..= 384], coeff_offset_b: base.u32[..= 384]),
+        choose cpu_arch >= x86_avx2,
+{
+    var util128 : base.x86_sse42_utility
+
+    var k_0 : base.x86_m128i
+    var dc  : base.x86_m128i
+    var la  : base.x86_m128i
+    var lb  : base.x86_m128i
+
+    var off_a : base.u32[..= 384]
+    var off_b : base.u32[..= 384]
+    var dc_a  : base.u32
+    var dc_b  : base.u32
+
+    off_a = args.coeff_offset_a
+    off_b = args.coeff_offset_b
+
+    k_0 = util128.make_m128i_zeroes()
+
+    // Compute DC for each block: asr3(dc + 4).
+    dc_a = this.mb_coeffs[off_a] ~mod+ 4
+    dc_a = (dc_a >> 3) | ((0 ~mod- (dc_a >> 31)) ~mod<< 29)
+    this.mb_coeffs[off_a] = 0
+
+    dc_b = this.mb_coeffs[off_b] ~mod+ 4
+    dc_b = (dc_b >> 3) | ((0 ~mod- (dc_b >> 31)) ~mod<< 29)
+    this.mb_coeffs[off_b] = 0
+
+    // Combine: [dc_a×4, dc_b×4] as 8 i16 in one m128i.
+    la = util128.make_m128i_repeat_u16(a: (dc_a & 0xFFFF) as base.u16)
+    lb = util128.make_m128i_repeat_u16(a: (dc_b & 0xFFFF) as base.u16)
+    dc = la._mm_unpacklo_epi64(b: lb)
+
+    // Row 0.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        la = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0)
+        la = la._mm_add_epi16(b: dc)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 1.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        la = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0)
+        la = la._mm_add_epi16(b: dc)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 2.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        la = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0)
+        la = la._mm_add_epi16(b: dc)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 3.
+    if 8 <= args.dst.length() {
+        assert args.dst.length() >= 8 via "a >= b: b <= a"()
+        la = util128.make_m128i_single_u64(a: args.dst.peek_u64le())._mm_unpacklo_epi8(b: k_0)
+        la = la._mm_add_epi16(b: dc)._mm_packus_epi16(b: la)
+        args.dst.poke_u64le!(a: la.truncate_u64())
+    }
+}

@@ -1,0 +1,357 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 uses two 4x4 transforms:
+// 1. Inverse DCT for Y/U/V residual blocks
+// 2. Walsh-Hadamard Transform (WHT) for Y2 DC block
+//
+// Coefficients are stored as base.u16 (2's complement). All intermediate
+// computation uses base.u32 with modular arithmetic (~mod operators).
+//
+// IMPORTANT: VP8 arithmetic is signed. Right shifts in the IDCT must be
+// arithmetic (sign-preserving), not logical. Wuffs's >> on base.u32 is
+// logical, so we use asr16/asr3 helpers for arithmetic right shift.
+
+// asr16! performs branchless arithmetic right shift by 16 on a u32 value
+// representing a signed 32-bit quantity. Preserves the sign bit.
+pri func decoder.asr16!(v: base.u32) base.u32 {
+    // sign = 0 or 1; (0 ~mod- sign) = 0x00000000 or 0xFFFFFFFF
+    return (args.v >> 16) | ((0 ~mod- (args.v >> 31)) ~mod<< 16)
+}
+
+// asr3! performs branchless arithmetic right shift by 3 on a u32 value
+// representing a signed 32-bit quantity. Preserves the sign bit.
+pri func decoder.asr3!(v: base.u32) base.u32 {
+    return (args.v >> 3) | ((0 ~mod- (args.v >> 31)) ~mod<< 29)
+}
+
+// idct_add! performs a 4x4 inverse DCT and adds the result to the prediction
+// block in the workbuf. The 16 input coefficients start at mb_coeffs[coeff_offset].
+pri func decoder.idct_add!(dst: slice base.u8, stride: base.u32, coeff_offset: base.u32[..= 384]),
+        choosy,
+{
+    var in0  : base.u32
+    var in1  : base.u32
+    var in2  : base.u32
+    var in3  : base.u32
+    var t0   : base.u32
+    var t1   : base.u32
+    var t2   : base.u32
+    var t3   : base.u32
+    var d0   : base.u32
+    var d1   : base.u32
+    var d2   : base.u32
+    var d3   : base.u32
+    var c1   : base.u32
+    var c2   : base.u32
+    var sh   : base.u32
+    var temp : array[16] base.u32
+    var i    : base.u32
+    var j    : base.u32
+    var val  : base.u32
+    var idx  : base.u64
+    var row  : base.u32
+
+    // Column pass: transform columns of the 4x4 matrix.
+    i = 0
+    while i < 4,
+            inv i <= 4,
+    {
+        assert i < 4 via "a < b: a < c; c <= b"(c: 4)
+        in0 = this.mb_coeffs[args.coeff_offset + i]
+        in1 = this.mb_coeffs[args.coeff_offset + i + 4]
+        in2 = this.mb_coeffs[args.coeff_offset + i + 8]
+        in3 = this.mb_coeffs[args.coeff_offset + i + 12]
+
+        t0 = in0 ~mod+ in2
+        t1 = in0 ~mod- in2
+
+        // c1 = asr16(in1 * cospi8sqrt2minus1) + in1
+        sh = this.asr16!(v: in1 ~mod* 20091)
+        c1 = sh ~mod+ in1
+        // c2 = asr16(in3 * cospi8sqrt2minus1) + in3
+        sh = this.asr16!(v: in3 ~mod* 20091)
+        c2 = sh ~mod+ in3
+        // t2 = asr16(in1 * sinpi8sqrt2) - c2
+        sh = this.asr16!(v: in1 ~mod* 35468)
+        t2 = sh ~mod- c2
+        // t3 = c1 + asr16(in3 * sinpi8sqrt2)
+        sh = this.asr16!(v: in3 ~mod* 35468)
+        t3 = c1 ~mod+ sh
+
+        temp[i] = t0 ~mod+ t3
+        temp[i + 12] = t0 ~mod- t3
+        temp[i + 4] = t1 ~mod+ t2
+        temp[i + 8] = t1 ~mod- t2
+
+        i += 1
+    }
+
+    // Row pass: transform rows, add to prediction, and clamp.
+    row = 0
+    while row < 4 {
+        j = row * 4
+        in0 = temp[j] ~mod+ 4
+        in1 = temp[j + 1]
+        in2 = temp[j + 2]
+        in3 = temp[j + 3]
+
+        t0 = in0 ~mod+ in2
+        t1 = in0 ~mod- in2
+        sh = this.asr16!(v: in1 ~mod* 20091)
+        c1 = sh ~mod+ in1
+        sh = this.asr16!(v: in3 ~mod* 20091)
+        c2 = sh ~mod+ in3
+        sh = this.asr16!(v: in1 ~mod* 35468)
+        t2 = sh ~mod- c2
+        sh = this.asr16!(v: in3 ~mod* 35468)
+        t3 = c1 ~mod+ sh
+
+        d0 = this.asr3!(v: t0 ~mod+ t3)
+        d1 = this.asr3!(v: t1 ~mod+ t2)
+        d2 = this.asr3!(v: t1 ~mod- t2)
+        d3 = this.asr3!(v: t0 ~mod- t3)
+
+        // Add to prediction and clamp to [0, 255].
+        idx = (row as base.u64) * (args.stride as base.u64)
+
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ d0
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ d1
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ d2
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ d3
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+
+        row += 1
+    }
+
+    // Clear the coefficients.
+    i = 0
+    while i < 16 {
+        assert (args.coeff_offset + i) < 400 via "a < b: a < c; c <= b"(c: 400)
+        this.mb_coeffs[args.coeff_offset + i] = 0
+        i += 1
+    }
+}
+
+// idct_dc_add! performs a simplified IDCT when only the DC coefficient is
+// non-zero. Adds asr3(dc + 4) to each of the 16 prediction pixels.
+pri func decoder.idct_dc_add!(dst: slice base.u8, stride: base.u32, coeff_offset: base.u32[..= 384]),
+        choosy,
+{
+    var dc  : base.u32
+    var row : base.u32
+    var idx : base.u64
+    var val : base.u32
+
+    dc = this.asr3!(v: this.mb_coeffs[args.coeff_offset] ~mod+ 4)
+    this.mb_coeffs[args.coeff_offset] = 0
+
+    row = 0
+    while row < 4 {
+        idx = (row as base.u64) * (args.stride as base.u64)
+
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ dc
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ dc
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ dc
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+        idx ~mod+= 1
+        if idx < args.dst.length() {
+            val = (args.dst[idx] as base.u32) ~mod+ dc
+            if val > 255 {
+                if (val & 0x8000_0000) <> 0 {
+                    val = 0
+                } else {
+                    val = 255
+                }
+            }
+            args.dst[idx] = (val & 0xFF) as base.u8
+        }
+
+        row += 1
+    }
+}
+
+// idct_add_pair! performs 4x4 inverse DCT on two adjacent blocks and adds
+// the results to prediction. Block A at dst[0..], Block B at dst[4..].
+// The scalar default just calls idct_add for each block separately.
+pri func decoder.idct_add_pair!(dst: slice base.u8, stride: base.u32,
+        coeff_offset_a: base.u32[..= 384], coeff_offset_b: base.u32[..= 384]),
+        choosy,
+{
+    this.idct_add!(dst: args.dst, stride: args.stride, coeff_offset: args.coeff_offset_a)
+    if 4 <= args.dst.length() {
+        this.idct_add!(dst: args.dst[4 ..], stride: args.stride, coeff_offset: args.coeff_offset_b)
+    }
+}
+
+// idct_dc_add_pair! adds DC-only offsets to two adjacent 4x4 blocks.
+// Block A at dst[0..], Block B at dst[4..].
+pri func decoder.idct_dc_add_pair!(dst: slice base.u8, stride: base.u32,
+        coeff_offset_a: base.u32[..= 384], coeff_offset_b: base.u32[..= 384]),
+        choosy,
+{
+    this.idct_dc_add!(dst: args.dst, stride: args.stride, coeff_offset: args.coeff_offset_a)
+    if 4 <= args.dst.length() {
+        this.idct_dc_add!(dst: args.dst[4 ..], stride: args.stride, coeff_offset: args.coeff_offset_b)
+    }
+}
+
+// wht! performs a 4x4 Walsh-Hadamard Transform on the Y2 (DC) block.
+// Input: 16 DC coefficients from mb_coeffs[384..400].
+// Output: distributes the transformed DC values back to the 16 Y blocks.
+// Uses u32 modular arithmetic (2's complement).
+pri func decoder.wht!(coeff_offset: base.u32[..= 384]) {
+    var temp : array[16] base.u32
+    var i    : base.u32
+    var j    : base.u32
+    var a0   : base.u32
+    var a1   : base.u32
+    var a2   : base.u32
+    var a3   : base.u32
+    var b0   : base.u32
+    var b1   : base.u32
+    var b2   : base.u32
+    var b3   : base.u32
+
+    // Column pass.
+    i = 0
+    while i < 4,
+            inv i <= 4,
+    {
+        assert i < 4 via "a < b: a < c; c <= b"(c: 4)
+        a0 = this.mb_coeffs[args.coeff_offset + i]
+        a1 = this.mb_coeffs[args.coeff_offset + i + 4]
+        a2 = this.mb_coeffs[args.coeff_offset + i + 8]
+        a3 = this.mb_coeffs[args.coeff_offset + i + 12]
+
+        b0 = a0 ~mod+ a3
+        b1 = a1 ~mod+ a2
+        b2 = a1 ~mod- a2
+        b3 = a0 ~mod- a3
+
+        temp[i] = b0 ~mod+ b1
+        temp[i + 4] = b3 ~mod+ b2
+        temp[i + 8] = b0 ~mod- b1
+        temp[i + 12] = b3 ~mod- b2
+
+        i += 1
+    }
+
+    // Row pass.
+    i = 0
+    while i < 4 {
+        j = i * 4
+        a0 = temp[j]
+        a1 = temp[j + 1]
+        a2 = temp[j + 2]
+        a3 = temp[j + 3]
+
+        b0 = a0 ~mod+ a3
+        b1 = a1 ~mod+ a2
+        b2 = a1 ~mod- a2
+        b3 = a0 ~mod- a3
+
+        // Output DC values with rounding: asr3(val + 3)
+        temp[j] = this.asr3!(v: (b0 ~mod+ b1) ~mod+ 3)
+        temp[j + 1] = this.asr3!(v: (b3 ~mod+ b2) ~mod+ 3)
+        temp[j + 2] = this.asr3!(v: (b0 ~mod- b1) ~mod+ 3)
+        temp[j + 3] = this.asr3!(v: (b3 ~mod- b2) ~mod+ 3)
+
+        i += 1
+    }
+
+    // Distribute the 16 transformed DC values to the Y sub-blocks.
+    i = 0
+    while i < 16 {
+        this.mb_coeffs[i * 16] = temp[i]
+        i += 1
+    }
+
+    // Clear the Y2 block.
+    i = 0
+    while i < 16 {
+        assert (args.coeff_offset + i) < 400 via "a < b: a < c; c <= b"(c: 400)
+        this.mb_coeffs[args.coeff_offset + i] = 0
+        i += 1
+    }
+}

@@ -1,0 +1,349 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 16x16 intra prediction, SSE4.2 version.
+//
+// Uses SSE for the fill/compute inner loops. Reference pixel loading
+// (above row, left column) is scalar since those bytes are scattered.
+
+pri func decoder.predict_16x16_x86_sse42!(workbuf: slice base.u8, mode: base.u8[..= 3]),
+        choose cpu_arch >= x86_sse42,
+{
+    var util : base.x86_sse42_utility
+
+    // Reference pixel arrays (pre-loaded before reslicing workbuf).
+    var left_arr : array[16] base.u8
+    var tl       : base.u8
+    var s        : slice base.u8
+
+    // SSE registers.
+    var zero   : base.x86_m128i
+    var above  : base.x86_m128i
+    var diff   : base.x86_m128i
+    var result : base.x86_m128i
+    var sad    : base.x86_m128i
+    var tmp    : base.x86_m128i
+
+    var y_off : base.u64
+    var idx   : base.u64
+    var r     : base.u32
+    var sum   : base.u32
+    var count : base.u32
+    var dc    : base.u8
+
+    zero = util.make_m128i_zeroes()
+
+    // Calculate block offset.
+    y_off = (this.mb_y as base.u64) * 16 * (this.y_stride as base.u64)
+    y_off ~mod+= ((this.mb_x as base.u64) * 16)
+
+    // Load above row directly into SSE register (16 contiguous bytes).
+    if (this.mb_y > 0) and (y_off >= (this.y_stride as base.u64)) {
+        idx = y_off ~mod- (this.y_stride as base.u64)
+        if idx < args.workbuf.length() {
+            s = args.workbuf[idx ..]
+            if s.length() >= 16 {
+                above = util.make_m128i_slice128(a: s[.. 16])
+            }
+        }
+    } else {
+        above = util.make_m128i_repeat_u8(a: 127)
+    }
+
+    // Pre-load left column (16 bytes, stride apart).
+    r = 0
+    while r < 16 {
+        left_arr[r] = 129
+        if this.mb_x > 0 {
+            idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+            if idx > 0 {
+                idx -= 1
+                if idx < args.workbuf.length() {
+                    left_arr[r] = args.workbuf[idx]
+                }
+            }
+        }
+        r += 1
+    }
+
+    // Pre-load top-left pixel.
+    tl = 127
+    if (this.mb_x > 0) and (this.mb_y > 0) and (y_off > (this.y_stride as base.u64)) {
+        idx = (y_off - (this.y_stride as base.u64)) - 1
+        if idx < args.workbuf.length() {
+            tl = args.workbuf[idx]
+        }
+    } else if (this.mb_x == 0) and (this.mb_y > 0) {
+        tl = 129
+    }
+
+    // Reslice workbuf to block start for efficient output.
+    if y_off <= args.workbuf.length() {
+        args.workbuf = args.workbuf[y_off ..]
+    }
+
+    if args.mode == 0 {
+        // DC prediction: average of above + left pixels.
+        sum = 0
+        count = 0
+        if this.mb_y > 0 {
+            // Sum above row using SAD trick: sad_epu8(above, zero) gives byte sums.
+            sad = above._mm_sad_epu8(b: zero)
+            // sad = [sum_lo, 0, 0, 0, sum_hi, 0, 0, 0] in u16 layout.
+            tmp = sad._mm_srli_si128(imm8: 8)
+            sad = sad._mm_add_epi32(b: tmp)
+            sum = sad.truncate_u32()
+            count = 16
+        }
+        if this.mb_x > 0 {
+            r = 0
+            while r < 16 {
+                sum ~mod+= left_arr[r] as base.u32
+                r += 1
+            }
+            count ~mod+= 16
+        }
+        if count > 0 {
+            dc = (((sum ~mod+ (count >> 1)) / count) & 0xFF) as base.u8
+        } else {
+            dc = 128
+        }
+
+        result = util.make_m128i_repeat_u8(a: dc)
+        r = 0
+        while r < 16 {
+            if 16 <= args.workbuf.length() {
+                result.store_slice128!(a: args.workbuf[.. 16])
+            }
+            if (this.y_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else if args.mode == 1 {
+        // V prediction: replicate the above row.
+        r = 0
+        while r < 16 {
+            if 16 <= args.workbuf.length() {
+                above.store_slice128!(a: args.workbuf[.. 16])
+            }
+            if (this.y_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else if args.mode == 2 {
+        // H prediction: broadcast left[r] per row.
+        r = 0
+        while r < 16 {
+            result = util.make_m128i_repeat_u8(a: left_arr[r])
+            if 16 <= args.workbuf.length() {
+                result.store_slice128!(a: args.workbuf[.. 16])
+            }
+            if (this.y_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else {
+        // TM prediction: pred[r][c] = clamp(above[c] + left[r] - tl).
+        // Use saturating unsigned byte arithmetic (same approach as ARM NEON):
+        //   if left[r] >= tl: result = adds_epu8(above, left[r] - tl)
+        //   if left[r] <  tl: result = subs_epu8(above, tl - left[r])
+        r = 0
+        while r < 16 {
+            if left_arr[r] >= tl {
+                diff = util.make_m128i_repeat_u8(a: left_arr[r] ~mod- tl)
+                result = above._mm_adds_epu8(b: diff)
+            } else {
+                diff = util.make_m128i_repeat_u8(a: tl ~mod- left_arr[r])
+                result = above._mm_subs_epu8(b: diff)
+            }
+            if 16 <= args.workbuf.length() {
+                result.store_slice128!(a: args.workbuf[.. 16])
+            }
+            if (this.y_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+            }
+            r += 1
+        }
+    }
+}
+
+// VP8 8x8 chroma intra prediction, SSE4.2 version.
+//
+// Same 4 modes as 16x16 (DC, V, H, TM) but operating on 8x8 blocks
+// using the UV plane stride. Uses 64-bit SSE loads/stores.
+
+pri func decoder.predict_8x8_x86_sse42!(workbuf: slice base.u8, mode: base.u8[..= 3], plane_offset: base.u64),
+        choose cpu_arch >= x86_sse42,
+{
+    var util : base.x86_sse42_utility
+
+    // Reference pixel arrays (pre-loaded before reslicing workbuf).
+    var left_arr : array[8] base.u8
+    var tl       : base.u8
+    var s        : slice base.u8
+
+    // SSE registers.
+    var zero   : base.x86_m128i
+    var above  : base.x86_m128i
+    var diff   : base.x86_m128i
+    var result : base.x86_m128i
+    var sad    : base.x86_m128i
+
+    var uv_off : base.u64
+    var idx    : base.u64
+    var r      : base.u32
+    var sum    : base.u32
+    var count  : base.u32
+    var dc     : base.u8
+
+    zero = util.make_m128i_zeroes()
+
+    // Calculate block offset within the U or V plane.
+    uv_off = args.plane_offset ~mod+ ((this.mb_y as base.u64) * 8 * (this.uv_stride as base.u64))
+    uv_off ~mod+= ((this.mb_x as base.u64) * 8)
+
+    // Load above row directly into SSE register (8 contiguous bytes).
+    if (this.mb_y > 0) and (uv_off >= (this.uv_stride as base.u64)) {
+        idx = uv_off ~mod- (this.uv_stride as base.u64)
+        if idx < args.workbuf.length() {
+            s = args.workbuf[idx ..]
+            if s.length() >= 8 {
+                above = util.make_m128i_slice64(a: s[.. 8])
+            }
+        }
+    } else {
+        above = util.make_m128i_repeat_u8(a: 127)
+    }
+
+    // Pre-load left column (8 bytes, uv_stride apart).
+    r = 0
+    while r < 8 {
+        left_arr[r] = 129
+        if this.mb_x > 0 {
+            idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+            if idx > 0 {
+                idx -= 1
+                if idx < args.workbuf.length() {
+                    left_arr[r] = args.workbuf[idx]
+                }
+            }
+        }
+        r += 1
+    }
+
+    // Pre-load top-left pixel.
+    tl = 127
+    if (this.mb_x > 0) and (this.mb_y > 0) and (uv_off > (this.uv_stride as base.u64)) {
+        idx = (uv_off - (this.uv_stride as base.u64)) - 1
+        if idx < args.workbuf.length() {
+            tl = args.workbuf[idx]
+        }
+    } else if (this.mb_x == 0) and (this.mb_y > 0) {
+        tl = 129
+    }
+
+    // Reslice workbuf to block start for efficient output.
+    if uv_off <= args.workbuf.length() {
+        args.workbuf = args.workbuf[uv_off ..]
+    }
+
+    if args.mode == 0 {
+        // DC prediction: average of above + left pixels.
+        sum = 0
+        count = 0
+        if this.mb_y > 0 {
+            // SAD trick: sum 8 above bytes (upper 8 bytes of m128i are zero).
+            sad = above._mm_sad_epu8(b: zero)
+            sum = sad.truncate_u32()
+            count = 8
+        }
+        if this.mb_x > 0 {
+            r = 0
+            while r < 8 {
+                sum ~mod+= left_arr[r] as base.u32
+                r += 1
+            }
+            count ~mod+= 8
+        }
+        if count > 0 {
+            dc = (((sum ~mod+ (count >> 1)) / count) & 0xFF) as base.u8
+        } else {
+            dc = 128
+        }
+
+        result = util.make_m128i_repeat_u8(a: dc)
+        r = 0
+        while r < 8 {
+            if 8 <= args.workbuf.length() {
+                result.store_slice64!(a: args.workbuf[.. 8])
+            }
+            if (this.uv_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else if args.mode == 1 {
+        // V prediction: replicate the above row.
+        r = 0
+        while r < 8 {
+            if 8 <= args.workbuf.length() {
+                above.store_slice64!(a: args.workbuf[.. 8])
+            }
+            if (this.uv_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else if args.mode == 2 {
+        // H prediction: broadcast left[r] per row.
+        r = 0
+        while r < 8 {
+            result = util.make_m128i_repeat_u8(a: left_arr[r])
+            if 8 <= args.workbuf.length() {
+                result.store_slice64!(a: args.workbuf[.. 8])
+            }
+            if (this.uv_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+            }
+            r += 1
+        }
+
+    } else {
+        // TM prediction: pred[r][c] = clamp(above[c] + left[r] - tl).
+        // Use saturating unsigned byte arithmetic (same approach as ARM NEON):
+        //   if left[r] >= tl: result = adds_epu8(above, left[r] - tl)
+        //   if left[r] <  tl: result = subs_epu8(above, tl - left[r])
+        r = 0
+        while r < 8 {
+            if left_arr[r] >= tl {
+                diff = util.make_m128i_repeat_u8(a: left_arr[r] ~mod- tl)
+                result = above._mm_adds_epu8(b: diff)
+            } else {
+                diff = util.make_m128i_repeat_u8(a: tl ~mod- left_arr[r])
+                result = above._mm_subs_epu8(b: diff)
+            }
+            if 8 <= args.workbuf.length() {
+                result.store_slice64!(a: args.workbuf[.. 8])
+            }
+            if (this.uv_stride as base.u64) <= args.workbuf.length() {
+                args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+            }
+            r += 1
+        }
+    }
+}

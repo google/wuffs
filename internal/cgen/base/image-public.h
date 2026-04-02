@@ -370,6 +370,63 @@ wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & rr32) >> 16);
 }
 
+// wuffs_base__color_ycc_bt601__as__color_u32 converts from BT.601 studio-range
+// YCbCr (as used by VP8, H.264, etc.) to 0xAARRGGBB. The alpha bits are
+// always 0xFF.
+//
+// This uses the studio-range formula from ITU-R BT.601 / RFC 6386 section 13:
+//  R = 1.164*(Y-16) + 1.596*(Cr-128)
+//  G = 1.164*(Y-16) - 0.391*(Cb-128) - 0.813*(Cr-128)
+//  B = 1.164*(Y-16) + 2.018*(Cb-128)
+//
+// The fixed-point arithmetic matches libwebp's VP8YUVToR/G/B for bit-exact
+// results.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_ycc_bt601__as__color_u32(uint8_t yy,
+                                           uint8_t cb,
+                                           uint8_t cr) {
+  int32_t yc = ((int32_t)yy * 19077) >> 8;
+  int32_t rc = ((int32_t)cr * 26149) >> 8;
+  int32_t gc_u = ((int32_t)cb * 6419) >> 8;
+  int32_t gc_v = ((int32_t)cr * 13320) >> 8;
+  int32_t bc = ((int32_t)cb * 33050) >> 8;
+
+  int32_t rr = yc + rc - 14234;
+  int32_t gg = yc - gc_u - gc_v + 8708;
+  int32_t bb = yc + bc - 17685;
+
+  // Clip to [0, 255]: if in range [0, 16320], shift right by 6.
+  uint32_t r = (rr < 0) ? 0u : (rr > 16320) ? 255u : ((uint32_t)rr >> 6);
+  uint32_t g = (gg < 0) ? 0u : (gg > 16320) ? 255u : ((uint32_t)gg >> 6);
+  uint32_t b = (bb < 0) ? 0u : (bb > 16320) ? 255u : ((uint32_t)bb >> 6);
+
+  return 0xFF000000u | (r << 16) | (g << 8) | b;
+}
+
+// wuffs_base__color_ycc_bt601__as__color_u32_abgr is like
+// wuffs_base__color_ycc_bt601__as__color_u32 but the uint32_t returned is in
+// 0xAABBGGRR order, not 0xAARRGGBB.
+static inline uint32_t  //
+wuffs_base__color_ycc_bt601__as__color_u32_abgr(uint8_t yy,
+                                                uint8_t cb,
+                                                uint8_t cr) {
+  int32_t yc = ((int32_t)yy * 19077) >> 8;
+  int32_t rc = ((int32_t)cr * 26149) >> 8;
+  int32_t gc_u = ((int32_t)cb * 6419) >> 8;
+  int32_t gc_v = ((int32_t)cr * 13320) >> 8;
+  int32_t bc = ((int32_t)cb * 33050) >> 8;
+
+  int32_t rr = yc + rc - 14234;
+  int32_t gg = yc - gc_u - gc_v + 8708;
+  int32_t bb = yc + bc - 17685;
+
+  uint32_t r = (rr < 0) ? 0u : (rr > 16320) ? 255u : ((uint32_t)rr >> 6);
+  uint32_t g = (gg < 0) ? 0u : (gg > 16320) ? 255u : ((uint32_t)gg >> 6);
+  uint32_t b = (bb < 0) ? 0u : (bb > 16320) ? 255u : ((uint32_t)bb >> 6);
+
+  return 0xFF000000u | (b << 16) | (g << 8) | r;
+}
+
 // --------
 
 typedef uint8_t wuffs_base__pixel_blend;

@@ -1,0 +1,1675 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 normal loop filter, AVX2 version.
+//
+// Combines U and V plane processing: lower 128-bit lane = U, upper = V.
+// This halves function call overhead and compute instructions for chroma
+// filtering at MB and inner sub-block edges.
+
+// ============================================================================
+// normal_vfilter_mb_uv: filter6 for horizontal MB boundary edges (U+V)
+// ============================================================================
+
+pri func decoder.normal_vfilter_mb_uv_x86_avx2!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_avx2,
+{
+    var sse_util : base.x86_sse42_utility
+    var util     : base.x86_avx2_utility
+    var u_wb     : slice base.u8
+    var v_wb     : slice base.u8
+    var u_128    : base.x86_m128i
+    var v_128    : base.x86_m128i
+
+    var p3 : base.x86_m256i
+    var p2 : base.x86_m256i
+    var p1 : base.x86_m256i
+    var p0 : base.x86_m256i
+    var q0 : base.x86_m256i
+    var q1 : base.x86_m256i
+    var q2 : base.x86_m256i
+    var q3 : base.x86_m256i
+
+    var zero      : base.x86_m256i
+    var sign_bit  : base.x86_m256i
+    var kFE       : base.x86_m256i
+    var m_thresh  : base.x86_m256i
+    var m_ithresh : base.x86_m256i
+    var m_hthresh : base.x86_m256i
+    var k3        : base.x86_m256i
+    var k4        : base.x86_m256i
+    var k63       : base.x86_m256i
+    var k27       : base.x86_m256i
+    var k18       : base.x86_m256i
+    var k9        : base.x86_m256i
+
+    var mask    : base.x86_m256i
+    var not_hev : base.x86_m256i
+    var delta   : base.x86_m256i
+    var v3      : base.x86_m256i
+    var v4      : base.x86_m256i
+    var a1      : base.x86_m256i
+    var a2      : base.x86_m256i
+    var a3      : base.x86_m256i
+    var t1      : base.x86_m256i
+    var t2      : base.x86_m256i
+    var t3      : base.x86_m256i
+    var lo      : base.x86_m256i
+    var hi      : base.x86_m256i
+    var d_lo    : base.x86_m256i
+    var d_hi    : base.x86_m256i
+    var p0_adj  : base.x86_m256i
+    var q0_adj  : base.x86_m256i
+
+    // Bounds: need 4*uv_stride before each offset.
+    if args.u_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    if args.v_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+
+    // Set up U slice at p3 position.
+    u_wb = args.workbuf
+    if (args.u_off - (4 * (this.uv_stride as base.u64))) <= u_wb.length() {
+        u_wb = u_wb[args.u_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Set up V slice at p3 position.
+    v_wb = args.workbuf
+    if (args.v_off - (4 * (this.uv_stride as base.u64))) <= v_wb.length() {
+        v_wb = v_wb[args.v_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // ---- Load 8 rows: p3..q3, combining U (lower lane) + V (upper lane) ----
+
+    // p3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p3 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p2
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p2 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p1 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p0
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p0 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q0
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q0 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q1 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q2
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q2 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q3 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+
+    // ---- Constants ----
+    zero = util.make_m256i_zeroes()
+    sign_bit = util.make_m256i_repeat_u8(a: 0x80)
+    kFE = util.make_m256i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m256i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m256i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m256i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m256i_repeat_u8(a: 3)
+    k4 = util.make_m256i_repeat_u8(a: 4)
+    k63 = util.make_m256i_repeat_u16(a: 63)
+    k27 = util.make_m256i_repeat_u16(a: 27)
+    k18 = util.make_m256i_repeat_u16(a: 18)
+    k9 = util.make_m256i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: p1))
+    t2 = t1._mm256_and_si256(b: kFE)._mm256_srli_epi16(imm8: 1)
+    t3 = p0._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: p0))
+    t3 = t3._mm256_adds_epu8(b: t3)
+    t3 = t3._mm256_adds_epu8(b: t2)
+    mask = t3._mm256_subs_epu8(b: m_thresh)._mm256_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm256_subs_epu8(b: p2)._mm256_or_si256(b: p2._mm256_subs_epu8(b: p3))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p2._mm256_subs_epu8(b: p1)._mm256_or_si256(b: p1._mm256_subs_epu8(b: p2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q0._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: q0))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q1._mm256_subs_epu8(b: q2)._mm256_or_si256(b: q2._mm256_subs_epu8(b: q1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q2._mm256_subs_epu8(b: q3)._mm256_or_si256(b: q3._mm256_subs_epu8(b: q2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    t2 = q1._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: q1))
+    t3 = t1._mm256_subs_epu8(b: m_hthresh)._mm256_or_si256(b: t2._mm256_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm256_cmpeq_epi8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2._mm256_xor_si256(b: sign_bit)
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+    q2 = q2._mm256_xor_si256(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) ----
+    t1 = p1._mm256_subs_epi8(b: q1)
+    t2 = q0._mm256_subs_epi8(b: p0)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    delta = t1._mm256_adds_epi8(b: t2)
+    delta = delta._mm256_and_si256(b: mask)
+
+    // ---- Filter2 (HEV path): v4, v3 ----
+    v4 = delta._mm256_adds_epi8(b: k4)
+    lo = zero._mm256_unpacklo_epi8(b: v4)
+    hi = zero._mm256_unpackhi_epi8(b: v4)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v4 = lo._mm256_packs_epi16(b: hi)
+
+    v3 = delta._mm256_adds_epi8(b: k3)
+    lo = zero._mm256_unpacklo_epi8(b: v3)
+    hi = zero._mm256_unpackhi_epi8(b: v3)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v3 = lo._mm256_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    d_lo = zero._mm256_unpacklo_epi8(b: delta)._mm256_srai_epi16(imm8: 8)
+    d_hi = zero._mm256_unpackhi_epi8(b: delta)._mm256_srai_epi16(imm8: 8)
+
+    lo = d_lo._mm256_mullo_epi16(b: k27)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k27)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a1 = lo._mm256_packs_epi16(b: hi)
+
+    lo = d_lo._mm256_mullo_epi16(b: k18)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k18)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a2 = lo._mm256_packs_epi16(b: hi)
+
+    lo = d_lo._mm256_mullo_epi16(b: k9)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k9)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a3 = lo._mm256_packs_epi16(b: hi)
+
+    // ---- Merge HEV/!HEV ----
+    p0_adj = not_hev._mm256_andnot_si256(b: v3)._mm256_or_si256(b: a1._mm256_and_si256(b: not_hev))
+    p0 = p0._mm256_adds_epi8(b: p0_adj)
+    q0_adj = not_hev._mm256_andnot_si256(b: v4)._mm256_or_si256(b: a1._mm256_and_si256(b: not_hev))
+    q0 = q0._mm256_subs_epi8(b: q0_adj)
+    p1 = p1._mm256_adds_epi8(b: a2._mm256_and_si256(b: not_hev))
+    q1 = q1._mm256_subs_epi8(b: a2._mm256_and_si256(b: not_hev))
+    p2 = p2._mm256_adds_epi8(b: a3._mm256_and_si256(b: not_hev))
+    q2 = q2._mm256_subs_epi8(b: a3._mm256_and_si256(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm256_xor_si256(b: sign_bit)
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+    q2 = q2._mm256_xor_si256(b: sign_bit)
+
+    // ---- Store p2, p1, p0, q0, q1, q2 back to U and V planes ----
+
+    // U store: reslice to p2 position (u_off - 3*stride).
+    if args.u_off < (3 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    u_wb = args.workbuf
+    if (args.u_off - (3 * (this.uv_stride as base.u64))) <= u_wb.length() {
+        u_wb = u_wb[args.u_off - (3 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // V store: reslice to p2 position (v_off - 3*stride).
+    if args.v_off < (3 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    v_wb = args.workbuf
+    if (args.v_off - (3 * (this.uv_stride as base.u64))) <= v_wb.length() {
+        v_wb = v_wb[args.v_off - (3 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Store p2.
+    u_128 = p2._mm256_castsi256_si128()
+    v_128 = p2._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store p1.
+    u_128 = p1._mm256_castsi256_si128()
+    v_128 = p1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store p0.
+    u_128 = p0._mm256_castsi256_si128()
+    v_128 = p0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store q0.
+    u_128 = q0._mm256_castsi256_si128()
+    v_128 = q0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store q1.
+    u_128 = q1._mm256_castsi256_si128()
+    v_128 = q1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store q2.
+    u_128 = q2._mm256_castsi256_si128()
+    v_128 = q2._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+}
+
+// ============================================================================
+// normal_vfilter_inner_uv: filter4 for horizontal inner sub-block edges (U+V)
+// ============================================================================
+
+pri func decoder.normal_vfilter_inner_uv_x86_avx2!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_avx2,
+{
+    var sse_util : base.x86_sse42_utility
+    var util     : base.x86_avx2_utility
+    var u_wb     : slice base.u8
+    var v_wb     : slice base.u8
+    var u_128    : base.x86_m128i
+    var v_128    : base.x86_m128i
+
+    var p3 : base.x86_m256i
+    var p2 : base.x86_m256i
+    var p1 : base.x86_m256i
+    var p0 : base.x86_m256i
+    var q0 : base.x86_m256i
+    var q1 : base.x86_m256i
+    var q2 : base.x86_m256i
+    var q3 : base.x86_m256i
+
+    var zero      : base.x86_m256i
+    var sign_bit  : base.x86_m256i
+    var kFE       : base.x86_m256i
+    var m_thresh  : base.x86_m256i
+    var m_ithresh : base.x86_m256i
+    var m_hthresh : base.x86_m256i
+    var k1        : base.x86_m256i
+    var k3        : base.x86_m256i
+    var k4        : base.x86_m256i
+
+    var mask    : base.x86_m256i
+    var not_hev : base.x86_m256i
+    var delta   : base.x86_m256i
+    var v3      : base.x86_m256i
+    var v4      : base.x86_m256i
+    var a3      : base.x86_m256i
+    var t1      : base.x86_m256i
+    var t2      : base.x86_m256i
+    var t3      : base.x86_m256i
+    var lo      : base.x86_m256i
+    var hi      : base.x86_m256i
+
+    // Bounds: need 4*uv_stride before each offset.
+    if args.u_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    if args.v_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+
+    // Set up U slice at p3 position.
+    u_wb = args.workbuf
+    if (args.u_off - (4 * (this.uv_stride as base.u64))) <= u_wb.length() {
+        u_wb = u_wb[args.u_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Set up V slice at p3 position.
+    v_wb = args.workbuf
+    if (args.v_off - (4 * (this.uv_stride as base.u64))) <= v_wb.length() {
+        v_wb = v_wb[args.v_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // ---- Load 8 rows: p3..q3 ----
+
+    // p3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p3 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p2
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p2 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p1 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // p0
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    p0 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q0
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q0 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q1 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q2
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q2 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+    if ((this.uv_stride as base.u64) > u_wb.length()) or
+            ((this.uv_stride as base.u64) > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    v_wb = v_wb[(this.uv_stride as base.u64) ..]
+
+    // q3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_128 = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_128 = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    q3 = u_128._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_128, imm8: 1)
+
+    // ---- Constants ----
+    zero = util.make_m256i_zeroes()
+    sign_bit = util.make_m256i_repeat_u8(a: 0x80)
+    kFE = util.make_m256i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m256i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m256i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m256i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m256i_repeat_u8(a: 1)
+    k3 = util.make_m256i_repeat_u8(a: 3)
+    k4 = util.make_m256i_repeat_u8(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: p1))
+    t2 = t1._mm256_and_si256(b: kFE)._mm256_srli_epi16(imm8: 1)
+    t3 = p0._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: p0))
+    t3 = t3._mm256_adds_epu8(b: t3)
+    t3 = t3._mm256_adds_epu8(b: t2)
+    mask = t3._mm256_subs_epu8(b: m_thresh)._mm256_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm256_subs_epu8(b: p2)._mm256_or_si256(b: p2._mm256_subs_epu8(b: p3))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p2._mm256_subs_epu8(b: p1)._mm256_or_si256(b: p1._mm256_subs_epu8(b: p2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q0._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: q0))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q1._mm256_subs_epu8(b: q2)._mm256_or_si256(b: q2._mm256_subs_epu8(b: q1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q2._mm256_subs_epu8(b: q3)._mm256_or_si256(b: q3._mm256_subs_epu8(b: q2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    t2 = q1._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: q1))
+    t3 = t1._mm256_subs_epu8(b: m_hthresh)._mm256_or_si256(b: t2._mm256_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm256_cmpeq_epi8(b: zero)
+
+    // ---- Convert p1, p0, q0, q1 to signed ----
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+
+    // ---- Combined delta ----
+    t1 = p1._mm256_subs_epi8(b: q1)
+    t1 = not_hev._mm256_andnot_si256(b: t1)
+    t2 = q0._mm256_subs_epi8(b: p0)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    delta = t1._mm256_adds_epi8(b: t2)
+    delta = delta._mm256_and_si256(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta._mm256_adds_epi8(b: k4)
+    lo = zero._mm256_unpacklo_epi8(b: v4)
+    hi = zero._mm256_unpackhi_epi8(b: v4)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v4 = lo._mm256_packs_epi16(b: hi)
+
+    v3 = delta._mm256_adds_epi8(b: k3)
+    lo = zero._mm256_unpacklo_epi8(b: v3)
+    hi = zero._mm256_unpackhi_epi8(b: v3)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v3 = lo._mm256_packs_epi16(b: hi)
+
+    // Apply to p0, q0.
+    q0 = q0._mm256_subs_epi8(b: v4)
+    p0 = p0._mm256_adds_epi8(b: v3)
+
+    // ---- Filter4 !HEV: a3 = SignedShift(v4+1, 1) & not_hev ----
+    a3 = v4._mm256_adds_epi8(b: k1)
+    lo = zero._mm256_unpacklo_epi8(b: a3)
+    hi = zero._mm256_unpackhi_epi8(b: a3)
+    lo = lo._mm256_srai_epi16(imm8: 9)
+    hi = hi._mm256_srai_epi16(imm8: 9)
+    a3 = lo._mm256_packs_epi16(b: hi)
+    a3 = a3._mm256_and_si256(b: not_hev)
+
+    // Apply to p1, q1.
+    q1 = q1._mm256_subs_epi8(b: a3)
+    p1 = p1._mm256_adds_epi8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+
+    // ---- Store p1, p0, q0, q1 ----
+    if args.u_off < (2 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    u_wb = args.workbuf
+    if (args.u_off - (2 * (this.uv_stride as base.u64))) <= u_wb.length() {
+        u_wb = u_wb[args.u_off - (2 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+    if args.v_off < (2 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    v_wb = args.workbuf
+    if (args.v_off - (2 * (this.uv_stride as base.u64))) <= v_wb.length() {
+        v_wb = v_wb[args.v_off - (2 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Store p1.
+    u_128 = p1._mm256_castsi256_si128()
+    v_128 = p1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store p0.
+    u_128 = p0._mm256_castsi256_si128()
+    v_128 = p0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store q0.
+    u_128 = q0._mm256_castsi256_si128()
+    v_128 = q0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= u_wb.length() {
+        u_wb = u_wb[(this.uv_stride as base.u64) ..]
+    }
+    if (this.uv_stride as base.u64) <= v_wb.length() {
+        v_wb = v_wb[(this.uv_stride as base.u64) ..]
+    }
+
+    // Store q1.
+    u_128 = q1._mm256_castsi256_si128()
+    v_128 = q1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+}
+
+// ============================================================================
+// normal_hfilter_mb_uv: filter6 for vertical MB boundary edges (U+V)
+// 8x8 transpose + filter6 + reverse transpose, both planes simultaneously.
+// ============================================================================
+
+pri func decoder.normal_hfilter_mb_uv_x86_avx2!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_avx2,
+{
+    var sse_util : base.x86_sse42_utility
+    var util     : base.x86_avx2_utility
+    var u_wb     : slice base.u8
+    var v_wb     : slice base.u8
+    var stride   : base.u64
+    var u_ra     : base.x86_m128i
+    var u_rb     : base.x86_m128i
+    var v_ra     : base.x86_m128i
+    var v_rb     : base.x86_m128i
+    var u_128    : base.x86_m128i
+    var v_128    : base.x86_m128i
+
+    // Transpose scratch (AVX2 — each lane does independent 8x8 transpose).
+    var f0 : base.x86_m256i
+    var f1 : base.x86_m256i
+    var f2 : base.x86_m256i
+    var f3 : base.x86_m256i
+    var g0 : base.x86_m256i
+    var g1 : base.x86_m256i
+    var g2 : base.x86_m256i
+    var g3 : base.x86_m256i
+
+    var p3 : base.x86_m256i
+    var p2 : base.x86_m256i
+    var p1 : base.x86_m256i
+    var p0 : base.x86_m256i
+    var q0 : base.x86_m256i
+    var q1 : base.x86_m256i
+    var q2 : base.x86_m256i
+    var q3 : base.x86_m256i
+
+    var zero      : base.x86_m256i
+    var sign_bit  : base.x86_m256i
+    var kFE       : base.x86_m256i
+    var m_thresh  : base.x86_m256i
+    var m_ithresh : base.x86_m256i
+    var m_hthresh : base.x86_m256i
+    var k3        : base.x86_m256i
+    var k4        : base.x86_m256i
+    var k63       : base.x86_m256i
+    var k27       : base.x86_m256i
+    var k18       : base.x86_m256i
+    var k9        : base.x86_m256i
+
+    var mask    : base.x86_m256i
+    var not_hev : base.x86_m256i
+    var delta   : base.x86_m256i
+    var v3      : base.x86_m256i
+    var v4      : base.x86_m256i
+    var a1      : base.x86_m256i
+    var a2      : base.x86_m256i
+    var a3      : base.x86_m256i
+    var t1      : base.x86_m256i
+    var t2      : base.x86_m256i
+    var t3      : base.x86_m256i
+    var lo      : base.x86_m256i
+    var hi      : base.x86_m256i
+    var d_lo    : base.x86_m256i
+    var d_hi    : base.x86_m256i
+    var p0_adj  : base.x86_m256i
+    var q0_adj  : base.x86_m256i
+    var ra      : base.x86_m256i
+
+    stride = this.uv_stride as base.u64
+
+    // Bounds: need 4 bytes before q0 for p3 column.
+    if (args.u_off < 4) or (args.v_off < 4) {
+        return nothing
+    }
+    u_wb = args.workbuf
+    if (args.u_off - 4) > u_wb.length() {
+        return nothing
+    }
+    u_wb = u_wb[(args.u_off - 4) ..]
+
+    v_wb = args.workbuf
+    if (args.v_off - 4) > v_wb.length() {
+        return nothing
+    }
+    v_wb = v_wb[(args.v_off - 4) ..]
+
+    // ==== Load 8 rows of 8 bytes from each plane + forward transpose phase 1 ====
+    // Each pair: load U rows, load V rows, combine into m256i, interleave.
+
+    // Rows 0,1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f0 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 2,3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f1 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 4,5
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f2 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 6,7
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if stride > u_wb.length() {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    if stride > v_wb.length() {
+        return nothing
+    }
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f3 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // ==== Forward transpose phase 2 ====
+    g0 = f0._mm256_unpacklo_epi16(b: f1)
+    g1 = f0._mm256_unpackhi_epi16(b: f1)
+    g2 = f2._mm256_unpacklo_epi16(b: f3)
+    g3 = f2._mm256_unpackhi_epi16(b: f3)
+
+    // ==== Forward transpose phase 3 ====
+    f0 = g0._mm256_unpacklo_epi32(b: g2)
+    f1 = g0._mm256_unpackhi_epi32(b: g2)
+    f2 = g1._mm256_unpacklo_epi32(b: g3)
+    f3 = g1._mm256_unpackhi_epi32(b: g3)
+
+    // ==== Extract columns ====
+    p3 = f0
+    t1 = f0  // save for unpackhi
+    p2 = t1._mm256_unpackhi_epi64(b: t1)
+    p1 = f1
+    t1 = f1
+    p0 = t1._mm256_unpackhi_epi64(b: t1)
+    q0 = f2
+    t1 = f2
+    q1 = t1._mm256_unpackhi_epi64(b: t1)
+    q2 = f3
+    t1 = f3
+    q3 = t1._mm256_unpackhi_epi64(b: t1)
+
+    // ==== Filter computation (filter6) ====
+
+    zero = util.make_m256i_zeroes()
+    sign_bit = util.make_m256i_repeat_u8(a: 0x80)
+    kFE = util.make_m256i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m256i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m256i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m256i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m256i_repeat_u8(a: 3)
+    k4 = util.make_m256i_repeat_u8(a: 4)
+    k63 = util.make_m256i_repeat_u16(a: 63)
+    k27 = util.make_m256i_repeat_u16(a: 27)
+    k18 = util.make_m256i_repeat_u16(a: 18)
+    k9 = util.make_m256i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: p1))
+    t2 = t1._mm256_and_si256(b: kFE)._mm256_srli_epi16(imm8: 1)
+    t3 = p0._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: p0))
+    t3 = t3._mm256_adds_epu8(b: t3)
+    t3 = t3._mm256_adds_epu8(b: t2)
+    mask = t3._mm256_subs_epu8(b: m_thresh)._mm256_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm256_subs_epu8(b: p2)._mm256_or_si256(b: p2._mm256_subs_epu8(b: p3))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p2._mm256_subs_epu8(b: p1)._mm256_or_si256(b: p1._mm256_subs_epu8(b: p2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q0._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: q0))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q1._mm256_subs_epu8(b: q2)._mm256_or_si256(b: q2._mm256_subs_epu8(b: q1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q2._mm256_subs_epu8(b: q3)._mm256_or_si256(b: q3._mm256_subs_epu8(b: q2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    t2 = q1._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: q1))
+    t3 = t1._mm256_subs_epu8(b: m_hthresh)._mm256_or_si256(b: t2._mm256_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm256_cmpeq_epi8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2._mm256_xor_si256(b: sign_bit)
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+    q2 = q2._mm256_xor_si256(b: sign_bit)
+
+    // ---- Delta ----
+    t1 = p1._mm256_subs_epi8(b: q1)
+    t2 = q0._mm256_subs_epi8(b: p0)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    delta = t1._mm256_adds_epi8(b: t2)
+    delta = delta._mm256_and_si256(b: mask)
+
+    // ---- Filter2 (HEV path) ----
+    v4 = delta._mm256_adds_epi8(b: k4)
+    lo = zero._mm256_unpacklo_epi8(b: v4)
+    hi = zero._mm256_unpackhi_epi8(b: v4)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v4 = lo._mm256_packs_epi16(b: hi)
+
+    v3 = delta._mm256_adds_epi8(b: k3)
+    lo = zero._mm256_unpacklo_epi8(b: v3)
+    hi = zero._mm256_unpackhi_epi8(b: v3)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v3 = lo._mm256_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path) ----
+    d_lo = zero._mm256_unpacklo_epi8(b: delta)._mm256_srai_epi16(imm8: 8)
+    d_hi = zero._mm256_unpackhi_epi8(b: delta)._mm256_srai_epi16(imm8: 8)
+
+    lo = d_lo._mm256_mullo_epi16(b: k27)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k27)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a1 = lo._mm256_packs_epi16(b: hi)
+
+    lo = d_lo._mm256_mullo_epi16(b: k18)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k18)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a2 = lo._mm256_packs_epi16(b: hi)
+
+    lo = d_lo._mm256_mullo_epi16(b: k9)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    hi = d_hi._mm256_mullo_epi16(b: k9)._mm256_add_epi16(b: k63)._mm256_srai_epi16(imm8: 7)
+    a3 = lo._mm256_packs_epi16(b: hi)
+
+    // ---- Merge HEV/!HEV ----
+    p0_adj = not_hev._mm256_andnot_si256(b: v3)._mm256_or_si256(b: a1._mm256_and_si256(b: not_hev))
+    p0 = p0._mm256_adds_epi8(b: p0_adj)
+    q0_adj = not_hev._mm256_andnot_si256(b: v4)._mm256_or_si256(b: a1._mm256_and_si256(b: not_hev))
+    q0 = q0._mm256_subs_epi8(b: q0_adj)
+    p1 = p1._mm256_adds_epi8(b: a2._mm256_and_si256(b: not_hev))
+    q1 = q1._mm256_subs_epi8(b: a2._mm256_and_si256(b: not_hev))
+    p2 = p2._mm256_adds_epi8(b: a3._mm256_and_si256(b: not_hev))
+    q2 = q2._mm256_subs_epi8(b: a3._mm256_and_si256(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm256_xor_si256(b: sign_bit)
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+    q2 = q2._mm256_xor_si256(b: sign_bit)
+
+    // ==== Reverse transpose ====
+    f0 = p3._mm256_unpacklo_epi8(b: p2)
+    f1 = p1._mm256_unpacklo_epi8(b: p0)
+    f2 = q0._mm256_unpacklo_epi8(b: q1)
+    f3 = q2._mm256_unpacklo_epi8(b: q3)
+
+    g0 = f0._mm256_unpacklo_epi16(b: f1)
+    g1 = f0._mm256_unpackhi_epi16(b: f1)
+    g2 = f2._mm256_unpacklo_epi16(b: f3)
+    g3 = f2._mm256_unpackhi_epi16(b: f3)
+
+    f0 = g0._mm256_unpacklo_epi32(b: g2)
+    f1 = g0._mm256_unpackhi_epi32(b: g2)
+    f2 = g1._mm256_unpacklo_epi32(b: g3)
+    f3 = g1._mm256_unpackhi_epi32(b: g3)
+
+    // ==== Store 8 rows of 8 bytes to each plane ====
+    if (args.u_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    u_wb = args.workbuf[(args.u_off - 4) ..]
+    if (args.v_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    v_wb = args.workbuf[(args.v_off - 4) ..]
+
+    // Rows 0,1
+    u_128 = f0._mm256_castsi256_si128()
+    v_128 = f0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f0._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f0._mm256_castsi256_si128())
+    v_128 = f0._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f0._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 2,3
+    u_128 = f1._mm256_castsi256_si128()
+    v_128 = f1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f1._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f1._mm256_castsi256_si128())
+    v_128 = f1._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f1._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 4,5
+    u_128 = f2._mm256_castsi256_si128()
+    v_128 = f2._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f2._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f2._mm256_castsi256_si128())
+    v_128 = f2._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f2._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 6,7
+    u_128 = f3._mm256_castsi256_si128()
+    v_128 = f3._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f3._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f3._mm256_castsi256_si128())
+    v_128 = f3._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f3._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+}
+
+// ============================================================================
+// normal_hfilter_inner_uv: filter4 for vertical inner sub-block edges (U+V)
+// ============================================================================
+
+pri func decoder.normal_hfilter_inner_uv_x86_avx2!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_avx2,
+{
+    var sse_util : base.x86_sse42_utility
+    var util     : base.x86_avx2_utility
+    var u_wb     : slice base.u8
+    var v_wb     : slice base.u8
+    var stride   : base.u64
+    var u_ra     : base.x86_m128i
+    var u_rb     : base.x86_m128i
+    var v_ra     : base.x86_m128i
+    var v_rb     : base.x86_m128i
+    var u_128    : base.x86_m128i
+    var v_128    : base.x86_m128i
+
+    var f0 : base.x86_m256i
+    var f1 : base.x86_m256i
+    var f2 : base.x86_m256i
+    var f3 : base.x86_m256i
+    var g0 : base.x86_m256i
+    var g1 : base.x86_m256i
+    var g2 : base.x86_m256i
+    var g3 : base.x86_m256i
+
+    var p3 : base.x86_m256i
+    var p2 : base.x86_m256i
+    var p1 : base.x86_m256i
+    var p0 : base.x86_m256i
+    var q0 : base.x86_m256i
+    var q1 : base.x86_m256i
+    var q2 : base.x86_m256i
+    var q3 : base.x86_m256i
+
+    var zero      : base.x86_m256i
+    var sign_bit  : base.x86_m256i
+    var kFE       : base.x86_m256i
+    var m_thresh  : base.x86_m256i
+    var m_ithresh : base.x86_m256i
+    var m_hthresh : base.x86_m256i
+    var k1        : base.x86_m256i
+    var k3        : base.x86_m256i
+    var k4        : base.x86_m256i
+
+    var mask    : base.x86_m256i
+    var not_hev : base.x86_m256i
+    var delta   : base.x86_m256i
+    var v3      : base.x86_m256i
+    var v4      : base.x86_m256i
+    var a3      : base.x86_m256i
+    var t1      : base.x86_m256i
+    var t2      : base.x86_m256i
+    var t3      : base.x86_m256i
+    var lo      : base.x86_m256i
+    var hi      : base.x86_m256i
+    var ra      : base.x86_m256i
+
+    stride = this.uv_stride as base.u64
+
+    if (args.u_off < 4) or (args.v_off < 4) {
+        return nothing
+    }
+    u_wb = args.workbuf
+    if (args.u_off - 4) > u_wb.length() {
+        return nothing
+    }
+    u_wb = u_wb[(args.u_off - 4) ..]
+
+    v_wb = args.workbuf
+    if (args.v_off - 4) > v_wb.length() {
+        return nothing
+    }
+    v_wb = v_wb[(args.v_off - 4) ..]
+
+    // ==== Load + forward transpose ====
+
+    // Rows 0,1
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f0 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 2,3
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f1 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 4,5
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if (stride > u_wb.length()) or (stride > v_wb.length()) {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    v_wb = v_wb[stride ..]
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f2 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Rows 6,7
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_ra = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_ra = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    if stride > u_wb.length() {
+        return nothing
+    }
+    u_wb = u_wb[stride ..]
+    if stride > v_wb.length() {
+        return nothing
+    }
+    v_wb = v_wb[stride ..]
+    if (8 > u_wb.length()) or (8 > v_wb.length()) {
+        return nothing
+    }
+    u_rb = sse_util.make_m128i_slice64(a: u_wb[.. 8])
+    v_rb = sse_util.make_m128i_slice64(a: v_wb[.. 8])
+    ra = u_ra._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_ra, imm8: 1)
+    t1 = u_rb._mm256_castsi128_si256()._mm256_inserti128_si256(b: v_rb, imm8: 1)
+    f3 = ra._mm256_unpacklo_epi8(b: t1)
+
+    // Transpose phases 2,3
+    g0 = f0._mm256_unpacklo_epi16(b: f1)
+    g1 = f0._mm256_unpackhi_epi16(b: f1)
+    g2 = f2._mm256_unpacklo_epi16(b: f3)
+    g3 = f2._mm256_unpackhi_epi16(b: f3)
+
+    f0 = g0._mm256_unpacklo_epi32(b: g2)
+    f1 = g0._mm256_unpackhi_epi32(b: g2)
+    f2 = g1._mm256_unpacklo_epi32(b: g3)
+    f3 = g1._mm256_unpackhi_epi32(b: g3)
+
+    // Extract columns
+    p3 = f0
+    t1 = f0
+    p2 = t1._mm256_unpackhi_epi64(b: t1)
+    p1 = f1
+    t1 = f1
+    p0 = t1._mm256_unpackhi_epi64(b: t1)
+    q0 = f2
+    t1 = f2
+    q1 = t1._mm256_unpackhi_epi64(b: t1)
+    q2 = f3
+    t1 = f3
+    q3 = t1._mm256_unpackhi_epi64(b: t1)
+
+    // ==== Filter4 computation ====
+
+    zero = util.make_m256i_zeroes()
+    sign_bit = util.make_m256i_repeat_u8(a: 0x80)
+    kFE = util.make_m256i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m256i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m256i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m256i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m256i_repeat_u8(a: 1)
+    k3 = util.make_m256i_repeat_u8(a: 3)
+    k4 = util.make_m256i_repeat_u8(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: p1))
+    t2 = t1._mm256_and_si256(b: kFE)._mm256_srli_epi16(imm8: 1)
+    t3 = p0._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: p0))
+    t3 = t3._mm256_adds_epu8(b: t3)
+    t3 = t3._mm256_adds_epu8(b: t2)
+    mask = t3._mm256_subs_epu8(b: m_thresh)._mm256_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm256_subs_epu8(b: p2)._mm256_or_si256(b: p2._mm256_subs_epu8(b: p3))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p2._mm256_subs_epu8(b: p1)._mm256_or_si256(b: p1._mm256_subs_epu8(b: p2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q0._mm256_subs_epu8(b: q1)._mm256_or_si256(b: q1._mm256_subs_epu8(b: q0))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q1._mm256_subs_epu8(b: q2)._mm256_or_si256(b: q2._mm256_subs_epu8(b: q1))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+    t1 = q2._mm256_subs_epu8(b: q3)._mm256_or_si256(b: q3._mm256_subs_epu8(b: q2))
+    mask = mask._mm256_and_si256(b: t1._mm256_subs_epu8(b: m_ithresh)._mm256_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm256_subs_epu8(b: p0)._mm256_or_si256(b: p0._mm256_subs_epu8(b: p1))
+    t2 = q1._mm256_subs_epu8(b: q0)._mm256_or_si256(b: q0._mm256_subs_epu8(b: q1))
+    t3 = t1._mm256_subs_epu8(b: m_hthresh)._mm256_or_si256(b: t2._mm256_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm256_cmpeq_epi8(b: zero)
+
+    // ---- Convert to signed ----
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+
+    // ---- Combined delta ----
+    t1 = p1._mm256_subs_epi8(b: q1)
+    t1 = not_hev._mm256_andnot_si256(b: t1)
+    t2 = q0._mm256_subs_epi8(b: p0)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    t1 = t1._mm256_adds_epi8(b: t2)
+    delta = t1._mm256_adds_epi8(b: t2)
+    delta = delta._mm256_and_si256(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta._mm256_adds_epi8(b: k4)
+    lo = zero._mm256_unpacklo_epi8(b: v4)
+    hi = zero._mm256_unpackhi_epi8(b: v4)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v4 = lo._mm256_packs_epi16(b: hi)
+
+    v3 = delta._mm256_adds_epi8(b: k3)
+    lo = zero._mm256_unpacklo_epi8(b: v3)
+    hi = zero._mm256_unpackhi_epi8(b: v3)
+    lo = lo._mm256_srai_epi16(imm8: 11)
+    hi = hi._mm256_srai_epi16(imm8: 11)
+    v3 = lo._mm256_packs_epi16(b: hi)
+
+    q0 = q0._mm256_subs_epi8(b: v4)
+    p0 = p0._mm256_adds_epi8(b: v3)
+
+    // ---- Filter4 !HEV: a3 ----
+    a3 = v4._mm256_adds_epi8(b: k1)
+    lo = zero._mm256_unpacklo_epi8(b: a3)
+    hi = zero._mm256_unpackhi_epi8(b: a3)
+    lo = lo._mm256_srai_epi16(imm8: 9)
+    hi = hi._mm256_srai_epi16(imm8: 9)
+    a3 = lo._mm256_packs_epi16(b: hi)
+    a3 = a3._mm256_and_si256(b: not_hev)
+
+    q1 = q1._mm256_subs_epi8(b: a3)
+    p1 = p1._mm256_adds_epi8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1._mm256_xor_si256(b: sign_bit)
+    p0 = p0._mm256_xor_si256(b: sign_bit)
+    q0 = q0._mm256_xor_si256(b: sign_bit)
+    q1 = q1._mm256_xor_si256(b: sign_bit)
+
+    // ==== Reverse transpose (only p1, p0, q0, q1 modified — but we need to
+    // write all 8 columns back because the transpose mixes them) ====
+    f0 = p3._mm256_unpacklo_epi8(b: p2)
+    f1 = p1._mm256_unpacklo_epi8(b: p0)
+    f2 = q0._mm256_unpacklo_epi8(b: q1)
+    f3 = q2._mm256_unpacklo_epi8(b: q3)
+
+    g0 = f0._mm256_unpacklo_epi16(b: f1)
+    g1 = f0._mm256_unpackhi_epi16(b: f1)
+    g2 = f2._mm256_unpacklo_epi16(b: f3)
+    g3 = f2._mm256_unpackhi_epi16(b: f3)
+
+    f0 = g0._mm256_unpacklo_epi32(b: g2)
+    f1 = g0._mm256_unpackhi_epi32(b: g2)
+    f2 = g1._mm256_unpacklo_epi32(b: g3)
+    f3 = g1._mm256_unpackhi_epi32(b: g3)
+
+    // ==== Store ====
+    if (args.u_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    u_wb = args.workbuf[(args.u_off - 4) ..]
+    if (args.v_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    v_wb = args.workbuf[(args.v_off - 4) ..]
+
+    // Rows 0,1
+    u_128 = f0._mm256_castsi256_si128()
+    v_128 = f0._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f0._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f0._mm256_castsi256_si128())
+    v_128 = f0._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f0._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 2,3
+    u_128 = f1._mm256_castsi256_si128()
+    v_128 = f1._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f1._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f1._mm256_castsi256_si128())
+    v_128 = f1._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f1._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 4,5
+    u_128 = f2._mm256_castsi256_si128()
+    v_128 = f2._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f2._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f2._mm256_castsi256_si128())
+    v_128 = f2._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f2._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+
+    // Rows 6,7
+    u_128 = f3._mm256_castsi256_si128()
+    v_128 = f3._mm256_extracti128_si256(imm8: 1)
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+    if stride <= u_wb.length() {
+        u_wb = u_wb[stride ..]
+    }
+    if stride <= v_wb.length() {
+        v_wb = v_wb[stride ..]
+    }
+    u_128 = f3._mm256_castsi256_si128()._mm_unpackhi_epi64(b: f3._mm256_castsi256_si128())
+    v_128 = f3._mm256_extracti128_si256(imm8: 1)._mm_unpackhi_epi64(b: f3._mm256_extracti128_si256(imm8: 1))
+    if 8 <= u_wb.length() {
+        u_128.store_slice64!(a: u_wb[.. 8])
+    }
+    if 8 <= v_wb.length() {
+        v_128.store_slice64!(a: v_wb[.. 8])
+    }
+}

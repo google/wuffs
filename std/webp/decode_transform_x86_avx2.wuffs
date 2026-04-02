@@ -1,0 +1,674 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// --------
+
+pri func decoder.apply_transform_subtract_green_x86_avx2!(pix: slice base.u8),
+        choose cpu_arch >= x86_avx2,
+{
+    var util  : base.x86_avx2_utility
+    var tail  : slice base.u8
+    var v     : base.x86_m256i
+    var mask  : base.x86_m256i
+    var green : base.x86_m256i
+    var g_br  : base.x86_m256i
+
+    mask = util.make_m256i_repeat_u32(a: 0x0000_FF00)
+    tail = args.pix
+
+    while tail.length() >= 32 {
+        v = util.make_m256i_slice256(a: tail)
+        green = v._mm256_and_si256(b: mask)
+        g_br = green._mm256_srli_epi32(imm8: 8)._mm256_or_si256(
+                b: green._mm256_slli_epi32(imm8: 8))
+        v = v._mm256_add_epi8(b: g_br)
+        v.store_slice256!(a: tail[.. 32])
+        tail = tail[32 ..]
+    }
+
+    while tail.length() >= 4 {
+        tail[0] ~mod+= tail[1]
+        tail[2] ~mod+= tail[1]
+        tail = tail[4 ..]
+    }
+}
+
+// --------
+
+// cross_color inverse transform with AVX2.
+//
+// Per pixel: new_r = old_r + ((sign_ext(g) * g2r) >> 5) & 0xFF
+//            new_b = old_b + ((sign_ext(g) * g2b) >> 5) & 0xFF
+//                          + ((sign_ext(new_r) * r2b) >> 5) & 0xFF
+//
+// Uses i16 multiply (mullo_epi16) on sign-extended byte values.
+// shuffle_epi8 extracts green/red bytes to i16 lanes and scatters deltas back.
+
+pri func decoder.apply_transform_cross_color_x86_avx2!(pix: slice base.u8, tile_data: roslice base.u8),
+        choose cpu_arch >= x86_avx2,
+{
+    var tile_size_log2    : base.u32[..= 9]
+    var tiles_per_row     : base.u32[..= 16895]
+    var tmask             : base.u32[..= 0x1FF]
+    var do_subtract_green : base.bool
+    var y                 : base.u32[..= 0x4000]
+    var x                 : base.u32[..= 0x4008]
+    var t                 : base.u64
+    var tile_data         : roslice base.u8
+    var x_end             : base.u32
+
+    var g2r        : base.u32
+    var g2b        : base.u32
+    var r2b        : base.u32
+    var raw_g2r    : base.u8
+    var raw_g2b    : base.u8
+    var raw_r2b    : base.u8
+    var skip_bytes : base.u64
+
+    var b : base.u8
+    var g : base.u8
+    var r : base.u8
+
+    var util           : base.x86_avx2_utility
+    var pix            : base.x86_m256i
+    var green_i16      : base.x86_m256i
+    var red_i16        : base.x86_m256i
+    var new_r_i16      : base.x86_m256i
+    var delta_r_i16    : base.x86_m256i
+    var delta_b_i16    : base.x86_m256i
+    var g2r_vec        : base.x86_m256i
+    var g2b_vec        : base.x86_m256i
+    var r2b_vec        : base.x86_m256i
+    var delta_r_packed : base.x86_m256i
+    var delta_b_packed : base.x86_m256i
+
+    // Shuffle masks (same for both 128-bit lanes).
+    var green_shuf : base.x86_m256i
+    var red_shuf   : base.x86_m256i
+    var r_scatter  : base.x86_m256i
+    var b_scatter  : base.x86_m256i
+
+    // Fused subtract_green support.
+    var sg_mask  : base.x86_m256i
+    var sg_green : base.x86_m256i
+    var sg_br    : base.x86_m256i
+
+    tile_size_log2 = this.transform_tile_size_log2[1] as base.u32
+    tiles_per_row = (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
+    tmask = ((1 as base.u32) << tile_size_log2) - 1
+    do_subtract_green = this.fuse_subtract_green
+
+    // Extract green byte (offset 1 in each pixel) to i16 positions.
+    // Per 128-bit lane: bytes [1,_,5,_,9,_,13,_,0,0,0,0,0,0,0,0].
+    green_shuf = util.make_m256i_multiple_u32(
+            a00: 0x8005_8001, a01: 0x800D_8009,
+            a02: 0x8080_8080, a03: 0x8080_8080,
+            a04: 0x8005_8001, a05: 0x800D_8009,
+            a06: 0x8080_8080, a07: 0x8080_8080)
+
+    // Extract red byte (offset 2 in each pixel) to i16 positions.
+    red_shuf = util.make_m256i_multiple_u32(
+            a00: 0x8006_8002, a01: 0x800E_800A,
+            a02: 0x8080_8080, a03: 0x8080_8080,
+            a04: 0x8006_8002, a05: 0x800E_800A,
+            a06: 0x8080_8080, a07: 0x8080_8080)
+
+    // Scatter delta_r low bytes from i16 to red byte position (offset 2) in each pixel.
+    // i16 values at byte positions [0,_,2,_,4,_,6,_,...] → pixel byte [_,_,R,_] per pixel.
+    r_scatter = util.make_m256i_multiple_u32(
+            a00: 0x8000_8080, a01: 0x8002_8080,
+            a02: 0x8004_8080, a03: 0x8006_8080,
+            a04: 0x8000_8080, a05: 0x8002_8080,
+            a06: 0x8004_8080, a07: 0x8006_8080)
+
+    // Scatter delta_b low bytes to blue byte position (offset 0) in each pixel.
+    b_scatter = util.make_m256i_multiple_u32(
+            a00: 0x8080_8000, a01: 0x8080_8002,
+            a02: 0x8080_8004, a03: 0x8080_8006,
+            a04: 0x8080_8000, a05: 0x8080_8002,
+            a06: 0x8080_8004, a07: 0x8080_8006)
+
+    // Mask for extracting green bytes (fused subtract_green).
+    sg_mask = util.make_m256i_repeat_u32(a: 0x0000_FF00)
+
+    y = 0
+    while y < this.height {
+        assert y < 0x4000 via "a < b: a < c; c <= b"(c: this.height)
+
+        t = (4 * (y >> tile_size_log2) * tiles_per_row) as base.u64
+        tile_data = this.util.empty_slice_u8()
+        if t <= args.tile_data.length() {
+            tile_data = args.tile_data[t ..]
+        }
+
+        x = 0
+        while x < this.width,
+                inv y < 0x4000,
+        {
+            assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+
+            if ((x & tmask) == 0) and (tile_data.length() >= 4) {
+                raw_g2r = tile_data[0]
+                raw_g2b = tile_data[1]
+                raw_r2b = tile_data[2]
+                g2r = this.util.sign_extend_convert_u8_u32(a: raw_g2r)
+                g2b = this.util.sign_extend_convert_u8_u32(a: raw_g2b)
+                r2b = this.util.sign_extend_convert_u8_u32(a: raw_r2b)
+                tile_data = tile_data[4 ..]
+            }
+
+            // Compute end of this tile span.
+            x_end = (x | tmask) + 1
+            if x_end > this.width {
+                x_end = this.width
+            }
+
+            // Extend x_end across consecutive tiles with same coefficients.
+            while (x_end < this.width) and (tile_data.length() >= 4),
+                    inv y < 0x4000,
+            {
+                if (tile_data[0] <> raw_g2r) or (tile_data[1] <> raw_g2b) or (tile_data[2] <> raw_r2b) {
+                    break
+                }
+                tile_data = tile_data[4 ..]
+                // Safe: x_end < this.width <= 0x4000, so no actual wrap.
+                x_end = (x_end | tmask) ~mod+ 1
+                if x_end > this.width {
+                    x_end = this.width
+                }
+            }
+            if x_end > this.width {
+                x_end = this.width
+            }
+
+            // Skip identity tiles (all coefficients zero, no subtract_green).
+            if (g2r == 0) and (g2b == 0) and (r2b == 0) and (not do_subtract_green) {
+                if (x_end > x) and (x_end <= this.width) {
+                    skip_bytes = ((x_end - x) as base.u64) * 4
+                    assert x_end < 0x4001 via "a < b: a <= c; c < b"(c: this.width)
+                    x = x_end
+                    if skip_bytes <= args.pix.length() {
+                        args.pix = args.pix[skip_bytes ..]
+                    }
+                }
+            } else {
+                // Broadcast coefficients as i16.
+                g2r_vec = util.make_m256i_repeat_u16(a: (g2r & 0xFFFF) as base.u16)
+                g2b_vec = util.make_m256i_repeat_u16(a: (g2b & 0xFFFF) as base.u16)
+                r2b_vec = util.make_m256i_repeat_u16(a: (r2b & 0xFFFF) as base.u16)
+
+                // AVX2: process 8 pixels (32 bytes) per iteration.
+                if x_end >= 8 {
+                    while (x < this.width) and (x <= (x_end - 8)) and (args.pix.length() >= 32) and (x_end <= this.width),
+                            inv y < 0x4000,
+                    {
+                        pix = util.make_m256i_slice256(a: args.pix)
+
+                        // Extract green to i16, sign-extend.
+                        green_i16 = pix._mm256_shuffle_epi8(b: green_shuf)
+                        green_i16 = green_i16._mm256_slli_epi16(imm8: 8)._mm256_srai_epi16(imm8: 8)
+
+                        // delta_r = (green * g2r) >> 5
+                        delta_r_i16 = green_i16._mm256_mullo_epi16(b: g2r_vec)._mm256_srai_epi16(imm8: 5)
+
+                        // delta_b_from_green = (green * g2b) >> 5
+                        delta_b_i16 = green_i16._mm256_mullo_epi16(b: g2b_vec)._mm256_srai_epi16(imm8: 5)
+
+                        // Compute new_r (for r2b contribution) from ORIGINAL red
+                        // (before subtract_green), since cross_color uses coded red.
+                        red_i16 = pix._mm256_shuffle_epi8(b: red_shuf)
+                        red_i16 = red_i16._mm256_slli_epi16(imm8: 8)._mm256_srai_epi16(imm8: 8)
+                        new_r_i16 = red_i16._mm256_add_epi16(b: delta_r_i16)
+                        // Byte-truncate and sign-extend for the multiply.
+                        new_r_i16 = new_r_i16._mm256_slli_epi16(imm8: 8)._mm256_srai_epi16(imm8: 8)
+
+                        // delta_b_from_red = (new_r * r2b) >> 5
+                        delta_b_i16 = delta_b_i16._mm256_add_epi16(
+                                b: new_r_i16._mm256_mullo_epi16(b: r2b_vec)._mm256_srai_epi16(imm8: 5))
+
+                        // Scatter deltas back to pixel byte positions and add.
+                        delta_r_packed = delta_r_i16._mm256_shuffle_epi8(b: r_scatter)
+                        delta_b_packed = delta_b_i16._mm256_shuffle_epi8(b: b_scatter)
+                        pix = pix._mm256_add_epi8(b: delta_r_packed)
+                        pix = pix._mm256_add_epi8(b: delta_b_packed)
+
+                        // Fused subtract_green: add green to R and B AFTER
+                        // cross_color, so r2b uses the coded red, not red+green.
+                        if do_subtract_green {
+                            sg_green = pix._mm256_and_si256(b: sg_mask)
+                            sg_br = sg_green._mm256_srli_epi32(imm8: 8)._mm256_or_si256(
+                                    b: sg_green._mm256_slli_epi32(imm8: 8))
+                            pix = pix._mm256_add_epi8(b: sg_br)
+                        }
+
+                        pix.store_slice256!(a: args.pix[.. 32])
+                        args.pix = args.pix[32 ..]
+                        assert x < this.width via "a < b: a < c; c <= b"(c: this.width)
+                        assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+                        x += 8
+                    }
+                }
+
+                // Scalar tail for remaining pixels in this tile span.
+                while (x < x_end) and (x_end <= this.width),
+                        inv y < 0x4000,
+                {
+                    assert x < this.width via "a < b: a < c; c <= b"(c: x_end)
+                    assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+
+                    if args.pix.length() >= 4 {
+                        b = args.pix[0]
+                        g = args.pix[1]
+                        r = args.pix[2]
+                        r ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2r) >> 5) & 0xFF) as base.u8
+                        b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2b) >> 5) & 0xFF) as base.u8
+                        b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: r) ~mod* r2b) >> 5) & 0xFF) as base.u8
+                        if do_subtract_green {
+                            r ~mod+= g
+                            b ~mod+= g
+                        }
+                        args.pix[0] = b
+                        args.pix[2] = r
+                        args.pix = args.pix[4 ..]
+                    }
+
+                    x += 1
+                }
+            }
+        }
+
+        y += 1
+    }
+}
+
+// --------
+
+// predictor inverse transform with per-tile-span dispatch.
+// Restructured to avoid per-pixel mode checks within a tile span.
+// For top-only modes (2, 3, 4), uses AVX2 to process 8 pixels at once.
+
+pri func decoder.apply_transform_predictor_x86_avx2!(pix: slice base.u8, tile_data: roslice base.u8),
+        choose cpu_arch >= x86_avx2,
+{
+    var w4       : base.u64[..= 0x1_0000]
+    var prev_row : roslice base.u8
+    var curr_row : slice base.u8
+
+    var tile_size_log2 : base.u32[..= 9]
+    var tiles_per_row  : base.u32[..= 16895]
+    var mask           : base.u32[..= 0x1FF]
+    var y              : base.u32[..= 0x4000]
+    var x              : base.u32[..= 0x4008]
+    var t              : base.u64
+    var tile_data      : roslice base.u8
+    var mode           : base.u8[..= 0x0F]
+    var x_end          : base.u32
+
+    var util       : base.x86_avx2_utility
+    var avx_pix    : base.x86_m256i
+    var avx_prev   : base.x86_m256i
+    var avx_opaque : base.x86_m256i
+    var avx_carry  : base.x86_m256i
+
+    var l0    : base.u32[..= 0xFF]
+    var l1    : base.u32[..= 0xFF]
+    var l2    : base.u32[..= 0xFF]
+    var l3    : base.u32[..= 0xFF]
+    var c0    : base.u32[..= 0xFF]
+    var c1    : base.u32[..= 0xFF]
+    var c2    : base.u32[..= 0xFF]
+    var c3    : base.u32[..= 0xFF]
+    var t0    : base.u32[..= 0xFF]
+    var t1    : base.u32[..= 0xFF]
+    var t2    : base.u32[..= 0xFF]
+    var t3    : base.u32[..= 0xFF]
+    var sum_l : base.u32
+    var sum_t : base.u32
+
+    if (this.width <= 0) or (this.height <= 0) {
+        return nothing
+    }
+
+    w4 = (this.width * 4) as base.u64
+    curr_row = this.util.empty_slice_u8()
+    if w4 <= args.pix.length() {
+        curr_row = args.pix[.. w4]
+    }
+
+    // The first pixel's predictor is mode 0 (opaque black).
+    if curr_row.length() >= 4 {
+        curr_row[3] ~mod+= 0xFF
+    }
+
+    // The rest of the first row's predictor is mode 1 (L).
+    // AVX2 prefix-sum: 8 pixels at a time.
+    if curr_row.length() >= 4 {
+        avx_carry = util.make_m256i_repeat_u32(a: curr_row.peek_u32le())
+        while curr_row.length() >= 36 {
+            avx_pix = util.make_m256i_slice256(a: curr_row[4 .. 36])
+            avx_prev = avx_pix._mm256_slli_si256(imm8: 4)
+            avx_pix = avx_pix._mm256_add_epi8(b: avx_prev)
+            avx_prev = avx_pix._mm256_slli_si256(imm8: 8)
+            avx_pix = avx_pix._mm256_add_epi8(b: avx_prev)
+            avx_opaque = avx_pix._mm256_shuffle_epi32(imm8: 0xFF)
+            avx_opaque = avx_opaque._mm256_permute2x128_si256(b: avx_opaque, imm8: 0x08)
+            avx_pix = avx_pix._mm256_add_epi8(b: avx_opaque)
+            avx_pix = avx_pix._mm256_add_epi8(b: avx_carry)
+            avx_pix.store_slice256!(a: curr_row[4 .. 36])
+            avx_carry = avx_pix._mm256_permute4x64_epi64(imm8: 0xFF)
+            avx_carry = avx_carry._mm256_shuffle_epi32(imm8: 0xFF)
+            curr_row = curr_row[32 ..]
+        }
+    }
+    // Scalar tail.
+    while curr_row.length() >= 8 {
+        curr_row[4] ~mod+= curr_row[0]
+        curr_row[5] ~mod+= curr_row[1]
+        curr_row[6] ~mod+= curr_row[2]
+        curr_row[7] ~mod+= curr_row[3]
+        curr_row = curr_row[4 ..]
+    }
+
+    tile_size_log2 = this.transform_tile_size_log2[0] as base.u32
+    tiles_per_row = (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
+    mask = ((1 as base.u32) << tile_size_log2) - 1
+
+    y = 1
+    while y < this.height {
+        assert y < 0x4000 via "a < b: a < c; c <= b"(c: this.height)
+
+        t = (4 * (y >> tile_size_log2) * tiles_per_row) as base.u64
+        tile_data = this.util.empty_slice_u8()
+        if t <= args.tile_data.length() {
+            tile_data = args.tile_data[t ..]
+            if tile_data.length() >= 4 {
+                mode = tile_data[1] & 0x0F
+                tile_data = tile_data[4 ..]
+            }
+        }
+
+        if w4 <= args.pix.length() {
+            prev_row = args.pix
+            args.pix = args.pix[w4 ..]
+            curr_row = args.pix
+        }
+
+        // The first column's predictor is mode 2 (T).
+        if (prev_row.length() >= 4) and (curr_row.length() >= 4) {
+            curr_row[0] ~mod+= prev_row[0]
+            curr_row[1] ~mod+= prev_row[1]
+            curr_row[2] ~mod+= prev_row[2]
+            curr_row[3] ~mod+= prev_row[3]
+        }
+
+        x = 1
+        while x < this.width,
+                inv y < 0x4000,
+        {
+            assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+
+            if ((x & mask) == 0) and (tile_data.length() >= 4) {
+                mode = tile_data[1] & 0x0F
+                tile_data = tile_data[4 ..]
+            }
+
+            // Compute end of this tile span.
+            x_end = (x | mask) + 1
+            if x_end > this.width {
+                x_end = this.width
+            }
+
+            // Extend x_end across consecutive tiles with same mode.
+            while (x_end < this.width) and (tile_data.length() >= 4),
+                    inv y < 0x4000,
+            {
+                if (tile_data[1] & 0x0F) <> mode {
+                    break
+                }
+                tile_data = tile_data[4 ..]
+                // Safe: x_end < this.width <= 0x4000, so no actual wrap.
+                x_end = (x_end | mask) ~mod+ 1
+                if x_end > this.width {
+                    x_end = this.width
+                }
+            }
+            if x_end > this.width {
+                x_end = this.width
+            }
+
+            // AVX2 path for mode 0 (opaque black): only alpha (+0xFF) per
+            // pixel. No left-pixel dependency, fully vectorizable.
+            if mode == 0 {
+                avx_opaque = util.make_m256i_repeat_u32(a: 0xFF00_0000)
+                if x_end >= 8 {
+                    while (x < this.width) and (x <= (x_end - 8)) and (curr_row.length() >= 36) and (prev_row.length() >= 32),
+                            inv y < 0x4000,
+                    {
+                        avx_pix = util.make_m256i_slice256(a: curr_row[4 .. 36])
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_opaque)
+                        avx_pix.store_slice256!(a: curr_row[4 .. 36])
+                        curr_row = curr_row[32 ..]
+                        prev_row = prev_row[32 ..]
+                        assert x < this.width via "a < b: a < c; c <= b"(c: this.width)
+                        assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+                        x += 8
+                    }
+                }
+
+                // AVX2 prefix-sum for mode 1 (L/left): 8 pixels at a time.
+                // Uses Hillis-Steele parallel scan within 128-bit lanes
+                // (2 shift+add steps) plus a cross-lane fixup.
+            } else if mode == 1 {
+                if (x_end >= 8) and (curr_row.length() >= 4) {
+                    avx_carry = util.make_m256i_repeat_u32(a: curr_row.peek_u32le())
+                    while (x < this.width) and (x <= (x_end - 8)) and (curr_row.length() >= 36) and (prev_row.length() >= 32),
+                            inv y < 0x4000,
+                    {
+                        avx_pix = util.make_m256i_slice256(a: curr_row[4 .. 36])
+
+                        // Within-lane prefix sum (2 shift+add steps).
+                        avx_prev = avx_pix._mm256_slli_si256(imm8: 4)
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_prev)
+                        avx_prev = avx_pix._mm256_slli_si256(imm8: 8)
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_prev)
+
+                        // Cross-lane fixup: add lower lane total to upper lane.
+                        avx_opaque = avx_pix._mm256_shuffle_epi32(imm8: 0xFF)
+                        avx_opaque = avx_opaque._mm256_permute2x128_si256(b: avx_opaque, imm8: 0x08)
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_opaque)
+
+                        // Add carry from previous iteration.
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_carry)
+
+                        // Store result.
+                        avx_pix.store_slice256!(a: curr_row[4 .. 36])
+
+                        // Update carry: broadcast last pixel to all positions.
+                        avx_carry = avx_pix._mm256_permute4x64_epi64(imm8: 0xFF)
+                        avx_carry = avx_carry._mm256_shuffle_epi32(imm8: 0xFF)
+
+                        curr_row = curr_row[32 ..]
+                        prev_row = prev_row[32 ..]
+                        assert x < this.width via "a < b: a < c; c <= b"(c: this.width)
+                        assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+                        x += 8
+                    }
+                }
+
+                // Scalar tail for remaining pixels.
+                while (x < x_end) and (x_end <= this.width) and (curr_row.length() >= 8) and (prev_row.length() >= 4),
+                        inv y < 0x4000,
+                {
+                    assert x < this.width via "a < b: a < c; c <= b"(c: x_end)
+                    assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+                    curr_row[4] ~mod+= curr_row[0]
+                    curr_row[5] ~mod+= curr_row[1]
+                    curr_row[6] ~mod+= curr_row[2]
+                    curr_row[7] ~mod+= curr_row[3]
+                    curr_row = curr_row[4 ..]
+                    prev_row = prev_row[4 ..]
+                    x += 1
+                }
+
+                // AVX2 path for top-only modes without averaging (2, 3, 4).
+            } else if (mode == 2) or (mode == 3) or (mode == 4) {
+                if x_end >= 8 {
+                    while (x < this.width) and (x <= (x_end - 8)) and (curr_row.length() >= 36) and (prev_row.length() >= 40),
+                            inv y < 0x4000,
+                    {
+                        avx_pix = util.make_m256i_slice256(a: curr_row[4 .. 36])
+
+                        if mode == 2 {
+                            avx_prev = util.make_m256i_slice256(a: prev_row[4 .. 36])
+                        } else if mode == 3 {
+                            avx_prev = util.make_m256i_slice256(a: prev_row[8 .. 40])
+                        } else {
+                            avx_prev = util.make_m256i_slice256(a: prev_row[0 .. 32])
+                        }
+
+                        avx_pix = avx_pix._mm256_add_epi8(b: avx_prev)
+                        avx_pix.store_slice256!(a: curr_row[4 .. 36])
+                        curr_row = curr_row[32 ..]
+                        prev_row = prev_row[32 ..]
+                        assert x < this.width via "a < b: a < c; c <= b"(c: this.width)
+                        assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+                        x += 8
+                    }
+                }
+            }
+
+            // Scalar fallback for remaining pixels and non-vectorizable modes.
+            while (x < x_end) and (x_end <= this.width),
+                    inv y < 0x4000,
+            {
+                assert x < this.width via "a < b: a < c; c <= b"(c: x_end)
+                assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+
+                if (prev_row.length() < 12) or (curr_row.length() < 8) {
+                    break
+                }
+
+                if mode == 0 {
+                    curr_row[7] ~mod+= 0xFF
+                } else if mode == 1 {
+                    curr_row[4] ~mod+= curr_row[0]
+                    curr_row[5] ~mod+= curr_row[1]
+                    curr_row[6] ~mod+= curr_row[2]
+                    curr_row[7] ~mod+= curr_row[3]
+                } else if mode == 2 {
+                    curr_row[4] ~mod+= prev_row[4]
+                    curr_row[5] ~mod+= prev_row[5]
+                    curr_row[6] ~mod+= prev_row[6]
+                    curr_row[7] ~mod+= prev_row[7]
+                } else if mode == 3 {
+                    curr_row[4] ~mod+= prev_row[8]
+                    curr_row[5] ~mod+= prev_row[9]
+                    curr_row[6] ~mod+= prev_row[10]
+                    curr_row[7] ~mod+= prev_row[11]
+                } else if mode == 4 {
+                    curr_row[4] ~mod+= prev_row[0]
+                    curr_row[5] ~mod+= prev_row[1]
+                    curr_row[6] ~mod+= prev_row[2]
+                    curr_row[7] ~mod+= prev_row[3]
+                } else if mode == 5 {
+                    l0 = ((curr_row[0] as base.u32) + (prev_row[8] as base.u32)) / 2
+                    l1 = ((curr_row[1] as base.u32) + (prev_row[9] as base.u32)) / 2
+                    l2 = ((curr_row[2] as base.u32) + (prev_row[10] as base.u32)) / 2
+                    l3 = ((curr_row[3] as base.u32) + (prev_row[11] as base.u32)) / 2
+                    curr_row[4] ~mod+= ((l0 + (prev_row[4] as base.u32)) / 2) as base.u8
+                    curr_row[5] ~mod+= ((l1 + (prev_row[5] as base.u32)) / 2) as base.u8
+                    curr_row[6] ~mod+= ((l2 + (prev_row[6] as base.u32)) / 2) as base.u8
+                    curr_row[7] ~mod+= ((l3 + (prev_row[7] as base.u32)) / 2) as base.u8
+                } else if mode == 6 {
+                    curr_row[4] ~mod+= (((curr_row[0] as base.u32) + (prev_row[0] as base.u32)) / 2) as base.u8
+                    curr_row[5] ~mod+= (((curr_row[1] as base.u32) + (prev_row[1] as base.u32)) / 2) as base.u8
+                    curr_row[6] ~mod+= (((curr_row[2] as base.u32) + (prev_row[2] as base.u32)) / 2) as base.u8
+                    curr_row[7] ~mod+= (((curr_row[3] as base.u32) + (prev_row[3] as base.u32)) / 2) as base.u8
+                } else if mode == 7 {
+                    curr_row[4] ~mod+= (((curr_row[0] as base.u32) + (prev_row[4] as base.u32)) / 2) as base.u8
+                    curr_row[5] ~mod+= (((curr_row[1] as base.u32) + (prev_row[5] as base.u32)) / 2) as base.u8
+                    curr_row[6] ~mod+= (((curr_row[2] as base.u32) + (prev_row[6] as base.u32)) / 2) as base.u8
+                    curr_row[7] ~mod+= (((curr_row[3] as base.u32) + (prev_row[7] as base.u32)) / 2) as base.u8
+                } else if mode == 8 {
+                    curr_row[4] ~mod+= (((prev_row[0] as base.u32) + (prev_row[4] as base.u32)) / 2) as base.u8
+                    curr_row[5] ~mod+= (((prev_row[1] as base.u32) + (prev_row[5] as base.u32)) / 2) as base.u8
+                    curr_row[6] ~mod+= (((prev_row[2] as base.u32) + (prev_row[6] as base.u32)) / 2) as base.u8
+                    curr_row[7] ~mod+= (((prev_row[3] as base.u32) + (prev_row[7] as base.u32)) / 2) as base.u8
+                } else if mode == 9 {
+                    curr_row[4] ~mod+= (((prev_row[4] as base.u32) + (prev_row[8] as base.u32)) / 2) as base.u8
+                    curr_row[5] ~mod+= (((prev_row[5] as base.u32) + (prev_row[9] as base.u32)) / 2) as base.u8
+                    curr_row[6] ~mod+= (((prev_row[6] as base.u32) + (prev_row[10] as base.u32)) / 2) as base.u8
+                    curr_row[7] ~mod+= (((prev_row[7] as base.u32) + (prev_row[11] as base.u32)) / 2) as base.u8
+                } else if mode == 10 {
+                    l0 = ((curr_row[0] as base.u32) + (prev_row[0] as base.u32)) / 2
+                    l1 = ((curr_row[1] as base.u32) + (prev_row[1] as base.u32)) / 2
+                    l2 = ((curr_row[2] as base.u32) + (prev_row[2] as base.u32)) / 2
+                    l3 = ((curr_row[3] as base.u32) + (prev_row[3] as base.u32)) / 2
+                    t0 = ((prev_row[4] as base.u32) + (prev_row[8] as base.u32)) / 2
+                    t1 = ((prev_row[5] as base.u32) + (prev_row[9] as base.u32)) / 2
+                    t2 = ((prev_row[6] as base.u32) + (prev_row[10] as base.u32)) / 2
+                    t3 = ((prev_row[7] as base.u32) + (prev_row[11] as base.u32)) / 2
+                    curr_row[4] ~mod+= ((l0 + t0) / 2) as base.u8
+                    curr_row[5] ~mod+= ((l1 + t1) / 2) as base.u8
+                    curr_row[6] ~mod+= ((l2 + t2) / 2) as base.u8
+                    curr_row[7] ~mod+= ((l3 + t3) / 2) as base.u8
+                } else if mode == 11 {
+                    l0 = curr_row[0] as base.u32
+                    l1 = curr_row[1] as base.u32
+                    l2 = curr_row[2] as base.u32
+                    l3 = curr_row[3] as base.u32
+                    c0 = prev_row[0] as base.u32
+                    c1 = prev_row[1] as base.u32
+                    c2 = prev_row[2] as base.u32
+                    c3 = prev_row[3] as base.u32
+                    t0 = prev_row[4] as base.u32
+                    t1 = prev_row[5] as base.u32
+                    t2 = prev_row[6] as base.u32
+                    t3 = prev_row[7] as base.u32
+                    sum_l = this.absolute_difference(a: c0, b: t0) +
+                            this.absolute_difference(a: c1, b: t1) +
+                            this.absolute_difference(a: c2, b: t2) +
+                            this.absolute_difference(a: c3, b: t3)
+                    sum_t = this.absolute_difference(a: c0, b: l0) +
+                            this.absolute_difference(a: c1, b: l1) +
+                            this.absolute_difference(a: c2, b: l2) +
+                            this.absolute_difference(a: c3, b: l3)
+                    if sum_l < sum_t {
+                        curr_row[4] ~mod+= l0 as base.u8
+                        curr_row[5] ~mod+= l1 as base.u8
+                        curr_row[6] ~mod+= l2 as base.u8
+                        curr_row[7] ~mod+= l3 as base.u8
+                    } else {
+                        curr_row[4] ~mod+= t0 as base.u8
+                        curr_row[5] ~mod+= t1 as base.u8
+                        curr_row[6] ~mod+= t2 as base.u8
+                        curr_row[7] ~mod+= t3 as base.u8
+                    }
+                } else if mode == 12 {
+                    curr_row[4] ~mod+= this.mode12(l: curr_row[0], t: prev_row[4], tl: prev_row[0])
+                    curr_row[5] ~mod+= this.mode12(l: curr_row[1], t: prev_row[5], tl: prev_row[1])
+                    curr_row[6] ~mod+= this.mode12(l: curr_row[2], t: prev_row[6], tl: prev_row[2])
+                    curr_row[7] ~mod+= this.mode12(l: curr_row[3], t: prev_row[7], tl: prev_row[3])
+                } else if mode == 13 {
+                    curr_row[4] ~mod+= this.mode13(l: curr_row[0], t: prev_row[4], tl: prev_row[0])
+                    curr_row[5] ~mod+= this.mode13(l: curr_row[1], t: prev_row[5], tl: prev_row[1])
+                    curr_row[6] ~mod+= this.mode13(l: curr_row[2], t: prev_row[6], tl: prev_row[2])
+                    curr_row[7] ~mod+= this.mode13(l: curr_row[3], t: prev_row[7], tl: prev_row[3])
+                }
+
+                curr_row = curr_row[4 ..]
+                prev_row = prev_row[4 ..]
+                x += 1
+            }
+        }
+
+        y += 1
+    }
+}

@@ -408,6 +408,31 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 #define WUFFS_BASE__GENERATED_C_CODE
 #endif
 
+// WUFFS_BASE__GENERATED_C_CODE_NOINLINE is WUFFS_BASE__GENERATED_C_CODE with
+// an additional noinline hint. It is used for cold helper functions (e.g. byte
+// loading) that should not be inlined into their callers, so that the callers
+// remain small enough for the compiler to inline them at their call sites.
+#if defined(__GNUC__) || defined(__clang__)
+#define WUFFS_BASE__GENERATED_C_CODE_NOINLINE \
+  WUFFS_BASE__GENERATED_C_CODE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define WUFFS_BASE__GENERATED_C_CODE_NOINLINE \
+  WUFFS_BASE__GENERATED_C_CODE __declspec(noinline)
+#else
+#define WUFFS_BASE__GENERATED_C_CODE_NOINLINE WUFFS_BASE__GENERATED_C_CODE
+#endif
+
+// WUFFS_BASE__GENERATED_C_CODE_ALWAYS_INLINE is
+// WUFFS_BASE__GENERATED_C_CODE with an additional always_inline hint. It is
+// used for hot helper functions that should always be inlined into their
+// callers (e.g. coefficient decoding in boolean decoders).
+#if defined(__GNUC__) || defined(__clang__)
+#define WUFFS_BASE__GENERATED_C_CODE_ALWAYS_INLINE \
+  WUFFS_BASE__GENERATED_C_CODE inline __attribute__((always_inline))
+#else
+#define WUFFS_BASE__GENERATED_C_CODE_ALWAYS_INLINE WUFFS_BASE__GENERATED_C_CODE
+#endif
+
 // --------
 
 // Options (bitwise or'ed together) for wuffs_foo__bar__initialize functions.
@@ -1077,6 +1102,38 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 #endif  // (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)
 
+static inline uint32_t  //
+wuffs_base__count_leading_zeroes_u32(uint32_t u) {
+#if defined(__GNUC__) || defined(__clang__)
+  return u ? ((uint32_t)(__builtin_clz(u))) : 32u;
+#else
+  if (u == 0) {
+    return 32;
+  }
+  uint32_t n = 0;
+  if ((u >> 16) == 0) {
+    n |= 16;
+    u <<= 16;
+  }
+  if ((u >> 24) == 0) {
+    n |= 8;
+    u <<= 8;
+  }
+  if ((u >> 28) == 0) {
+    n |= 4;
+    u <<= 4;
+  }
+  if ((u >> 30) == 0) {
+    n |= 2;
+    u <<= 2;
+  }
+  if ((u >> 31) == 0) {
+    n |= 1;
+  }
+  return n;
+#endif
+}
+
 // --------
 
 // Normally, the wuffs_base__peek_etc and wuffs_base__poke_etc implementations
@@ -1111,6 +1168,10 @@ wuffs_base__peek_u16be__no_bounds_check(const uint8_t* p) {
   uint16_t x;
   memcpy(&x, p, 2);
   return _byteswap_ushort(x);
+#elif defined(__GNUC__) || defined(__clang__)
+  uint16_t x;
+  memcpy(&x, p, 2);
+  return __builtin_bswap16(x);
 #else
   return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
 #endif
@@ -1145,6 +1206,13 @@ wuffs_base__peek_u32be__no_bounds_check(const uint8_t* p) {
   uint32_t x;
   memcpy(&x, p, 4);
   return _byteswap_ulong(x);
+#elif defined(__GNUC__) || defined(__clang__)
+  // Use memcpy + bswap to guarantee a single 32-bit load. The byte-shift
+  // pattern below is semantically equivalent, but compilers may fail to merge
+  // the four byte loads in large functions.
+  uint32_t x;
+  memcpy(&x, p, 4);
+  return __builtin_bswap32(x);
 #else
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
@@ -1213,6 +1281,10 @@ wuffs_base__peek_u64be__no_bounds_check(const uint8_t* p) {
   uint64_t x;
   memcpy(&x, p, 8);
   return _byteswap_uint64(x);
+#elif defined(__GNUC__) || defined(__clang__)
+  uint64_t x;
+  memcpy(&x, p, 8);
+  return __builtin_bswap64(x);
 #else
   return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
          ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |

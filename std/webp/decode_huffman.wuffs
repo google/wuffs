@@ -8,25 +8,118 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.decode_huffman_groups?(src: base.io_reader, n_huffman_groups: base.u32[..= 256]) {
-    var hg : base.u32
-    var ht : base.u32
+pri func decoder.decode_huffman_groups?(src: base.io_reader, n_huffman_groups: base.u32[..= 1024], n_bitstream_groups: base.u32[..= 0x1_0000]) {
+    var hg         : base.u32
+    var ht         : base.u32
+    var target     : base.u32[..= 1024]
+    var sorted_idx : base.u32[..= 1024]
+    var raw_hg     : base.u32
 
-    hg = 0
-    while hg < args.n_huffman_groups {
-        assert hg < 256 via "a < b: a < c; c <= b"(c: args.n_huffman_groups)
-        ht = 0
-        while ht < 5,
-                inv hg < 256,
-        {
-            this.decode_huffman_tree?(src: args.src, hg: hg, ht: ht)
-            ht += 1
+    var red_entry   : base.u32
+    var blue_entry  : base.u32
+    var alpha_entry : base.u32
+    var green_entry : base.u32
+
+    if args.n_bitstream_groups <= args.n_huffman_groups {
+        // Non-compacted: decode n_huffman_groups trees directly.
+        hg = 0
+        while hg < args.n_huffman_groups {
+            assert hg < 1024 via "a < b: a < c; c <= b"(c: args.n_huffman_groups)
+            this.ht_next_top = 1280
+            ht = 0
+            while ht < 5,
+                    inv hg < 1024,
+            {
+                this.decode_huffman_tree?(src: args.src, hg: hg, ht: ht)
+                ht += 1
+            }
+
+            red_entry = this.huffman_tables[hg][256]
+            blue_entry = this.huffman_tables[hg][512]
+            alpha_entry = this.huffman_tables[hg][768]
+            if ((red_entry & 0x8000_000F) == 0x8000_0000) and
+                    ((blue_entry & 0x8000_000F) == 0x8000_0000) and
+                    ((alpha_entry & 0x8000_000F) == 0x8000_0000) {
+                this.hg_literal_arb[hg] =
+                        (((alpha_entry >> 8) & 0xFF) << 24) |
+                        (((red_entry >> 8) & 0xFF) << 16) |
+                        ((blue_entry >> 8) & 0xFF)
+                green_entry = this.huffman_tables[hg][0]
+                if ((green_entry & 0x8000_000F) == 0x8000_0000) and
+                        (((green_entry >> 8) & 0xFFFF) < 0x100) {
+                    this.hg_trivial[hg] = 2
+                    this.hg_literal_arb[hg] |= ((green_entry >> 8) & 0xFF) << 8
+                } else {
+                    this.hg_trivial[hg] = 1
+                }
+            } else {
+                this.hg_trivial[hg] = 0
+            }
+
+            hg += 1
         }
-        hg += 1
+    } else {
+        // Compacted: the bitstream contains n_bitstream_groups sets of
+        // Huffman trees, but only n_huffman_groups are actually used.
+        // Merge-iterate with the sorted list of used indices; unused
+        // trees are decoded into the scratch slot at index 1024.
+        sorted_idx = 0
+        raw_hg = 0
+        while raw_hg < args.n_bitstream_groups,
+                inv sorted_idx <= 1024,
+        {
+            // Determine where to store this group's trees.
+            if (sorted_idx < this.hg_n_sorted) and (sorted_idx < 1024) {
+                if (this.hg_sorted[sorted_idx] as base.u32) == raw_hg {
+                    target = sorted_idx
+                    sorted_idx += 1
+                } else {
+                    target = 1024
+                }
+            } else {
+                target = 1024
+            }
+
+            this.ht_next_top = 1280
+            ht = 0
+            while ht < 5,
+                    inv target <= 1024,
+                    inv sorted_idx <= 1024,
+            {
+                this.decode_huffman_tree?(src: args.src, hg: target, ht: ht)
+                ht += 1
+            }
+
+            if target < 1024 {
+                red_entry = this.huffman_tables[target][256]
+                blue_entry = this.huffman_tables[target][512]
+                alpha_entry = this.huffman_tables[target][768]
+                if ((red_entry & 0x8000_000F) == 0x8000_0000) and
+                        ((blue_entry & 0x8000_000F) == 0x8000_0000) and
+                        ((alpha_entry & 0x8000_000F) == 0x8000_0000) {
+                    this.hg_literal_arb[target] =
+                            (((alpha_entry >> 8) & 0xFF) << 24) |
+                            (((red_entry >> 8) & 0xFF) << 16) |
+                            ((blue_entry >> 8) & 0xFF)
+                    green_entry = this.huffman_tables[target][0]
+                    if ((green_entry & 0x8000_000F) == 0x8000_0000) and
+                            (((green_entry >> 8) & 0xFFFF) < 0x100) {
+                        this.hg_trivial[target] = 2
+                        this.hg_literal_arb[target] |= ((green_entry >> 8) & 0xFF) << 8
+                    } else {
+                        this.hg_trivial[target] = 1
+                    }
+                } else {
+                    this.hg_trivial[target] = 0
+                }
+            }
+
+            raw_hg ~mod+= 1
+        }
     }
 }
 
-pri func decoder.decode_huffman_tree?(src: base.io_reader, hg: base.u32[..= 255], ht: base.u32[..= 4]) {
+pri func decoder.decode_huffman_tree?(src: base.io_reader, hg: base.u32[..= 1024], ht: base.u32[..= 4]) {
     var c8         : base.u8
     var use_simple : base.u32[..= 1]
     var status     : base.status
@@ -64,20 +157,21 @@ pri func decoder.decode_huffman_tree?(src: base.io_reader, hg: base.u32[..= 255]
 
         this.build_code_lengths?(src: args.src)
 
-        status = this.build_huffman_nodes!(hg: args.hg, ht: args.ht)
+        status = this.build_huffman_table!(hg: args.hg, ht: args.ht)
         if not status.is_ok() {
             return status
         }
     }
 }
 
-pri func decoder.decode_huffman_tree_simple?(src: base.io_reader, hg: base.u32[..= 255], ht: base.u32[..= 4]) {
+pri func decoder.decode_huffman_tree_simple?(src: base.io_reader, hg: base.u32[..= 1024], ht: base.u32[..= 4]) {
     var c8                  : base.u8
     var use_second_symbol   : base.u32[..= 1]
     var first_symbol_n_bits : base.u32[..= 8]
     var symbol0             : base.u32[..= 0xFF]
     var symbol1             : base.u32[..= 0xFF]
-    var base_offset         : base.u32[..= 0x064C]
+    var base_offset         : base.u32[..= 3840]
+    var i                   : base.u32
 
     if this.n_bits < 2 {
         c8 = args.src.read_u8?()
@@ -109,7 +203,8 @@ pri func decoder.decode_huffman_tree_simple?(src: base.io_reader, hg: base.u32[.
     this.bits >>= first_symbol_n_bits
     this.n_bits -= first_symbol_n_bits
 
-    base_offset = HUFFMAN_TABLE_BASE_OFFSETS[args.ht] as base.u32
+    base_offset = args.ht * 256
+    this.huffman_table_base_offsets[args.hg][args.ht] = base_offset as base.u16
 
     if use_second_symbol <> 0 {
         if this.n_bits < 8 {
@@ -125,13 +220,27 @@ pri func decoder.decode_huffman_tree_simple?(src: base.io_reader, hg: base.u32[.
         this.bits >>= 8
         this.n_bits -= 8
 
-        this.huffman_nodes[args.hg][base_offset + 0] = (base_offset + 1) as base.u16
-        this.huffman_nodes[args.hg][base_offset + 1] = (symbol0 | 0x8000) as base.u16
-        this.huffman_nodes[args.hg][base_offset + 2] = (symbol1 | 0x8000) as base.u16
+        // Two symbols with 1-bit codes.
+        // symbol0 at code 0 fills even indices, symbol1 at code 1 fills odd.
+        i = 0
+        while i < 256 {
+            this.huffman_tables[args.hg][(base_offset ~mod+ i) & 0xFFF] =
+                    0x8000_0000 | (symbol0 << 8) | 1
+            this.huffman_tables[args.hg][((base_offset ~mod+ i) ~mod+ 1) & 0xFFF] =
+                    0x8000_0000 | (symbol1 << 8) | 1
+            i += 2
+        }
 
     } else {
-        this.huffman_nodes[args.hg][base_offset] = (symbol0 | 0x8000) as base.u16
+        // Single symbol, 0 bits consumed. Fill all 256 entries.
+        i = 0
+        while i < 256 {
+            this.huffman_tables[args.hg][(base_offset ~mod+ i) & 0xFFF] =
+                    0x8000_0000 | (symbol0 << 8) | 0
+            i += 1
+        }
     }
+
 }
 
 pri func decoder.decode_code_length_code_lengths?(src: base.io_reader) {
@@ -270,102 +379,278 @@ pri func decoder.build_code_lengths_huffman_nodes!() base.status {
     return ok
 }
 
-pri func decoder.build_huffman_nodes!(hg: base.u32[..= 255], ht: base.u32[..= 4]) base.status {
-    var base_offset : base.u32[..= 0x064C]
+// build_huffman_table! builds a two-level Huffman lookup table, modeled on
+// Deflate's init_huff!. Primary table: 8-bit index (256 entries). Secondary
+// tables handle codes longer than 8 bits via redirect entries.
+pri func decoder.build_huffman_table!(hg: base.u32[..= 1024], ht: base.u32[..= 4]) base.status {
+    var base_offset       : base.u32[..= 3840]
+    var i                 : base.u32[..= 2328]
+    var n_symbols         : base.u32[..= 2328]
+    var count             : base.u32[..= 2328]
+    var n_used_symbols    : base.u32
+    var last_used_symbol  : base.u32[..= 2328]
+    var remaining         : base.u32
+    var min_cl            : base.u32[..= 9]
+    var max_cl            : base.u32[..= 15]
+    var initial_high_bits : base.u32
+    var prev_cl           : base.u32[..= 15]
+    var prev_redirect_key : base.u32
+    var top               : base.u32[..= 4096]
+    var next_top          : base.u32[..= 4096]
+    var code              : base.u32
+    var key               : base.u32
+    var value             : base.u32
+    var cl                : base.u32[..= 15]
+    var redirect_key      : base.u32[..= 255]
+    var j                 : base.u32[..= 16]
+    var reversed_key      : base.u32[..= 255]
+    var symbol            : base.u32[..= 2328]
+    var high_bits         : base.u32
+    var delta             : base.u32
 
-    var code_bits : base.u32
-    var code_len  : base.u32[..= 15]
-    var symbol    : base.u32[..= 2328]
+    var counts  : array[16] base.u16[..= 2328]
+    var offsets : array[16] base.u16[..= 2328]
+    var symbols : array[2328] base.u16
 
-    var histogram        : array[16] base.u32
-    var n_used_symbols   : base.u32
-    var last_used_symbol : base.u32[..= 2328]
+    // Primary table is at a fixed offset: tree * 256.
+    base_offset = args.ht * 256
+    this.huffman_table_base_offsets[args.hg][args.ht] = base_offset as base.u16
 
-    var subscription_weight : base.u32[..= 0x8000]
-    var subscription_total  : base.u32
-    var curr_code           : base.u32
-    var next_codes          : array[17] base.u32
-
-    var n_branches : base.u32
-    var h          : base.u32[..= 0x187A]
-    var children   : base.u32
-    var node       : base.u16
-
-    base_offset = HUFFMAN_TABLE_BASE_OFFSETS[args.ht] as base.u32
-
-    symbol = 0
-    while symbol < this.ht_n_symbols {
-        assert symbol < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
-        code_len = (this.code_lengths[symbol] & 15) as base.u32
-        if code_len <> 0 {
-            histogram[code_len] ~mod+= 1
-            n_used_symbols ~mod+= 1
-            last_used_symbol = symbol
+    // Calculate counts and find single-symbol case.
+    i = 0
+    while i < this.ht_n_symbols {
+        assert i < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
+        if counts[this.code_lengths[i] & 15] >= 2328 {
+            return "#internal error: inconsistent Huffman decoder state"
         }
-        symbol += 1
+        counts[this.code_lengths[i] & 15] += 1
+        if (this.code_lengths[i] & 15) <> 0 {
+            n_used_symbols ~mod+= 1
+            last_used_symbol = i
+        }
+        i += 1
     }
 
     if n_used_symbols < 1 {
         return "#bad Huffman code"
     } else if n_used_symbols == 1 {
-        this.huffman_nodes[args.hg][base_offset] = (last_used_symbol | 0x8000) as base.u16
+        // Single symbol: fill all 256 primary entries with 0-bit code.
+        i = 0
+        while i < 256 {
+            this.huffman_tables[args.hg][(base_offset ~mod+ i) & 0xFFF] =
+                    0x8000_0000 | (last_used_symbol << 8)
+            i += 1
+        }
         return ok
     }
 
-    subscription_weight = 1 << 14
-    code_len = 1
-    while true {
-        curr_code = (curr_code ~mod+ histogram[code_len]) ~mod<< 1
-        next_codes[code_len + 1] = curr_code
-        subscription_total ~mod+= subscription_weight ~mod* histogram[code_len]
-        subscription_weight >>= 1
-        if code_len >= 15 {
-            break
+    // Check that the Huffman code completely covers all possible input bits.
+    remaining = 1
+    i = 1
+    while i <= 15 {
+        if remaining > (1 << 30) {
+            return "#internal error: inconsistent Huffman decoder state"
         }
-        code_len += 1
+        remaining <<= 1
+        if remaining < (counts[i] as base.u32) {
+            return "#bad Huffman code (over-subscribed)"
+        }
+        remaining -= counts[i] as base.u32
+        i += 1
     }
-
-    if subscription_total > (1 << 15) {
-        return "#bad Huffman code (over-subscribed)"
-    } else if subscription_total < (1 << 15) {
+    if remaining <> 0 {
         return "#bad Huffman code (under-subscribed)"
     }
 
-    this.huffman_nodes[args.hg][base_offset] = 0
-    symbol = 0
-    while symbol < this.ht_n_symbols {
-        assert symbol < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
-        code_len = (this.code_lengths[symbol] & 15) as base.u32
-        if code_len <> 0 {
-            code_bits = next_codes[code_len]
-            next_codes[code_len] ~mod+= 1
-
-            // Insert {symbol, code_bits, code_len} into the node tree.
-            code_bits ~mod<<= 32 - code_len
-            h = base_offset
-            while code_len > 0,
-                    inv symbol < 2328,
-            {
-                node = this.huffman_nodes[args.hg][h]
-                if node == 0 {
-                    children = base_offset ~mod+ (1 ~mod+ (2 ~mod* n_branches))
-                    children = children.min(no_more_than: 0x1879)
-                    this.huffman_nodes[args.hg][h] = children as base.u16
-                    this.huffman_nodes[args.hg][children + 0] = 0
-                    this.huffman_nodes[args.hg][children + 1] = 0
-                    h = children + (code_bits >> 31)
-                    n_branches ~mod+= 1
-                } else {
-                    children = node as base.u32
-                    h = children.min(no_more_than: 0x1879) + (code_bits >> 31)
-                }
-                code_bits ~mod<<= 1
-                code_len -= 1
-            }
-            this.huffman_nodes[args.hg][h] = (symbol | 0x8000) as base.u16
+    // Calculate offsets and n_symbols.
+    i = 1
+    while i <= 15 {
+        offsets[i] = n_symbols as base.u16
+        count = counts[i] as base.u32
+        if n_symbols > (2328 - count) {
+            return "#internal error: inconsistent Huffman decoder state"
         }
-        symbol += 1
+        assert (n_symbols + count) <= 2328 via "(a + b) <= c: a <= (c - b)"()
+        n_symbols = n_symbols + count
+        i += 1
     }
+    if n_symbols > 2328 {
+        return "#internal error: inconsistent Huffman decoder state"
+    }
+
+    // Sort symbols by code length.
+    i = 0
+    while i < this.ht_n_symbols,
+            inv n_symbols <= 2328,
+    {
+        assert i < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
+        if (this.code_lengths[i] & 15) <> 0 {
+            if offsets[this.code_lengths[i] & 15] >= 2328 {
+                return "#internal error: inconsistent Huffman decoder state"
+            }
+            symbols[offsets[this.code_lengths[i] & 15]] = i as base.u16
+            offsets[this.code_lengths[i] & 15] += 1
+        }
+        i += 1
+    }
+
+    // Calculate min_cl and max_cl.
+    min_cl = 1
+    while true,
+            inv n_symbols <= 2328,
+    {
+        if counts[min_cl] <> 0 {
+            break
+        }
+        if min_cl >= 9 {
+            return "#bad Huffman code"
+        }
+        min_cl += 1
+    }
+    max_cl = 15
+    while true,
+            inv n_symbols <= 2328,
+    {
+        if counts[max_cl] <> 0 {
+            break
+        }
+        if max_cl <= 1 {
+            return "#bad Huffman code"
+        }
+        max_cl -= 1
+    }
+
+    // Fill the primary and secondary tables.
+    //
+    // Primary table: 8-bit index (256 entries).
+    // Secondary tables: for codes > 8 bits, redirect entries in the primary
+    // table point to secondary sub-tables.
+    // Always fill all 256 primary table entries, regardless of max_cl.
+    // The decode loop uses a fixed 8-bit mask (bits & 0xFF) so all 256
+    // entries must be valid. For codes shorter than 8 bits, entries are
+    // replicated across all high-bit patterns.
+    initial_high_bits = 1 << 8
+    if (symbols[0] as base.u32) >= this.ht_n_symbols {
+        return "#internal error: inconsistent Huffman decoder state"
+    }
+    assert (symbols[0] as base.u32) < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
+    prev_cl = (this.code_lengths[symbols[0] as base.u32] & 15) as base.u32
+    prev_redirect_key = 0xFFFF_FFFF
+    top = base_offset
+    next_top = this.ht_next_top
+    code = 0
+    key = 0
+    value = 0
+    i = 0
+    while true,
+            pre code < (1 << 15),
+            pre i < 2328,
+            inv n_symbols <= 2328,
+    {
+        if (symbols[i] as base.u32) >= this.ht_n_symbols {
+            return "#internal error: inconsistent Huffman decoder state"
+        }
+        assert (symbols[i] as base.u32) < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
+        cl = (this.code_lengths[symbols[i] as base.u32] & 15) as base.u32
+        if cl > prev_cl {
+            code <<= cl - prev_cl
+            if code >= (1 << 15) {
+                return "#internal error: inconsistent Huffman decoder state"
+            }
+        }
+        prev_cl = cl
+
+        key = code
+        if cl > 8 {
+            cl -= 8
+            assert cl <= 7
+
+            redirect_key = (key >> cl) & 0xFF
+            key = key.low_bits(n: cl)
+            if prev_redirect_key <> (redirect_key as base.u32) {
+                prev_redirect_key = redirect_key as base.u32
+
+                // Calculate the number of bits needed for the 2nd level table.
+                remaining = (1 as base.u32) << cl
+                j = prev_cl
+                while j <= 15,
+                        inv cl <= 7,
+                        inv code < (1 << 15),
+                        inv i < 2328,
+                        inv n_symbols <= 2328,
+                {
+                    if remaining <= (counts[j] as base.u32) {
+                        break
+                    }
+                    remaining -= counts[j] as base.u32
+                    if remaining > (1 << 30) {
+                        return "#internal error: inconsistent Huffman decoder state"
+                    }
+                    remaining <<= 1
+                    j += 1
+                }
+                if (j <= 8) or (15 < j) {
+                    return "#internal error: inconsistent Huffman decoder state"
+                }
+                j -= 8
+                initial_high_bits = (1 as base.u32) << j
+
+                top = next_top
+                if (top + ((1 as base.u32) << j)) > 4096 {
+                    return "#internal error: inconsistent Huffman decoder state"
+                }
+                assert (top + ((1 as base.u32) << j)) <= 4096 via "a <= b: a <= c; c <= b"(c: 4096)
+                next_top = top + ((1 as base.u32) << j)
+
+                // Write redirect entry in primary table.
+                redirect_key = REVERSE8[redirect_key] as base.u32
+                if (base_offset + redirect_key) >= 4096 {
+                    return "#internal error: inconsistent Huffman decoder state"
+                }
+                this.huffman_tables[args.hg][base_offset + redirect_key] =
+                        0x1000_0008 | (top << 8) | (j << 4)
+            }
+        }
+        if (cl > 8) or (key >= (1 << 8)) or (counts[prev_cl] <= 0) {
+            return "#internal error: inconsistent Huffman decoder state"
+        }
+        counts[prev_cl] -= 1
+
+        reversed_key = ((REVERSE8[key & 0xFF] as base.u32) >> (8 - cl)) & 0xFF
+
+        if (symbols[i] as base.u32) >= 2328 {
+            return "#internal error: inconsistent Huffman decoder state"
+        }
+        symbol = symbols[i] as base.u32
+        value = 0x8000_0000 | (symbol << 8) | cl
+
+        // Replicate entry across all high_bits slots.
+        high_bits = initial_high_bits
+        delta = (1 as base.u32) << cl
+        while high_bits >= delta,
+                inv code < (1 << 15),
+                inv i < 2328,
+                inv n_symbols <= 2328,
+        {
+            high_bits -= delta
+            if (top + ((high_bits | reversed_key) & 0xFF)) >= 4096 {
+                return "#internal error: inconsistent Huffman decoder state"
+            }
+            this.huffman_tables[args.hg][top + ((high_bits | reversed_key) & 0xFF)] = value
+        }
+
+        i += 1
+        if i >= n_symbols {
+            break
+        }
+        assert i < 2328 via "a < b: a < c; c <= b"(c: n_symbols)
+        code += 1
+        if code >= (1 << 15) {
+            return "#internal error: inconsistent Huffman decoder state"
+        }
+    }
+
+    this.ht_next_top = next_top
     return ok
 }
 
@@ -521,11 +806,38 @@ pri const REPEAT_N_BITS : roarray[4] base.u8[..= 7] = [2, 3, 7, 0]
 
 pri const REPEAT_COUNTS : roarray[4] base.u8[..= 11] = [3, 3, 11, 0]
 
-// See the decoder.huffman_nodes comment re five (5) Huffman trees.
-pri const HUFFMAN_TABLE_BASE_OFFSETS : roarray[5] base.u16[..= 0x064C] = [
-        0x064C,
-        0x0000,
-        0x01FF,
-        0x03FE,
-        0x05FD,
+// REVERSE8 reverses the bits in a byte.
+pri const REVERSE8 : roarray[256] base.u8 = [
+        0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0,  // 0x00 - 0x07
+        0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,  // 0x08 - 0x0F
+        0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8,  // 0x10 - 0x17
+        0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8,  // 0x18 - 0x1F
+        0x04, 0x84, 0x44, 0xC4, 0x24, 0xA4, 0x64, 0xE4,  // 0x20 - 0x27
+        0x14, 0x94, 0x54, 0xD4, 0x34, 0xB4, 0x74, 0xF4,  // 0x28 - 0x2F
+        0x0C, 0x8C, 0x4C, 0xCC, 0x2C, 0xAC, 0x6C, 0xEC,  // 0x30 - 0x37
+        0x1C, 0x9C, 0x5C, 0xDC, 0x3C, 0xBC, 0x7C, 0xFC,  // 0x38 - 0x3F
+        0x02, 0x82, 0x42, 0xC2, 0x22, 0xA2, 0x62, 0xE2,  // 0x40 - 0x47
+        0x12, 0x92, 0x52, 0xD2, 0x32, 0xB2, 0x72, 0xF2,  // 0x48 - 0x4F
+        0x0A, 0x8A, 0x4A, 0xCA, 0x2A, 0xAA, 0x6A, 0xEA,  // 0x50 - 0x57
+        0x1A, 0x9A, 0x5A, 0xDA, 0x3A, 0xBA, 0x7A, 0xFA,  // 0x58 - 0x5F
+        0x06, 0x86, 0x46, 0xC6, 0x26, 0xA6, 0x66, 0xE6,  // 0x60 - 0x67
+        0x16, 0x96, 0x56, 0xD6, 0x36, 0xB6, 0x76, 0xF6,  // 0x68 - 0x6F
+        0x0E, 0x8E, 0x4E, 0xCE, 0x2E, 0xAE, 0x6E, 0xEE,  // 0x70 - 0x77
+        0x1E, 0x9E, 0x5E, 0xDE, 0x3E, 0xBE, 0x7E, 0xFE,  // 0x78 - 0x7F
+        0x01, 0x81, 0x41, 0xC1, 0x21, 0xA1, 0x61, 0xE1,  // 0x80 - 0x87
+        0x11, 0x91, 0x51, 0xD1, 0x31, 0xB1, 0x71, 0xF1,  // 0x88 - 0x8F
+        0x09, 0x89, 0x49, 0xC9, 0x29, 0xA9, 0x69, 0xE9,  // 0x90 - 0x97
+        0x19, 0x99, 0x59, 0xD9, 0x39, 0xB9, 0x79, 0xF9,  // 0x98 - 0x9F
+        0x05, 0x85, 0x45, 0xC5, 0x25, 0xA5, 0x65, 0xE5,  // 0xA0 - 0xA7
+        0x15, 0x95, 0x55, 0xD5, 0x35, 0xB5, 0x75, 0xF5,  // 0xA8 - 0xAF
+        0x0D, 0x8D, 0x4D, 0xCD, 0x2D, 0xAD, 0x6D, 0xED,  // 0xB0 - 0xB7
+        0x1D, 0x9D, 0x5D, 0xDD, 0x3D, 0xBD, 0x7D, 0xFD,  // 0xB8 - 0xBF
+        0x03, 0x83, 0x43, 0xC3, 0x23, 0xA3, 0x63, 0xE3,  // 0xC0 - 0xC7
+        0x13, 0x93, 0x53, 0xD3, 0x33, 0xB3, 0x73, 0xF3,  // 0xC8 - 0xCF
+        0x0B, 0x8B, 0x4B, 0xCB, 0x2B, 0xAB, 0x6B, 0xEB,  // 0xD0 - 0xD7
+        0x1B, 0x9B, 0x5B, 0xDB, 0x3B, 0xBB, 0x7B, 0xFB,  // 0xD8 - 0xDF
+        0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7,  // 0xE0 - 0xE7
+        0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,  // 0xE8 - 0xEF
+        0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF,  // 0xF0 - 0xF7
+        0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF,  // 0xF8 - 0xFF
 ]

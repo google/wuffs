@@ -2168,6 +2168,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v3: this.components_v[3],
             is_rgb_or_cmyk: this.is_rgb_or_cmyk,
             triangle_filter_for_2to1: not this.use_lower_quality,
+            src_is_bt601: false,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }

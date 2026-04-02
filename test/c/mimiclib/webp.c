@@ -42,7 +42,10 @@ mimic_webp_decode(uint64_t* n_bytes_out,
   WebPDecoderConfig config;
   if (!WebPInitDecoderConfig(&config)) {
     return "mimic_webp_decode: WebPInitDecoderConfig failed";
-  } else if (WebPGetFeatures(wuffs_base__io_buffer__reader_pointer(src),
+  }
+  // Disable fancy upsampling to match Wuffs' box filter chroma upsampling.
+  config.options.no_fancy_upsampling = 1;
+  if (WebPGetFeatures(wuffs_base__io_buffer__reader_pointer(src),
                              wuffs_base__io_buffer__reader_length(src),
                              &config.input) != VP8_STATUS_OK) {
     return "mimic_webp_decode: WebPGetFeatures failed";

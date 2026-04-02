@@ -1,0 +1,348 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 4x4 inverse DCT, ARM NEON version using 16-bit arithmetic.
+//
+// Follows libwebp's approach: pack 4 rows into two int16x8 registers
+// (r01 = [row0 | row1], r23 = [row2 | row3]) and process both halves
+// simultaneously through the butterfly.
+//
+// Uses the vqdmulh trick: vqdmulh gives (a*b*2)>>16 = 2*mulhi(a,b).
+// For K1 (cospi8sqrt2minus1 = 20091): MUL(x) = x + mulhi(x, K1)
+//   = x + (vqdmulh(x, K1) >> 1)
+// For K2 (sinpi8sqrt2 = 35468): mulhi(x, K2)
+//   = vqdmulh(x, K2/2)  where K2/2 = 17734
+
+pri func decoder.idct_add_arm_neon!(dst: slice base.u8, stride: base.u32, coeff_offset: base.u32[..= 384]),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+
+    // Load temporaries for contiguous u32 → u16 narrowing.
+    var load0 : base.arm_neon_u32x4
+    var load1 : base.arm_neon_u32x4
+    var low   : base.arm_neon_u16x4
+
+    // Two packed row pairs.
+    var r01 : base.arm_neon_u16x8
+    var r23 : base.arm_neon_u16x8
+
+    // Butterfly temporaries.
+    var b1    : base.arm_neon_u16x8
+    var mul1  : base.arm_neon_u16x8
+    var c0    : base.arm_neon_u16x8
+    var c1    : base.arm_neon_u16x8
+    var a_val : base.arm_neon_u16x4
+    var b_val : base.arm_neon_u16x4
+    var c_val : base.arm_neon_u16x4
+    var d_val : base.arm_neon_u16x4
+    var d0    : base.arm_neon_u16x8
+    var d1    : base.arm_neon_u16x8
+    var e0    : base.arm_neon_u16x8
+    var e_tmp : base.arm_neon_u16x8
+    var e1    : base.arm_neon_u16x8
+
+    // Transpose temporaries.
+    var t0 : base.arm_neon_u16x8
+    var t1 : base.arm_neon_u16x8
+
+    // Output temporaries.
+    var k4       : base.arm_neon_u16x8
+    var pred01   : base.arm_neon_u8x8
+    var pred23   : base.arm_neon_u8x8
+    var pred01_w : base.arm_neon_u16x8
+    var pred23_w : base.arm_neon_u16x8
+    var out01    : base.arm_neon_u16x8
+    var out23    : base.arm_neon_u16x8
+    var out01_u8 : base.arm_neon_u8x8
+    var out23_u8 : base.arm_neon_u8x8
+    var val      : base.u32
+
+    var off : base.u32[..= 384]
+    var i   : base.u32
+
+    off = args.coeff_offset
+
+    // Load 16 coefficients as two u16x8 (4 coefficients per row).
+    // Load 4 u32 values at a time via contiguous load, narrow to u16x4,
+    // combine into u16x8.
+    // r01 = [row0_c0..c3 | row1_c0..c3]
+    // r23 = [row2_c0..c3 | row3_c0..c3]
+    assert off <= (off + 4) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off + 4) <= (off + 8) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off + 8) <= (off + 12) via "a <= (a + b): 0 <= b"(b: 4)
+    assert (off + 12) <= (off + 16) via "a <= (a + b): 0 <= b"(b: 4)
+    load0 = util.make_u32x4_slice_u32lex4(a: this.mb_coeffs[off .. off + 4])
+    load1 = util.make_u32x4_slice_u32lex4(a: this.mb_coeffs[off + 4 .. off + 8])
+    low = load0.vmovn_u32()
+    r01 = low.vmovn_high_u32(b: load1)
+
+    load0 = util.make_u32x4_slice_u32lex4(a: this.mb_coeffs[off + 8 .. off + 12])
+    load1 = util.make_u32x4_slice_u32lex4(a: this.mb_coeffs[off + 12 .. off + 16])
+    low = load0.vmovn_u32()
+    r23 = low.vmovn_high_u32(b: load1)
+
+    // ---- Column butterfly pass ----
+
+    // B1 = [row1 | row3] (odd rows for sin/cos multiply)
+    b1 = r01.vget_high_u16().vcombine_u16(b: r23.vget_high_u16())
+
+    // C0 = MUL(B1, K1) = B1 + (vqdmulh(B1, 20091) >> 1)
+    mul1 = b1.vqdmulhq_n_s16(b: 20091)
+    c0 = b1.vaddq_u16(b: mul1.vshrq_n_s16(b: 1))
+
+    // C1 = mulhi(B1, K2) = vqdmulh(B1, K2/2) = vqdmulh(B1, 17734)
+    c1 = b1.vqdmulhq_n_s16(b: 17734)
+
+    // a = row0 + row2, b = row0 - row2
+    a_val = r01.vget_low_u16().vadd_u16(b: r23.vget_low_u16())
+    b_val = r01.vget_low_u16().vsub_u16(b: r23.vget_low_u16())
+
+    // c = mulhi(row1, K2) - MUL(row3, K1)
+    // d = MUL(row1, K1) + mulhi(row3, K2)
+    c_val = c1.vget_low_u16().vsub_u16(b: c0.vget_high_u16())
+    d_val = c0.vget_low_u16().vadd_u16(b: c1.vget_high_u16())
+
+    // Combine: D0 = [a | b], D1 = [d | c]
+    d0 = a_val.vcombine_u16(b: b_val)
+    d1 = d_val.vcombine_u16(b: c_val)
+
+    // E0 = [a+d | b+c] = [out_row0 | out_row1]
+    e0 = d0.vaddq_u16(b: d1)
+    // E_tmp = [a-d | b-c] = [out_row3 | out_row2]
+    e_tmp = d0.vsubq_u16(b: d1)
+    // E1 = [out_row2 | out_row3] (swap halves)
+    e1 = e_tmp.vget_high_u16().vcombine_u16(b: e_tmp.vget_low_u16())
+
+    // ---- Transpose 4x4 via two rounds of zip ----
+    t0 = e0.vzip1q_u16(b: e1)
+    t1 = e0.vzip2q_u16(b: e1)
+    r01 = t0.vzip1q_u16(b: t1)
+    r23 = t0.vzip2q_u16(b: t1)
+
+    // ---- Row butterfly pass (same structure) ----
+
+    b1 = r01.vget_high_u16().vcombine_u16(b: r23.vget_high_u16())
+
+    mul1 = b1.vqdmulhq_n_s16(b: 20091)
+    c0 = b1.vaddq_u16(b: mul1.vshrq_n_s16(b: 1))
+
+    c1 = b1.vqdmulhq_n_s16(b: 17734)
+
+    a_val = r01.vget_low_u16().vadd_u16(b: r23.vget_low_u16())
+    b_val = r01.vget_low_u16().vsub_u16(b: r23.vget_low_u16())
+
+    c_val = c1.vget_low_u16().vsub_u16(b: c0.vget_high_u16())
+    d_val = c0.vget_low_u16().vadd_u16(b: c1.vget_high_u16())
+
+    d0 = a_val.vcombine_u16(b: b_val)
+    d1 = d_val.vcombine_u16(b: c_val)
+
+    e0 = d0.vaddq_u16(b: d1)
+    e_tmp = d0.vsubq_u16(b: d1)
+    e1 = e_tmp.vget_high_u16().vcombine_u16(b: e_tmp.vget_low_u16())
+
+    // ---- Transpose again ----
+    t0 = e0.vzip1q_u16(b: e1)
+    t1 = e0.vzip2q_u16(b: e1)
+    r01 = t0.vzip1q_u16(b: t1)
+    r23 = t0.vzip2q_u16(b: t1)
+
+    // ---- Add rounding bias (+4) and arithmetic right shift >>3 ----
+    k4 = util.make_u16x8_repeat(a: 4)
+    r01 = r01.vaddq_u16(b: k4)
+    r23 = r23.vaddq_u16(b: k4)
+    r01 = r01.vshrq_n_s16(b: 3)
+    r23 = r23.vshrq_n_s16(b: 3)
+
+    // ---- Add to prediction and clamp to [0, 255] ----
+    // Process row pairs (0+1, 2+3), loading predictions per row via reslicing.
+
+    // Row 0.
+    if 4 <= args.dst.length() {
+        pred01 = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred01_w = pred01.vmovl_u8()
+        out01 = pred01_w.vaddq_u16(b: r01)
+        out01_u8 = out01.vqmovun_s16()
+        val = out01_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 1 (uses high half of r01).
+    if 4 <= args.dst.length() {
+        pred01 = util.make_u8x8_multiple(
+                a00: 0, a01: 0, a02: 0, a03: 0,
+                a04: args.dst[0], a05: args.dst[1],
+                a06: args.dst[2], a07: args.dst[3])
+        pred01_w = pred01.vmovl_u8()
+        out01 = pred01_w.vaddq_u16(b: r01)
+        out01_u8 = out01.vqmovun_s16()
+        val = out01_u8.as_u32x2().vget_lane_u32(b: 1)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 2.
+    if 4 <= args.dst.length() {
+        pred23 = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred23_w = pred23.vmovl_u8()
+        out23 = pred23_w.vaddq_u16(b: r23)
+        out23_u8 = out23.vqmovun_s16()
+        val = out23_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 3.
+    if 4 <= args.dst.length() {
+        pred23 = util.make_u8x8_multiple(
+                a00: 0, a01: 0, a02: 0, a03: 0,
+                a04: args.dst[0], a05: args.dst[1],
+                a06: args.dst[2], a07: args.dst[3])
+        pred23_w = pred23.vmovl_u8()
+        out23 = pred23_w.vaddq_u16(b: r23)
+        out23_u8 = out23.vqmovun_s16()
+        val = out23_u8.as_u32x2().vget_lane_u32(b: 1)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+
+    // Clear the coefficients.
+    i = 0
+    while i < 16 {
+        assert (off + i) < 400 via "a < b: a < c; c <= b"(c: 400)
+        this.mb_coeffs[off + i] = 0
+        i += 1
+    }
+}
+
+// idct_dc_add_arm_neon! performs a DC-only IDCT add using NEON.
+// Computes dc = asr3(coeff[0] + 4), broadcasts to all lanes, then for each
+// of 4 rows: load 4 prediction bytes, widen, add dc, saturating narrow, store.
+// Replaces 16 per-pixel bounds checks + branching clamp with vqmovun_s16.
+pri func decoder.idct_dc_add_arm_neon!(dst: slice base.u8, stride: base.u32, coeff_offset: base.u32[..= 384]),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+
+    var dc_vec : base.arm_neon_u16x8
+    var k4     : base.arm_neon_u16x8
+    var pred   : base.arm_neon_u8x8
+    var pred_w : base.arm_neon_u16x8
+    var out    : base.arm_neon_u16x8
+    var out_u8 : base.arm_neon_u8x8
+    var val    : base.u32
+
+    // Compute DC = asr3(coeff[0] + 4) and broadcast to all 8 lanes.
+    dc_vec = util.make_u16x8_repeat(a: (this.mb_coeffs[args.coeff_offset] & 0xFFFF) as base.u16)
+    k4 = util.make_u16x8_repeat(a: 4)
+    dc_vec = dc_vec.vaddq_u16(b: k4)
+    dc_vec = dc_vec.vshrq_n_s16(b: 3)
+
+    // Clear the DC coefficient.
+    this.mb_coeffs[args.coeff_offset] = 0
+
+    // Row 0.
+    if 4 <= args.dst.length() {
+        pred = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred_w = pred.vmovl_u8()
+        out = pred_w.vaddq_u16(b: dc_vec)
+        out_u8 = out.vqmovun_s16()
+        val = out_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 1.
+    if 4 <= args.dst.length() {
+        pred = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred_w = pred.vmovl_u8()
+        out = pred_w.vaddq_u16(b: dc_vec)
+        out_u8 = out.vqmovun_s16()
+        val = out_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 2.
+    if 4 <= args.dst.length() {
+        pred = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred_w = pred.vmovl_u8()
+        out = pred_w.vaddq_u16(b: dc_vec)
+        out_u8 = out.vqmovun_s16()
+        val = out_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+    if (args.stride as base.u64) <= args.dst.length() {
+        args.dst = args.dst[(args.stride as base.u64) ..]
+    }
+
+    // Row 3.
+    if 4 <= args.dst.length() {
+        pred = util.make_u8x8_multiple(
+                a00: args.dst[0], a01: args.dst[1],
+                a02: args.dst[2], a03: args.dst[3],
+                a04: 0, a05: 0, a06: 0, a07: 0)
+        pred_w = pred.vmovl_u8()
+        out = pred_w.vaddq_u16(b: dc_vec)
+        out_u8 = out.vqmovun_s16()
+        val = out_u8.as_u32x2().vget_lane_u32(b: 0)
+        args.dst[0] = (val & 0xFF) as base.u8
+        args.dst[1] = ((val >> 8) & 0xFF) as base.u8
+        args.dst[2] = ((val >> 16) & 0xFF) as base.u8
+        args.dst[3] = (val >> 24) as base.u8
+    }
+}

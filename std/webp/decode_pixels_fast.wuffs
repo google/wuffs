@@ -1,0 +1,371 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// decode_pixels_fast is the non-coroutine fast path for VP8L pixel decoding.
+// It uses a 64-bit bit accumulator with "Variant 4" bulk refill (peek_u64le +
+// skip_u32_fast), requiring args.src.length() >= 16 to guarantee two refills
+// per pixel. Falls back to decode_pixels_slow for the last few bytes.
+//
+// This mirrors std/deflate/decode_huffman_fast64.wuffs.
+
+pri func decoder.decode_pixels_fast!(dst: slice base.u8, src: base.io_reader, width: base.u32[..= 0x4000], height: base.u32[..= 0x4000], tile_data: roslice base.u8, tile_size_log2: base.u32[..= 9]) base.status {
+    var bits   : base.u64
+    var n_bits : base.u32
+
+    var p     : base.u64
+    var p_max : base.u64[..= 0x4000_0000]
+
+    var tile_size_log2 : base.u32[..= 31]
+    var width_in_tiles : base.u32[..= 0x20FF]
+
+    var x : base.u32
+    var y : base.u32
+    var i : base.u32
+
+    var hg                 : base.u32[..= 0x3FF]
+    var trivial            : base.u8
+    var table_entry        : base.u32
+    var table_entry_n_bits : base.u32[..= 15]
+    var redir_top          : base.u32[..= 0xFFFF]
+    var redir_mask         : base.u32[..= 0x7FFF]
+
+    var pixel_g                      : base.u32[..= 0xFFFF]
+    var color                        : base.u32
+    var back_ref_len_n_bits          : base.u32[..= 11]
+    var back_ref_len_minus_1         : base.u32[..= 0x1FFF]
+    var back_ref_dist_n_bits         : base.u32[..= 18]
+    var back_ref_dist_sym            : base.u32[..= 0xFFFF]
+    var back_ref_dist_premap_minus_1 : base.u32[..= 0xF_FFFF]
+    var back_ref_dist_minus_1        : base.u32
+
+    var dm : base.u32[..= 0xFF]
+    var dx : base.u32
+    var dy : base.u32
+
+    var p_end : base.u64[..= 0x4000_8000]
+    var dist4 : base.u64
+    var q     : base.u64
+
+    var tmask      : base.u32
+    var tile_x_end : base.u32
+
+    var color_cache_shift  : base.u32[..= 31]
+    var color_cache_pixels : slice base.u8
+
+    // Load shared state.
+    bits = this.bits as base.u64
+    n_bits = this.n_bits
+    p = this.pix_p
+    x = this.pix_x
+    y = this.pix_y
+    p_max = (4 * args.width * args.height) as base.u64
+    if args.dst.length() < p_max {
+        return "#internal error: inconsistent dst buffer"
+    }
+
+    // Pre-compute color cache shift for eager insertion.
+    color_cache_shift = (32 - this.color_cache_bits) & 31
+
+    if args.tile_size_log2 <> 0 {
+        tile_size_log2 = args.tile_size_log2
+        width_in_tiles = (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
+    } else {
+        tile_size_log2 = 31
+        width_in_tiles = 1
+    }
+    tmask = ((1 as base.u32) << tile_size_log2) - 1
+
+    while (p < p_max) and (args.src.length() >= 16) {
+        // Group index is (Red << 8) | Green in BGRA pixel layout.
+        i = ((((y >> tile_size_log2) ~mod* width_in_tiles) ~mod+ (x >> tile_size_log2)) ~mod* 4) ~mod+ 1
+        if (i as base.u64) < args.tile_data.length() {
+            hg = args.tile_data[i as base.u64] as base.u32
+            if ((i as base.u64) + 1) < args.tile_data.length() {
+                hg = (((args.tile_data[(i as base.u64) + 1] as base.u32) << 8) | hg) & 0x3FF
+            }
+        }
+        trivial = this.hg_trivial[hg]
+
+        // Compute end of this tile row span.
+        tile_x_end = (x | tmask) ~mod+ 1
+        if tile_x_end > args.width {
+            tile_x_end = args.width
+        }
+
+        // Inner loop: process pixels within the same tile.
+        while (x < tile_x_end) and (p < p_max) and (args.src.length() >= 16) {
+            // Fast path: trivial code (all channels single-symbol).
+            // No Huffman decode needed, no bits consumed.
+            if trivial >= 2 {
+                color = this.hg_literal_arb[hg]
+            } else {
+                // Refill 1: Variant 4 bulk refill to >= 56 bits.
+                bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                n_bits |= 56
+
+                // Decode Green symbol. Primary table at fixed offset 0.
+                table_entry = this.huffman_tables[hg][((bits & 0xFF) as base.u32)]
+                table_entry_n_bits = table_entry & 0x0F
+                bits >>= table_entry_n_bits
+                n_bits ~mod-= table_entry_n_bits
+                if (table_entry >> 31) == 0 {
+                    redir_top = (table_entry >> 8) & 0xFFFF
+                    redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                    table_entry = this.huffman_tables[hg][((redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & 0xFFF)]
+                    table_entry_n_bits = table_entry & 0x0F
+                    bits >>= table_entry_n_bits
+                    n_bits ~mod-= table_entry_n_bits
+                }
+                pixel_g = (table_entry >> 8) & 0xFFFF
+
+                if pixel_g < 0x100 {
+                    if trivial >= 1 {
+                        // Trivial literal: R/B/A are single-symbol.
+                        // Only green was decoded; skip Red, Blue, Alpha.
+                        color = this.hg_literal_arb[hg] | (pixel_g << 8)
+                    } else {
+                        // Full literal: decode all 4 channels.
+                        color = pixel_g << 8
+
+                        // Decode Red. Primary table at fixed offset 256.
+                        table_entry = this.huffman_tables[hg][(256 + ((bits & 0xFF) as base.u32))]
+                        table_entry_n_bits = table_entry & 0x0F
+                        bits >>= table_entry_n_bits
+                        n_bits ~mod-= table_entry_n_bits
+                        if (table_entry >> 31) == 0 {
+                            redir_top = (table_entry >> 8) & 0xFFFF
+                            redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                            table_entry = this.huffman_tables[hg][((redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & 0xFFF)]
+                            table_entry_n_bits = table_entry & 0x0F
+                            bits >>= table_entry_n_bits
+                            n_bits ~mod-= table_entry_n_bits
+                        }
+                        color |= (((table_entry >> 8) & 0xFF) as base.u32) << 16
+
+                        // Conditional refill 2: only refill if needed for Blue + Alpha.
+                        if n_bits < 30 {
+                            bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                            args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                            n_bits |= 56
+                        }
+
+                        // Decode Blue. Primary table at fixed offset 512.
+                        table_entry = this.huffman_tables[hg][(512 + ((bits & 0xFF) as base.u32))]
+                        table_entry_n_bits = table_entry & 0x0F
+                        bits >>= table_entry_n_bits
+                        n_bits ~mod-= table_entry_n_bits
+                        if (table_entry >> 31) == 0 {
+                            redir_top = (table_entry >> 8) & 0xFFFF
+                            redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                            table_entry = this.huffman_tables[hg][((redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & 0xFFF)]
+                            table_entry_n_bits = table_entry & 0x0F
+                            bits >>= table_entry_n_bits
+                            n_bits ~mod-= table_entry_n_bits
+                        }
+                        color |= (((table_entry >> 8) & 0xFF) as base.u32) << 0
+
+                        // Decode Alpha. Primary table at fixed offset 768.
+                        table_entry = this.huffman_tables[hg][(768 + ((bits & 0xFF) as base.u32))]
+                        table_entry_n_bits = table_entry & 0x0F
+                        bits >>= table_entry_n_bits
+                        n_bits ~mod-= table_entry_n_bits
+                        if (table_entry >> 31) == 0 {
+                            redir_top = (table_entry >> 8) & 0xFFFF
+                            redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                            table_entry = this.huffman_tables[hg][((redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & 0xFFF)]
+                            table_entry_n_bits = table_entry & 0x0F
+                            bits >>= table_entry_n_bits
+                            n_bits ~mod-= table_entry_n_bits
+                        }
+                        color |= (((table_entry >> 8) & 0xFF) as base.u32) << 24
+                    }
+
+                } else if pixel_g < 0x118 {
+                    // === Back-reference ===
+                    // Decode length.
+                    if pixel_g < 0x104 {
+                        back_ref_len_minus_1 = pixel_g - 0x100
+                    } else {
+                        back_ref_len_n_bits = (pixel_g - 0x102) >> 1
+                        back_ref_len_minus_1 = ((2 as base.u32) + (pixel_g & 1)) << back_ref_len_n_bits
+                        assert back_ref_len_minus_1 <= 6144
+                        back_ref_len_minus_1 += (bits.low_bits(n: back_ref_len_n_bits) as base.u32) & 0x1FFF
+                        bits >>= back_ref_len_n_bits
+                        n_bits ~mod-= back_ref_len_n_bits
+                    }
+
+                    // Conditional refill 2: distance symbol (15) + extra bits (18) = 33 max.
+                    if n_bits < 33 {
+                        bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                        args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                        n_bits |= 56
+                    }
+
+                    // Decode distance symbol. Primary table at fixed offset 1024.
+                    table_entry = this.huffman_tables[hg][(1024 + ((bits & 0xFF) as base.u32))]
+                    table_entry_n_bits = table_entry & 0x0F
+                    bits >>= table_entry_n_bits
+                    n_bits ~mod-= table_entry_n_bits
+                    if (table_entry >> 31) == 0 {
+                        redir_top = (table_entry >> 8) & 0xFFFF
+                        redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                        table_entry = this.huffman_tables[hg][((redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & 0xFFF)]
+                        table_entry_n_bits = table_entry & 0x0F
+                        bits >>= table_entry_n_bits
+                        n_bits ~mod-= table_entry_n_bits
+                    }
+                    back_ref_dist_sym = (table_entry >> 8) & 0xFFFF
+
+                    // Decode distance extra bits.
+                    if back_ref_dist_sym < 4 {
+                        back_ref_dist_premap_minus_1 = back_ref_dist_sym
+                    } else if back_ref_dist_sym < 40 {
+                        back_ref_dist_n_bits = (back_ref_dist_sym - 2) >> 1
+                        back_ref_dist_premap_minus_1 = ((2 as base.u32) + (back_ref_dist_sym & 1)) << back_ref_dist_n_bits
+                        assert back_ref_dist_premap_minus_1 <= 786432
+                        back_ref_dist_premap_minus_1 += (bits.low_bits(n: back_ref_dist_n_bits) as base.u32) & 0xF_FFFF
+                        bits >>= back_ref_dist_n_bits
+                        n_bits ~mod-= back_ref_dist_n_bits
+                    }
+
+                    // Distance mapping.
+                    if back_ref_dist_premap_minus_1 >= 120 {
+                        back_ref_dist_minus_1 = back_ref_dist_premap_minus_1 - 120
+                    } else {
+                        dm = DISTANCE_MAP[back_ref_dist_premap_minus_1] as base.u32
+                        dy = dm >> 4
+                        dx = 7 ~mod- (dm & 15)
+                        back_ref_dist_minus_1 = (args.width * dy) ~mod+ dx
+                    }
+
+                    // Apply back-reference.
+                    assert p < 0x4000_0000 via "a < b: a < c; c <= b"(c: p_max)
+                    p_end = p + (((back_ref_len_minus_1 + 1) * 4) as base.u64)
+                    dist4 = ((back_ref_dist_minus_1 as base.u64) * 4) + 4
+                    if (p_end > p_max) or (p_end > args.dst.length()) or (p < dist4) {
+                        return "#bad back-reference"
+                    }
+                    q = p - dist4
+                    if p > p_end {
+                        return "#internal error: inconsistent dst buffer"
+                    }
+                    if back_ref_dist_minus_1 >= back_ref_len_minus_1 {
+                        // Non-overlapping back-ref (dist >= len): bulk copy.
+                        if (q > p) or (p > args.dst.length()) {
+                            return "#internal error: inconsistent dst buffer"
+                        }
+                        args.dst[p .. p_end].copy_from_slice!(s: args.dst[q .. p])
+                        // Cache insertion for copied pixels.
+                        if color_cache_shift > 0 {
+                            if p_end > args.dst.length() {
+                                return "#internal error: inconsistent dst buffer"
+                            }
+                            iterate (color_cache_pixels = args.dst[p .. p_end])(length: 4, advance: 4, unroll: 4) {
+                                color = color_cache_pixels.peek_u32le()
+                                this.color_cache[((color ~mod* 0x1E35_A7BD) >> color_cache_shift) & 2047] = color
+                            }
+                        }
+                        p = p_end
+                    } else {
+                        // Overlapping back-ref (dist < len): per-pixel forward loop.
+                        while (q < p) and (p < p_end),
+                                inv p_end <= args.dst.length(),
+                        {
+                            assert q < p_end via "a < b: a < c; c < b"(c: p)
+                            assert p < 0x4000_8000 via "a < b: a < c; c <= b"(c: p_end)
+                            assert q < 0x4000_8000 via "a < b: a < c; c <= b"(c: p_end)
+                            if ((p + 4) <= p_end) and ((q + 4) <= p) {
+                                assert p <= (p + 4) via "a <= (a + b): 0 <= b"()
+                                assert (p + 4) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: p_end)
+                                assert q <= (q + 4) via "a <= (a + b): 0 <= b"()
+                                assert (q + 4) <= p_end via "a <= b: a <= c; c <= b"(c: p)
+                                assert (q + 4) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: p_end)
+                                color = args.dst[q .. (q + 4)].peek_u32le()
+                                args.dst[p .. (p + 4)].poke_u32le!(a: color)
+                                if color_cache_shift > 0 {
+                                    this.color_cache[((color ~mod* 0x1E35_A7BD) >> color_cache_shift) & 2047] = color
+                                }
+                                p += 4
+                                q += 4
+                            } else {
+                                assert p < args.dst.length() via "a < b: a < c; c <= b"(c: p_end)
+                                assert q < args.dst.length() via "a < b: a < c; c <= b"(c: p_end)
+                                args.dst[p] = args.dst[q]
+                                p += 1
+                                q += 1
+                            }
+                        }
+                    }
+
+                    // Update (x, y) for back-reference.
+                    x ~mod+= back_ref_len_minus_1 + 1
+                    while x >= args.width {
+                        x -= args.width
+                        y ~mod+= 1
+                    }
+                    break
+
+                } else {
+                    // === Color cache pixel ===
+                    color = this.color_cache[(pixel_g - 0x118) & 2047]
+                }
+            }
+
+            // Write pixel (literals, trivial code, and color cache).
+            assert p < 0x4000_0000 via "a < b: a < c; c <= b"(c: p_max)
+            if (p + 4) > args.dst.length() {
+                return "#internal error: inconsistent dst buffer"
+            }
+            assert p <= (p + 4) via "a <= (a + b): 0 <= b"()
+            args.dst[p .. (p + 4)].poke_u32le!(a: color)
+            p += 4
+
+            // Eager color cache insertion (skip when no cache is used).
+            if color_cache_shift > 0 {
+                this.color_cache[((color ~mod* 0x1E35_A7BD) >> color_cache_shift) & 2047] = color
+            }
+
+            // Update (x, y).
+            x ~mod+= 1
+            if x == args.width {
+                x = 0
+                y ~mod+= 1
+                break
+            }
+        }
+    }
+
+    // Unwind excess bytes from the accumulator so that n_bits < 8.
+    // This is safe because this function never suspends.
+    if n_bits > 63 {
+        return "#internal error: inconsistent n_bits"
+    }
+    while n_bits >= 8,
+            post n_bits < 8,
+    {
+        n_bits -= 8
+        if args.src.can_undo_byte() {
+            args.src.undo_byte!()
+        } else {
+            return "#internal error: inconsistent I/O"
+        }
+    }
+
+    // Store shared state back.
+    this.bits = (bits & (((1 as base.u64) << n_bits) - 1)) as base.u32
+    this.n_bits = n_bits
+    this.pix_p = p
+    this.pix_x = x
+    this.pix_y = y
+    this.pix_cc_p = p
+
+    return ok
+}

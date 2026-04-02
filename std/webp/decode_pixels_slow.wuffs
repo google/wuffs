@@ -21,18 +21,21 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
     var y : base.u32
     var i : base.u32
 
-    var hg   : base.u32[..= 0xFF]
-    var h    : base.u32[..= 0x187A]
-    var node : base.u16
+    var hg                 : base.u32[..= 0x3FF]
+    var ht_base            : base.u32
+    var table_entry        : base.u32
+    var table_entry_n_bits : base.u32[..= 15]
+    var redir_top          : base.u32[..= 0xFFFF]
+    var redir_mask         : base.u32[..= 0x7FFF]
 
-    var pixel_g   : base.u32[..= 0x7FFF]
+    var pixel_g   : base.u32[..= 0xFFFF]
     var color     : base.u32  // u32 0xAARR_GGBB, non-premultiplied alpha.
     var dst_pixel : slice base.u8
 
     var back_ref_len_n_bits          : base.u32[..= 11]
     var back_ref_len_minus_1         : base.u32[..= 0x1FFF]  // 0x1FFF = 8191.
     var back_ref_dist_n_bits         : base.u32[..= 18]
-    var back_ref_dist_sym            : base.u32[..= 0x7FFF]
+    var back_ref_dist_sym            : base.u32[..= 0xFFFF]
     var back_ref_dist_premap_minus_1 : base.u32[..= 0xF_FFFF]  // 0xF_FFFF = 1048575.
     var back_ref_dist_minus_1        : base.u32
 
@@ -53,6 +56,12 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
         return "#internal error: inconsistent dst buffer"
     }
 
+    // Resume from shared pixel position (set by fast path or prior call).
+    p = this.pix_p
+    x = this.pix_x
+    y = this.pix_y
+    color_cache_p = this.pix_cc_p
+
     if args.tile_size_log2 <> 0 {
         tile_size_log2 = args.tile_size_log2
         width_in_tiles = (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
@@ -62,100 +71,165 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
     }
 
     while p < p_max {
-        // The "~mod+ 1" selects the green pixel of the BGRA 4-byte group.
+        // Group index is (Red << 8) | Green in BGRA pixel layout.
+        // "~mod* 4 ~mod+ 1" points to the Green byte of the tile pixel.
         i = ((((y >> tile_size_log2) ~mod* width_in_tiles) ~mod+ (x >> tile_size_log2)) ~mod* 4) ~mod+ 1
         if (i as base.u64) < args.tile_data.length() {
             hg = args.tile_data[i as base.u64] as base.u32
+            if ((i as base.u64) + 1) < args.tile_data.length() {
+                hg = (((args.tile_data[(i as base.u64) + 1] as base.u32) << 8) | hg) & 0x3FF
+            }
         }
 
-        // Decode the Green+etc symbol.
-        h = HUFFMAN_TABLE_BASE_OFFSETS[0] as base.u32
-        while true,
+        // Decode the Green+etc symbol via table lookup.
+        // Best-effort refill for primary table lookup. Read when source
+        // has data available, but don't block at end of stream.
+        while (this.n_bits < 8) and (args.src.length() > 0),
                 inv p < p_max,
         {
-            node = this.huffman_nodes[hg][h]
-            if node >= 0x8000 {
-                break
-            } else if node > 0x1879 {
-                return "#internal error: inconsistent Huffman code"
+            c8 = args.src.read_u8?()
+            if this.n_bits >= 8 {
+                return "#internal error: inconsistent n_bits"
             }
-            if this.n_bits < 1 {
-                c8 = args.src.read_u8?()
-                this.bits = (c8 as base.u32)
-                this.n_bits = 8
-                assert this.n_bits >= 1
-            }
-            h = (node as base.u32) + (this.bits & 1)
-            this.bits >>= 1
-            this.n_bits -= 1
+            this.bits |= (c8 as base.u32) << this.n_bits
+            this.n_bits += 8
         }
-        pixel_g = (node & 0x7FFF) as base.u32
+        ht_base = this.huffman_table_base_offsets[hg][0] as base.u32
+        table_entry = this.huffman_tables[hg][(ht_base ~mod+ (this.bits & 0xFF)) & 0xFFF]
+        table_entry_n_bits = table_entry & 0x0F
+        this.bits >>= table_entry_n_bits
+        this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+        if (table_entry >> 31) == 0 {
+            // Redirect to second-level table. Refill for secondary.
+            while (this.n_bits < 7) and (args.src.length() > 0),
+                    inv p < p_max,
+            {
+                c8 = args.src.read_u8?()
+                if this.n_bits >= 7 {
+                    return "#internal error: inconsistent n_bits"
+                }
+                this.bits |= (c8 as base.u32) << this.n_bits
+                this.n_bits += 8
+            }
+            redir_top = (table_entry >> 8) & 0xFFFF
+            redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+            table_entry = this.huffman_tables[hg][(redir_top + (this.bits & redir_mask)) & 0xFFF]
+            table_entry_n_bits = table_entry & 0x0F
+            this.bits >>= table_entry_n_bits
+            this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+        }
+        pixel_g = (table_entry >> 8) & 0xFFFF
 
         if pixel_g < 0x100 {  // Literal pixel.
             color = pixel_g << 8
 
             // Decode the Red symbol.
-            h = HUFFMAN_TABLE_BASE_OFFSETS[1] as base.u32
-            while true,
+            while (this.n_bits < 8) and (args.src.length() > 0),
                     inv p < p_max,
             {
-                node = this.huffman_nodes[hg][h]
-                if node >= 0x8000 {
-                    break
+                c8 = args.src.read_u8?()
+                if this.n_bits >= 8 {
+                    return "#internal error: inconsistent n_bits"
                 }
-                if this.n_bits < 1 {
-                    c8 = args.src.read_u8?()
-                    this.bits = (c8 as base.u32)
-                    this.n_bits = 8
-                    assert this.n_bits >= 1
-                }
-                h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
-                this.bits >>= 1
-                this.n_bits -= 1
+                this.bits |= (c8 as base.u32) << this.n_bits
+                this.n_bits += 8
             }
-            color |= ((node & 0xFF) as base.u32) << 16
+            ht_base = this.huffman_table_base_offsets[hg][1] as base.u32
+            table_entry = this.huffman_tables[hg][(ht_base ~mod+ (this.bits & 0xFF)) & 0xFFF]
+            table_entry_n_bits = table_entry & 0x0F
+            this.bits >>= table_entry_n_bits
+            this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            if (table_entry >> 31) == 0 {
+                while (this.n_bits < 7) and (args.src.length() > 0),
+                        inv p < p_max,
+                {
+                    c8 = args.src.read_u8?()
+                    if this.n_bits >= 7 {
+                        return "#internal error: inconsistent n_bits"
+                    }
+                    this.bits |= (c8 as base.u32) << this.n_bits
+                    this.n_bits += 8
+                }
+                redir_top = (table_entry >> 8) & 0xFFFF
+                redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                table_entry = this.huffman_tables[hg][(redir_top + (this.bits & redir_mask)) & 0xFFF]
+                table_entry_n_bits = table_entry & 0x0F
+                this.bits >>= table_entry_n_bits
+                this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            }
+            color |= (((table_entry >> 8) & 0xFF) as base.u32) << 16
 
             // Decode the Blue symbol.
-            h = HUFFMAN_TABLE_BASE_OFFSETS[2] as base.u32
-            while true,
+            while (this.n_bits < 8) and (args.src.length() > 0),
                     inv p < p_max,
             {
-                node = this.huffman_nodes[hg][h]
-                if node >= 0x8000 {
-                    break
+                c8 = args.src.read_u8?()
+                if this.n_bits >= 8 {
+                    return "#internal error: inconsistent n_bits"
                 }
-                if this.n_bits < 1 {
-                    c8 = args.src.read_u8?()
-                    this.bits = (c8 as base.u32)
-                    this.n_bits = 8
-                    assert this.n_bits >= 1
-                }
-                h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
-                this.bits >>= 1
-                this.n_bits -= 1
+                this.bits |= (c8 as base.u32) << this.n_bits
+                this.n_bits += 8
             }
-            color |= ((node & 0xFF) as base.u32) << 0
+            ht_base = this.huffman_table_base_offsets[hg][2] as base.u32
+            table_entry = this.huffman_tables[hg][(ht_base ~mod+ (this.bits & 0xFF)) & 0xFFF]
+            table_entry_n_bits = table_entry & 0x0F
+            this.bits >>= table_entry_n_bits
+            this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            if (table_entry >> 31) == 0 {
+                while (this.n_bits < 7) and (args.src.length() > 0),
+                        inv p < p_max,
+                {
+                    c8 = args.src.read_u8?()
+                    if this.n_bits >= 7 {
+                        return "#internal error: inconsistent n_bits"
+                    }
+                    this.bits |= (c8 as base.u32) << this.n_bits
+                    this.n_bits += 8
+                }
+                redir_top = (table_entry >> 8) & 0xFFFF
+                redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                table_entry = this.huffman_tables[hg][(redir_top + (this.bits & redir_mask)) & 0xFFF]
+                table_entry_n_bits = table_entry & 0x0F
+                this.bits >>= table_entry_n_bits
+                this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            }
+            color |= (((table_entry >> 8) & 0xFF) as base.u32) << 0
 
             // Decode the Alpha symbol.
-            h = HUFFMAN_TABLE_BASE_OFFSETS[3] as base.u32
-            while true,
+            while (this.n_bits < 8) and (args.src.length() > 0),
                     inv p < p_max,
             {
-                node = this.huffman_nodes[hg][h]
-                if node >= 0x8000 {
-                    break
+                c8 = args.src.read_u8?()
+                if this.n_bits >= 8 {
+                    return "#internal error: inconsistent n_bits"
                 }
-                if this.n_bits < 1 {
-                    c8 = args.src.read_u8?()
-                    this.bits = (c8 as base.u32)
-                    this.n_bits = 8
-                    assert this.n_bits >= 1
-                }
-                h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
-                this.bits >>= 1
-                this.n_bits -= 1
+                this.bits |= (c8 as base.u32) << this.n_bits
+                this.n_bits += 8
             }
-            color |= ((node & 0xFF) as base.u32) << 24
+            ht_base = this.huffman_table_base_offsets[hg][3] as base.u32
+            table_entry = this.huffman_tables[hg][(ht_base ~mod+ (this.bits & 0xFF)) & 0xFFF]
+            table_entry_n_bits = table_entry & 0x0F
+            this.bits >>= table_entry_n_bits
+            this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            if (table_entry >> 31) == 0 {
+                while (this.n_bits < 7) and (args.src.length() > 0),
+                        inv p < p_max,
+                {
+                    c8 = args.src.read_u8?()
+                    if this.n_bits >= 7 {
+                        return "#internal error: inconsistent n_bits"
+                    }
+                    this.bits |= (c8 as base.u32) << this.n_bits
+                    this.n_bits += 8
+                }
+                redir_top = (table_entry >> 8) & 0xFFFF
+                redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                table_entry = this.huffman_tables[hg][(redir_top + (this.bits & redir_mask)) & 0xFFF]
+                table_entry_n_bits = table_entry & 0x0F
+                this.bits >>= table_entry_n_bits
+                this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            }
+            color |= (((table_entry >> 8) & 0xFF) as base.u32) << 24
 
         } else if pixel_g < 0x118 {  // Back-ref pixel.
             // Decode the back-ref length.
@@ -183,27 +257,41 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 this.n_bits -= back_ref_len_n_bits
             }
 
-            // Decode the back-ref distance.
-
-            h = HUFFMAN_TABLE_BASE_OFFSETS[4] as base.u32
-            while true,
+            // Decode the back-ref distance symbol.
+            while (this.n_bits < 8) and (args.src.length() > 0),
                     inv p < p_max,
             {
-                node = this.huffman_nodes[hg][h]
-                if node >= 0x8000 {
-                    break
+                c8 = args.src.read_u8?()
+                if this.n_bits >= 8 {
+                    return "#internal error: inconsistent n_bits"
                 }
-                if this.n_bits < 1 {
-                    c8 = args.src.read_u8?()
-                    this.bits = (c8 as base.u32)
-                    this.n_bits = 8
-                    assert this.n_bits >= 1
-                }
-                h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
-                this.bits >>= 1
-                this.n_bits -= 1
+                this.bits |= (c8 as base.u32) << this.n_bits
+                this.n_bits += 8
             }
-            back_ref_dist_sym = (node & 0x7FFF) as base.u32
+            ht_base = this.huffman_table_base_offsets[hg][4] as base.u32
+            table_entry = this.huffman_tables[hg][(ht_base ~mod+ (this.bits & 0xFF)) & 0xFFF]
+            table_entry_n_bits = table_entry & 0x0F
+            this.bits >>= table_entry_n_bits
+            this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            if (table_entry >> 31) == 0 {
+                while (this.n_bits < 7) and (args.src.length() > 0),
+                        inv p < p_max,
+                {
+                    c8 = args.src.read_u8?()
+                    if this.n_bits >= 7 {
+                        return "#internal error: inconsistent n_bits"
+                    }
+                    this.bits |= (c8 as base.u32) << this.n_bits
+                    this.n_bits += 8
+                }
+                redir_top = (table_entry >> 8) & 0xFFFF
+                redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+                table_entry = this.huffman_tables[hg][(redir_top + (this.bits & redir_mask)) & 0xFFF]
+                table_entry_n_bits = table_entry & 0x0F
+                this.bits >>= table_entry_n_bits
+                this.n_bits = (this.n_bits ~mod- table_entry_n_bits) & 31
+            }
+            back_ref_dist_sym = (table_entry >> 8) & 0xFFFF
 
             if back_ref_dist_sym < 4 {
                 back_ref_dist_premap_minus_1 = back_ref_dist_sym
@@ -305,4 +393,10 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
             y ~mod+= 1
         }
     }
+
+    // Store back shared pixel position.
+    this.pix_p = p
+    this.pix_x = x
+    this.pix_y = y
+    this.pix_cc_p = color_cache_p
 }

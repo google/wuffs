@@ -1309,6 +1309,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				advance = sixteen
 			case strings.HasSuffix(s, "_slice_u16lex32"): // 32 u16 values is 64 bytes.
 				advance = thirtyTwo
+			case strings.HasSuffix(s, "_slice_u32lex4"): // 4 u32 values is 16 bytes.
+				advance = four
 			case strings.Contains(s, "_slice"):
 				return bounds{}, fmt.Errorf("check: internal error: unrecognized %s method", s)
 			}

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -87,7 +88,31 @@ const (
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 	switch wfs {
 	case wfsCDecl:
-		b.writes("WUFFS_BASE__GENERATED_C_CODE\n")
+		// Use NOINLINE for cold helper functions (e.g. byte-loading helpers
+		// for boolean decoders) so the compiler keeps their callers small
+		// enough to inline at call sites.
+		// Also use NOINLINE for large per-macroblock functions (e.g.
+		// decode_one_mb) and coefficient dispatch functions (e.g.
+		// decode_mb_coefficients) so their callers stay compact.
+		// Use NOINLINE for cold helper functions (e.g. byte-loading helpers
+		// for boolean decoders) so the compiler keeps their callers small
+		// enough to inline at call sites.
+		// Also use NOINLINE for large per-macroblock functions (e.g.
+		// decode_one_mb) and coefficient dispatch functions (e.g.
+		// decode_mb_coefficients) so their callers stay compact.
+		// Use ALWAYS_INLINE for hot inner functions (e.g.
+		// decode_block_coeffs) that should be inlined into their callers
+		// to avoid per-call struct sync overhead.
+		funcName := n.FuncName().Str(g.tm)
+		if strings.HasSuffix(funcName, "_load_bytes") ||
+			funcName == "decode_one_mb" ||
+			funcName == "decode_mb_coefficients" {
+			b.writes("WUFFS_BASE__GENERATED_C_CODE_NOINLINE\n")
+		} else if funcName == "decode_block_coeffs" {
+			b.writes("WUFFS_BASE__GENERATED_C_CODE_ALWAYS_INLINE\n")
+		} else {
+			b.writes("WUFFS_BASE__GENERATED_C_CODE\n")
+		}
 		if n.Public() {
 			b.writes("WUFFS_BASE__MAYBE_STATIC ")
 		} else {

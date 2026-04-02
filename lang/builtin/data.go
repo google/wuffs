@@ -52,6 +52,7 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u8x8.vminv_u8() u8",
 	"arm_neon_u8x8.vmla_u8(b: arm_neon_u8x8, c: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x8.vmls_u8(b: arm_neon_u8x8, c: arm_neon_u8x8) arm_neon_u8x8",
+	"arm_neon_u8x8.vmovl_s8() arm_neon_u16x8",
 	"arm_neon_u8x8.vmovl_u8() arm_neon_u16x8",
 	"arm_neon_u8x8.vmovn_high_u16(b: arm_neon_u16x8) arm_neon_u8x16",
 	"arm_neon_u8x8.vmul_u8(b: arm_neon_u8x8) arm_neon_u8x8",
@@ -64,6 +65,7 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u8x8.vpmax_u8(b: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x8.vpmin_u8(b: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x8.vqadd_u8(b: arm_neon_u8x8) arm_neon_u8x8",
+	"arm_neon_u8x8.vqadd_s8(b: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x8.vqmovn_high_u16(b: arm_neon_u16x8) arm_neon_u8x16",
 	// arm_neon_u8x8.vqmovun_high_s16(etc)
 	// arm_neon_u8x8.vqrshl_u8(etc)
@@ -74,6 +76,7 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u8x8.vqshrn_high_n_u16(b: arm_neon_u16x8, c: u32) arm_neon_u8x16",
 	// arm_neon_u8x8.vqshrun_high_n_s16(etc)
 	"arm_neon_u8x8.vqsub_u8(b: arm_neon_u8x8) arm_neon_u8x8",
+	"arm_neon_u8x8.vqsub_s8(b: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x8.vqtbx1_u8(tab: arm_neon_u8x16, idx: arm_neon_u8x8) arm_neon_u8x8",
 	// arm_neon_u8x8.vqtbx2_u8(etc)
 	// arm_neon_u8x8.vqtbx3_u8(etc)
@@ -93,6 +96,7 @@ var funcsARMNeon = [...]string{
 	// arm_neon_u8x8.vshl_u8(etc)
 	"arm_neon_u8x8.vshll_n_u8(b: u32) arm_neon_u16x8",
 	"arm_neon_u8x8.vshr_n_u8(b: u32) arm_neon_u8x8",
+	"arm_neon_u8x8.vshr_n_s8(b: u32) arm_neon_u8x8",
 	"arm_neon_u8x8.vshrn_high_n_u16(b: arm_neon_u16x8, c: u32) arm_neon_u8x16",
 	"arm_neon_u8x8.vsli_n_u8(b: arm_neon_u8x8, c: u32) arm_neon_u8x8",
 	// arm_neon_u8x8.vsqadd_u8(etc)
@@ -431,10 +435,12 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u8x16.vpmaxq_u8(b: arm_neon_u8x16) arm_neon_u8x16",
 	"arm_neon_u8x16.vpminq_u8(b: arm_neon_u8x16) arm_neon_u8x16",
 	"arm_neon_u8x16.vqaddq_u8(b: arm_neon_u8x16) arm_neon_u8x16",
+	"arm_neon_u8x16.vqaddq_s8(b: arm_neon_u8x16) arm_neon_u8x16",
 	// arm_neon_u8x16.vqrshlq_u8(etc)
 	"arm_neon_u8x16.vqshlq_n_u8(b: u32) arm_neon_u8x16",
 	// arm_neon_u8x16.vqshlq_u8(etc)
 	"arm_neon_u8x16.vqsubq_u8(b: arm_neon_u8x16) arm_neon_u8x16",
+	"arm_neon_u8x16.vqsubq_s8(b: arm_neon_u8x16) arm_neon_u8x16",
 	"arm_neon_u8x16.vqtbl1_u8(b: arm_neon_u8x8) arm_neon_u8x8",
 	"arm_neon_u8x16.vqtbl1q_u8(b: arm_neon_u8x16) arm_neon_u8x16",
 	"arm_neon_u8x16.vqtbx1q_u8(tab: arm_neon_u8x16, idx: arm_neon_u8x16) arm_neon_u8x16",
@@ -453,6 +459,7 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u8x16.vshlq_n_u8(b: u32) arm_neon_u8x16",
 	// arm_neon_u8x16.vshlq_u8(etc)
 	"arm_neon_u8x16.vshrq_n_u8(b: u32) arm_neon_u8x16",
+	"arm_neon_u8x16.vshrq_n_s8(b: u32) arm_neon_u8x16",
 	"arm_neon_u8x16.vsliq_n_u8(b: arm_neon_u8x16, c: u32) arm_neon_u8x16",
 	// arm_neon_u8x16.vsqaddq_u8(etc)
 	"arm_neon_u8x16.vsraq_n_u8(b: arm_neon_u8x16, c: u32) arm_neon_u8x16",
@@ -544,13 +551,18 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u16x8.vpaddq_u16(b: arm_neon_u16x8) arm_neon_u16x8",
 	"arm_neon_u16x8.vpmaxq_u16(b: arm_neon_u16x8) arm_neon_u16x8",
 	"arm_neon_u16x8.vpminq_u16(b: arm_neon_u16x8) arm_neon_u16x8",
+	"arm_neon_u16x8.vqaddq_s16(b: arm_neon_u16x8) arm_neon_u16x8",
 	"arm_neon_u16x8.vqaddq_u16(b: arm_neon_u16x8) arm_neon_u16x8",
+	"arm_neon_u16x8.vqdmulhq_n_s16(b: u16) arm_neon_u16x8",
+	"arm_neon_u16x8.vqmovn_s16() arm_neon_u8x8",
 	"arm_neon_u16x8.vqmovn_u16() arm_neon_u8x8",
+	"arm_neon_u16x8.vqmovun_s16() arm_neon_u8x8",
 	// arm_neon_u16x8.vqrshlq_u16(etc)
 	"arm_neon_u16x8.vqrshrn_n_u16(b: u32) arm_neon_u8x8",
 	"arm_neon_u16x8.vqshlq_n_u16(b: u32) arm_neon_u16x8",
 	// arm_neon_u16x8.vqshlq_u16(etc)
 	"arm_neon_u16x8.vqshrn_n_u16(b: u32) arm_neon_u8x8",
+	"arm_neon_u16x8.vqsubq_s16(b: arm_neon_u16x8) arm_neon_u16x8",
 	"arm_neon_u16x8.vqsubq_u16(b: arm_neon_u16x8) arm_neon_u16x8",
 	"arm_neon_u16x8.vraddhn_u16(b: arm_neon_u16x8) arm_neon_u8x8",
 	"arm_neon_u16x8.vrev32q_u16() arm_neon_u16x8",
@@ -565,6 +577,7 @@ var funcsARMNeon = [...]string{
 	"arm_neon_u16x8.vshlq_n_u16(b: u32) arm_neon_u16x8",
 	// arm_neon_u16x8.vshlq_u16(etc)
 	"arm_neon_u16x8.vshrn_n_u16(b: u32) arm_neon_u8x8",
+	"arm_neon_u16x8.vshrq_n_s16(b: u32) arm_neon_u16x8",
 	"arm_neon_u16x8.vshrq_n_u16(b: u32) arm_neon_u16x8",
 	"arm_neon_u16x8.vsliq_n_u16(b: arm_neon_u16x8, c: u32) arm_neon_u16x8",
 	// arm_neon_u16x8.vsqaddq_u16(etc)

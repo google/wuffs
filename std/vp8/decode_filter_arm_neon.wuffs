@@ -1,0 +1,3124 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 loop filter, ARM NEON version.
+//
+// Processes 16 contiguous pixels at a horizontal edge in parallel.
+// Algorithm from libwebp (SimpleVFilter16_NEON / VFilter16_NEON):
+//   1. NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= limit (per-byte mask)
+//   2. Convert u8 to i8 (XOR with 0x80)
+//   3. GetBaseDelta: delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1))
+//   4. DoSimpleFilter: v4 = asr3_i8(delta+4), v3 = asr3_i8(delta+3)
+//      q0 -= v4, p0 += v3 (saturating i8)
+//   5. Convert back to u8
+
+pri func decoder.simple_vfilter_16_arm_neon!(workbuf: slice base.u8, q0_off: base.u64, limit: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+
+    // NEON registers.
+    var p1       : base.arm_neon_u8x16
+    var p0       : base.arm_neon_u8x16
+    var q0       : base.arm_neon_u8x16
+    var q1       : base.arm_neon_u8x16
+    var sign_bit : base.arm_neon_u8x16
+    var kFE      : base.arm_neon_u8x16
+    var m_thresh : base.arm_neon_u8x16
+    var k3       : base.arm_neon_u8x16
+    var k4       : base.arm_neon_u8x16
+    var mask     : base.arm_neon_u8x16
+    var t1       : base.arm_neon_u8x16
+    var t2       : base.arm_neon_u8x16
+    var t3       : base.arm_neon_u8x16
+    var delta    : base.arm_neon_u8x16
+    var v3       : base.arm_neon_u8x16
+    var v4       : base.arm_neon_u8x16
+    var zero     : base.arm_neon_u8x16
+
+    var wb : slice base.u8
+
+    // Need at least 2*stride bytes before q0_off for p1 and p0 rows.
+    if args.q0_off < (2 * (this.y_stride as base.u64)) {
+        return nothing
+    }
+
+    wb = args.workbuf
+
+    // Reslice wb to p1 position: q0_off - 2*stride.
+    if (args.q0_off - (2 * (this.y_stride as base.u64))) <= wb.length() {
+        wb = wb[args.q0_off - (2 * (this.y_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Load p1 row (16 contiguous bytes).
+    if 16 > wb.length() {
+        return nothing
+    }
+    p1 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Advance by stride to p0 row.
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    // Load p0 row.
+    if 16 > wb.length() {
+        return nothing
+    }
+    p0 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Advance by stride to q0 row.
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    // Load q0 row.
+    if 16 > wb.length() {
+        return nothing
+    }
+    q0 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Advance by stride to q1 row.
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    // Load q1 row.
+    if 16 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Set up constants.
+    zero = util.make_u8x16_repeat(a: 0)
+    sign_bit = util.make_u8x16_repeat(a: 0x80)
+    kFE = util.make_u8x16_repeat(a: 0xFE)
+    m_thresh = util.make_u8x16_repeat(a: (args.limit & 0xFF) as base.u8)
+    k3 = util.make_u8x16_repeat(a: 3)
+    k4 = util.make_u8x16_repeat(a: 4)
+
+    // ---- NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= limit ----
+    // abs(a-b) for u8 via NEON: vabdq_u8.
+    t1 = p1.vabdq_u8(b: q1)
+    // abs(p1-q1) / 2: clear LSB then shift right 1.
+    t2 = t1.vandq_u8(b: kFE)
+    t2 = t2.vshrq_n_u8(b: 1)
+    // abs(p0-q0) * 2: abd + saturating double.
+    t3 = p0.vabdq_u8(b: q0)
+    t3 = t3.vqaddq_u8(b: t3)
+    // abs(p0-q0)*2 + abs(p1-q1)/2.
+    t3 = t3.vqaddq_u8(b: t2)
+    // mask: 0xFF where value <= thresh, 0x00 where > thresh.
+    // subs_u8 saturates to 0 when t3 <= m_thresh.
+    mask = t3.vqsubq_u8(b: m_thresh)
+    mask = mask.vceqq_u8(b: zero)
+
+    // ---- GetBaseDelta (i8 domain) ----
+    // Convert to signed by XOR with 0x80.
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+
+    // delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1))
+    // Accumulate via saturating signed adds to avoid overflow.
+    t1 = p1.vqsubq_s8(b: q1)  // p1 - q1 (saturating i8)
+    t2 = q0.vqsubq_s8(b: p0)  // q0 - p0
+    t1 = t1.vqaddq_s8(b: t2)  // (p1-q1) + 1*(q0-p0)
+    t1 = t1.vqaddq_s8(b: t2)  // (p1-q1) + 2*(q0-p0)
+    delta = t1.vqaddq_s8(b: t2)  // (p1-q1) + 3*(q0-p0)
+
+    // Mask: only apply filter where NeedsFilter passed.
+    delta = delta.vandq_u8(b: mask)
+
+    // ---- DoSimpleFilter ----
+    // v4 = signed_byte_shr3(delta + 4)
+    v4 = delta.vqaddq_s8(b: k4)
+    v4 = v4.vshrq_n_s8(b: 3)
+
+    // v3 = signed_byte_shr3(delta + 3)
+    v3 = delta.vqaddq_s8(b: k3)
+    v3 = v3.vshrq_n_s8(b: 3)
+
+    // Apply: q0 -= v4, p0 += v3 (saturating i8).
+    q0 = q0.vqsubq_s8(b: v4)
+    p0 = p0.vqaddq_s8(b: v3)
+
+    // Convert back to unsigned.
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+
+    // ---- Store p0 and q0 back ----
+    if args.q0_off < (this.y_stride as base.u64) {
+        return nothing
+    }
+    if (args.q0_off - (this.y_stride as base.u64)) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (this.y_stride as base.u64) ..]
+    } else {
+        return nothing
+    }
+
+    // Store p0 row.
+    if 16 <= args.workbuf.length() {
+        p0.store_slice128!(a: args.workbuf[.. 16])
+    }
+
+    // Advance by stride to q0.
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    // Store q0 row.
+    if 16 <= args.workbuf.length() {
+        q0.store_slice128!(a: args.workbuf[.. 16])
+    }
+}
+
+// VP8 normal loop filter (filter4), ARM NEON version.
+//
+// Filters 16 contiguous pixels at a horizontal inner sub-block edge.
+// Loads 8 rows (p3..q3), computes NeedsFilter2 + HEV masks, then applies
+// filter2 (HEV) or filter4 (!HEV).
+
+pri func decoder.normal_vfilter_inner_16_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var p3        : base.arm_neon_u8x16
+    var p2        : base.arm_neon_u8x16
+    var p1        : base.arm_neon_u8x16
+    var p0        : base.arm_neon_u8x16
+    var q0        : base.arm_neon_u8x16
+    var q1        : base.arm_neon_u8x16
+    var q2        : base.arm_neon_u8x16
+    var q3        : base.arm_neon_u8x16
+    var zero      : base.arm_neon_u8x16
+    var sign_bit  : base.arm_neon_u8x16
+    var kFE       : base.arm_neon_u8x16
+    var m_thresh  : base.arm_neon_u8x16
+    var m_ithresh : base.arm_neon_u8x16
+    var m_hthresh : base.arm_neon_u8x16
+    var k1        : base.arm_neon_u8x16
+    var k3        : base.arm_neon_u8x16
+    var k4        : base.arm_neon_u8x16
+    var mask      : base.arm_neon_u8x16
+    var not_hev   : base.arm_neon_u8x16
+    var delta     : base.arm_neon_u8x16
+    var v3        : base.arm_neon_u8x16
+    var v4        : base.arm_neon_u8x16
+    var a3        : base.arm_neon_u8x16
+    var t1        : base.arm_neon_u8x16
+    var t2        : base.arm_neon_u8x16
+    var t3        : base.arm_neon_u8x16
+
+    // Need at least 4*stride bytes before q0_off for p3 row.
+    if args.q0_off < (4 * (this.y_stride as base.u64)) {
+        return nothing
+    }
+
+    wb = args.workbuf
+
+    // Reslice to p3 position.
+    if (args.q0_off - (4 * (this.y_stride as base.u64))) <= wb.length() {
+        wb = wb[args.q0_off - (4 * (this.y_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows: p3, p2, p1, p0, q0, q1, q2, q3.
+    if 16 > wb.length() {
+        return nothing
+    }
+    p3 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p2 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p1 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p0 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q0 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q2 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Constants.
+    zero = util.make_u8x16_repeat(a: 0)
+    sign_bit = util.make_u8x16_repeat(a: 0x80)
+    kFE = util.make_u8x16_repeat(a: 0xFE)
+    m_thresh = util.make_u8x16_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x16_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x16_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_u8x16_repeat(a: 1)
+    k3 = util.make_u8x16_repeat(a: 3)
+    k4 = util.make_u8x16_repeat(a: 4)
+
+    // ---- NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= level ----
+    t1 = p1.vabdq_u8(b: q1)
+    t2 = t1.vandq_u8(b: kFE)
+    t2 = t2.vshrq_n_u8(b: 1)
+    t3 = p0.vabdq_u8(b: q0)
+    t3 = t3.vqaddq_u8(b: t3)
+    t3 = t3.vqaddq_u8(b: t2)
+    mask = t3.vqsubq_u8(b: m_thresh)
+    mask = mask.vceqq_u8(b: zero)
+
+    // ---- NeedsFilter2: ilevel checks on 6 adjacent pairs ----
+    t1 = p3.vabdq_u8(b: p2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p2.vabdq_u8(b: p1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p1.vabdq_u8(b: p0)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q0.vabdq_u8(b: q1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q1.vabdq_u8(b: q2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q2.vabdq_u8(b: q3)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+
+    // ---- GetNotHEV: 0xFF where abs(p1-p0) <= hlevel AND abs(q1-q0) <= hlevel ----
+    t1 = p1.vabdq_u8(b: p0)
+    t2 = q1.vabdq_u8(b: q0)
+    t3 = t1.vqsubq_u8(b: m_hthresh).vorrq_u8(b: t2.vqsubq_u8(b: m_hthresh))
+    not_hev = t3.vceqq_u8(b: zero)
+
+    // ---- Convert p1, p0, q0, q1 to signed (XOR 0x80) ----
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+
+    // ---- Combined delta ----
+    // HEV: delta = 3*(q0-p0) + (p1-q1)    [filter2]
+    // !HEV: delta = 3*(q0-p0)              [filter4 uses no p1-q1]
+    t1 = p1.vqsubq_s8(b: q1)  // p1-q1 (sat i8)
+    t1 = t1.vbicq_u8(b: not_hev)  // zero where !HEV: t1 & ~not_hev
+    t2 = q0.vqsubq_s8(b: p0)  // q0-p0
+    t1 = t1.vqaddq_s8(b: t2)
+    t1 = t1.vqaddq_s8(b: t2)
+    delta = t1.vqaddq_s8(b: t2)  // 3*(q0-p0) + hev*(p1-q1)
+    delta = delta.vandq_u8(b: mask)
+
+    // ---- v4 = SignedShift(delta+4, 3), v3 = SignedShift(delta+3, 3) ----
+    v4 = delta.vqaddq_s8(b: k4)
+    v4 = v4.vshrq_n_s8(b: 3)
+
+    v3 = delta.vqaddq_s8(b: k3)
+    v3 = v3.vshrq_n_s8(b: 3)
+
+    // Apply to p0, q0 (both HEV and !HEV use these).
+    q0 = q0.vqsubq_s8(b: v4)
+    p0 = p0.vqaddq_s8(b: v3)
+
+    // ---- Filter4 !HEV: a3 = SignedShift(v4+1, 1) & not_hev ----
+    a3 = v4.vqaddq_s8(b: k1)
+    a3 = a3.vshrq_n_s8(b: 1)
+    a3 = a3.vandq_u8(b: not_hev)
+
+    // Apply to p1, q1 (only !HEV).
+    q1 = q1.vqsubq_s8(b: a3)
+    p1 = p1.vqaddq_s8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+
+    // ---- Store p1, p0, q0, q1 ----
+    if args.q0_off < (2 * (this.y_stride as base.u64)) {
+        return nothing
+    }
+    if (args.q0_off - (2 * (this.y_stride as base.u64))) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (2 * (this.y_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    if 16 <= args.workbuf.length() {
+        p1.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        p0.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        q0.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        q1.store_slice128!(a: args.workbuf[.. 16])
+    }
+}
+
+// VP8 normal loop filter (filter6) for 16-pixel MB horizontal edges, ARM NEON.
+//
+// Stronger filter applied at macroblock boundaries. Uses weighted deltas
+// (27/18/9) for !HEV pixels, modifying 6 rows (p2..q2).
+
+pri func decoder.normal_vfilter_mb_16_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var p3        : base.arm_neon_u8x16
+    var p2        : base.arm_neon_u8x16
+    var p1        : base.arm_neon_u8x16
+    var p0        : base.arm_neon_u8x16
+    var q0        : base.arm_neon_u8x16
+    var q1        : base.arm_neon_u8x16
+    var q2        : base.arm_neon_u8x16
+    var q3        : base.arm_neon_u8x16
+    var zero      : base.arm_neon_u8x16
+    var sign_bit  : base.arm_neon_u8x16
+    var kFE       : base.arm_neon_u8x16
+    var m_thresh  : base.arm_neon_u8x16
+    var m_ithresh : base.arm_neon_u8x16
+    var m_hthresh : base.arm_neon_u8x16
+    var k3        : base.arm_neon_u8x16
+    var k4        : base.arm_neon_u8x16
+    var mask      : base.arm_neon_u8x16
+    var not_hev   : base.arm_neon_u8x16
+    var delta     : base.arm_neon_u8x16
+    var v3        : base.arm_neon_u8x16
+    var v4        : base.arm_neon_u8x16
+    var a1        : base.arm_neon_u8x16
+    var a2        : base.arm_neon_u8x16
+    var a3        : base.arm_neon_u8x16
+    var t1        : base.arm_neon_u8x16
+    var t2        : base.arm_neon_u8x16
+    var t3        : base.arm_neon_u8x16
+    var p0_adj    : base.arm_neon_u8x16
+    var q0_adj    : base.arm_neon_u8x16
+
+    // Widening variables for filter6 multiply (i8 -> i16).
+    var d_lo      : base.arm_neon_u8x8
+    var d_hi      : base.arm_neon_u8x8
+    var lo        : base.arm_neon_u16x8
+    var hi        : base.arm_neon_u16x8
+    var k63_16    : base.arm_neon_u16x8
+    var tmp_lo    : base.arm_neon_u16x8
+    var tmp_hi    : base.arm_neon_u16x8
+    var narrow_lo : base.arm_neon_u8x8
+    var narrow_hi : base.arm_neon_u8x8
+
+    // Need at least 4*stride bytes before q0_off.
+    if args.q0_off < (4 * (this.y_stride as base.u64)) {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - (4 * (this.y_stride as base.u64))) <= wb.length() {
+        wb = wb[args.q0_off - (4 * (this.y_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows: p3, p2, p1, p0, q0, q1, q2, q3.
+    if 16 > wb.length() {
+        return nothing
+    }
+    p3 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p2 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p1 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    p0 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q0 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q2 = util.make_u8x16_slice128(a: wb[.. 16])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_u8x16_slice128(a: wb[.. 16])
+
+    // Constants.
+    zero = util.make_u8x16_repeat(a: 0)
+    sign_bit = util.make_u8x16_repeat(a: 0x80)
+    kFE = util.make_u8x16_repeat(a: 0xFE)
+    m_thresh = util.make_u8x16_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x16_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x16_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_u8x16_repeat(a: 3)
+    k4 = util.make_u8x16_repeat(a: 4)
+    k63_16 = util.make_u16x8_repeat(a: 63)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabdq_u8(b: q1)
+    t2 = t1.vandq_u8(b: kFE).vshrq_n_u8(b: 1)
+    t3 = p0.vabdq_u8(b: q0)
+    t3 = t3.vqaddq_u8(b: t3)
+    t3 = t3.vqaddq_u8(b: t2)
+    mask = t3.vqsubq_u8(b: m_thresh).vceqq_u8(b: zero)
+
+    t1 = p3.vabdq_u8(b: p2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p2.vabdq_u8(b: p1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p1.vabdq_u8(b: p0)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q0.vabdq_u8(b: q1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q1.vabdq_u8(b: q2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q2.vabdq_u8(b: q3)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabdq_u8(b: p0)
+    t2 = q1.vabdq_u8(b: q0)
+    t3 = t1.vqsubq_u8(b: m_hthresh).vorrq_u8(b: t2.vqsubq_u8(b: m_hthresh))
+    not_hev = t3.vceqq_u8(b: zero)
+
+    // ---- Convert p2, p1, p0, q0, q1, q2 to signed ----
+    p2 = p2.veorq_u8(b: sign_bit)
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+    q2 = q2.veorq_u8(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) for ALL positions ----
+    // Filter6 uses p1-q1 in both HEV and !HEV paths.
+    t1 = p1.vqsubq_s8(b: q1)
+    t2 = q0.vqsubq_s8(b: p0)
+    t1 = t1.vqaddq_s8(b: t2)
+    t1 = t1.vqaddq_s8(b: t2)
+    delta = t1.vqaddq_s8(b: t2)
+    delta = delta.vandq_u8(b: mask)
+
+    // ---- Filter2 (HEV path): v4 = asr3(delta+4), v3 = asr3(delta+3) ----
+    v4 = delta.vqaddq_s8(b: k4)
+    v4 = v4.vshrq_n_s8(b: 3)
+
+    v3 = delta.vqaddq_s8(b: k3)
+    v3 = v3.vshrq_n_s8(b: 3)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    // Sign-extend delta i8 -> i16 (split into lo and hi halves).
+    d_lo = delta.vget_low_u8()
+    d_hi = delta.vget_high_u8()
+    lo = d_lo.vmovl_s8()
+    hi = d_hi.vmovl_s8()
+
+    // a1 = (27 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 27)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 27)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a1 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // a2 = (18 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 18)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 18)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a2 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // a3 = (9 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 9)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 9)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a3 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // ---- Merge HEV (filter2) and !HEV (filter6) results ----
+    // p0 += select(hev: v3, !hev: a1)
+    p0_adj = v3.vbicq_u8(b: not_hev)  // v3 where HEV (v3 & ~not_hev)
+    p0_adj = p0_adj.vorrq_u8(b: a1.vandq_u8(b: not_hev))  // a1 where !HEV
+    p0 = p0.vqaddq_s8(b: p0_adj)
+
+    // q0 -= select(hev: v4, !hev: a1)
+    q0_adj = v4.vbicq_u8(b: not_hev)  // v4 where HEV
+    q0_adj = q0_adj.vorrq_u8(b: a1.vandq_u8(b: not_hev))  // a1 where !HEV
+    q0 = q0.vqsubq_s8(b: q0_adj)
+
+    // p1 += a2 & not_hev (only !HEV)
+    p1 = p1.vqaddq_s8(b: a2.vandq_u8(b: not_hev))
+    // q1 -= a2 & not_hev
+    q1 = q1.vqsubq_s8(b: a2.vandq_u8(b: not_hev))
+    // p2 += a3 & not_hev
+    p2 = p2.vqaddq_s8(b: a3.vandq_u8(b: not_hev))
+    // q2 -= a3 & not_hev
+    q2 = q2.vqsubq_s8(b: a3.vandq_u8(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2.veorq_u8(b: sign_bit)
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+    q2 = q2.veorq_u8(b: sign_bit)
+
+    // ---- Store p2, p1, p0, q0, q1, q2 ----
+    if args.q0_off < (3 * (this.y_stride as base.u64)) {
+        return nothing
+    }
+    if (args.q0_off - (3 * (this.y_stride as base.u64))) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (3 * (this.y_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    if 16 <= args.workbuf.length() {
+        p2.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        p1.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        p0.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        q0.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        q1.store_slice128!(a: args.workbuf[.. 16])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 16 <= args.workbuf.length() {
+        q2.store_slice128!(a: args.workbuf[.. 16])
+    }
+}
+
+// VP8 normal loop filter (filter6) for 8-pixel chroma horizontal MB edges, ARM NEON.
+// Same algorithm as the 16-pixel version but uses u8x8 and uv_stride.
+
+pri func decoder.normal_vfilter_mb_8_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var p3        : base.arm_neon_u8x8
+    var p2        : base.arm_neon_u8x8
+    var p1        : base.arm_neon_u8x8
+    var p0        : base.arm_neon_u8x8
+    var q0        : base.arm_neon_u8x8
+    var q1        : base.arm_neon_u8x8
+    var q2        : base.arm_neon_u8x8
+    var q3        : base.arm_neon_u8x8
+    var zero      : base.arm_neon_u8x8
+    var sign_bit  : base.arm_neon_u8x8
+    var kFE       : base.arm_neon_u8x8
+    var m_thresh  : base.arm_neon_u8x8
+    var m_ithresh : base.arm_neon_u8x8
+    var m_hthresh : base.arm_neon_u8x8
+    var k3        : base.arm_neon_u8x8
+    var k4        : base.arm_neon_u8x8
+    var mask      : base.arm_neon_u8x8
+    var not_hev   : base.arm_neon_u8x8
+    var delta     : base.arm_neon_u8x8
+    var v3        : base.arm_neon_u8x8
+    var v4        : base.arm_neon_u8x8
+    var a1        : base.arm_neon_u8x8
+    var a2        : base.arm_neon_u8x8
+    var a3        : base.arm_neon_u8x8
+    var t1        : base.arm_neon_u8x8
+    var t2        : base.arm_neon_u8x8
+    var t3        : base.arm_neon_u8x8
+    var p0_adj    : base.arm_neon_u8x8
+    var q0_adj    : base.arm_neon_u8x8
+
+    // Widening variables for filter6 multiply.
+    var wide   : base.arm_neon_u16x8
+    var tmp    : base.arm_neon_u16x8
+    var k63_16 : base.arm_neon_u16x8
+
+    if args.q0_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - (4 * (this.uv_stride as base.u64))) <= wb.length() {
+        wb = wb[args.q0_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows using uv_stride.
+    if 8 > wb.length() {
+        return nothing
+    }
+    p3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // Constants.
+    zero = util.make_u8x8_repeat(a: 0)
+    sign_bit = util.make_u8x8_repeat(a: 0x80)
+    kFE = util.make_u8x8_repeat(a: 0xFE)
+    m_thresh = util.make_u8x8_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x8_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x8_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_u8x8_repeat(a: 3)
+    k4 = util.make_u8x8_repeat(a: 4)
+    k63_16 = util.make_u16x8_repeat(a: 63)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabd_u8(b: q1)
+    t2 = t1.vand_u8(b: kFE).vshr_n_u8(b: 1)
+    t3 = p0.vabd_u8(b: q0)
+    t3 = t3.vqadd_u8(b: t3)
+    t3 = t3.vqadd_u8(b: t2)
+    mask = t3.vqsub_u8(b: m_thresh).vceq_u8(b: zero)
+
+    t1 = p3.vabd_u8(b: p2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p2.vabd_u8(b: p1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p1.vabd_u8(b: p0)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q0.vabd_u8(b: q1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q1.vabd_u8(b: q2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q2.vabd_u8(b: q3)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabd_u8(b: p0)
+    t2 = q1.vabd_u8(b: q0)
+    t3 = t1.vqsub_u8(b: m_hthresh).vorr_u8(b: t2.vqsub_u8(b: m_hthresh))
+    not_hev = t3.vceq_u8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2.veor_u8(b: sign_bit)
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+    q2 = q2.veor_u8(b: sign_bit)
+
+    // ---- Delta ----
+    t1 = p1.vqsub_s8(b: q1)
+    t2 = q0.vqsub_s8(b: p0)
+    t1 = t1.vqadd_s8(b: t2)
+    t1 = t1.vqadd_s8(b: t2)
+    delta = t1.vqadd_s8(b: t2)
+    delta = delta.vand_u8(b: mask)
+
+    // ---- Filter2 (HEV path) ----
+    v4 = delta.vqadd_s8(b: k4)
+    v4 = v4.vshr_n_s8(b: 3)
+    v3 = delta.vqadd_s8(b: k3)
+    v3 = v3.vshr_n_s8(b: 3)
+
+    // ---- Filter6 (!HEV path): widen to i16, multiply by 27/18/9 ----
+    // u8x8 -> u16x8 sign extension (no lo/hi split needed for 8 pixels).
+    wide = delta.vmovl_s8()
+
+    // a1 = (27 * delta + 63) >> 7
+    tmp = wide.vmulq_n_u16(b: 27)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a1 = tmp.vqmovn_s16()
+
+    // a2 = (18 * delta + 63) >> 7
+    tmp = wide.vmulq_n_u16(b: 18)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a2 = tmp.vqmovn_s16()
+
+    // a3 = (9 * delta + 63) >> 7
+    tmp = wide.vmulq_n_u16(b: 9)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a3 = tmp.vqmovn_s16()
+
+    // ---- Merge HEV and !HEV results ----
+    p0_adj = v3.vbic_u8(b: not_hev)
+    p0_adj = p0_adj.vorr_u8(b: a1.vand_u8(b: not_hev))
+    p0 = p0.vqadd_s8(b: p0_adj)
+
+    q0_adj = v4.vbic_u8(b: not_hev)
+    q0_adj = q0_adj.vorr_u8(b: a1.vand_u8(b: not_hev))
+    q0 = q0.vqsub_s8(b: q0_adj)
+
+    p1 = p1.vqadd_s8(b: a2.vand_u8(b: not_hev))
+    q1 = q1.vqsub_s8(b: a2.vand_u8(b: not_hev))
+    p2 = p2.vqadd_s8(b: a3.vand_u8(b: not_hev))
+    q2 = q2.vqsub_s8(b: a3.vand_u8(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2.veor_u8(b: sign_bit)
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+    q2 = q2.veor_u8(b: sign_bit)
+
+    // ---- Store p2, p1, p0, q0, q1, q2 ----
+    if args.q0_off < (3 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    if (args.q0_off - (3 * (this.uv_stride as base.u64))) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (3 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    if 8 <= args.workbuf.length() {
+        p2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        p1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        p0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        q0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        q1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        q2.store_slice64!(a: args.workbuf[.. 8])
+    }
+}
+
+// VP8 normal loop filter (filter4) for 8-pixel chroma horizontal inner edges, ARM NEON.
+
+pri func decoder.normal_vfilter_inner_8_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var p3        : base.arm_neon_u8x8
+    var p2        : base.arm_neon_u8x8
+    var p1        : base.arm_neon_u8x8
+    var p0        : base.arm_neon_u8x8
+    var q0        : base.arm_neon_u8x8
+    var q1        : base.arm_neon_u8x8
+    var q2        : base.arm_neon_u8x8
+    var q3        : base.arm_neon_u8x8
+    var zero      : base.arm_neon_u8x8
+    var sign_bit  : base.arm_neon_u8x8
+    var kFE       : base.arm_neon_u8x8
+    var m_thresh  : base.arm_neon_u8x8
+    var m_ithresh : base.arm_neon_u8x8
+    var m_hthresh : base.arm_neon_u8x8
+    var k1        : base.arm_neon_u8x8
+    var k3        : base.arm_neon_u8x8
+    var k4        : base.arm_neon_u8x8
+    var mask      : base.arm_neon_u8x8
+    var not_hev   : base.arm_neon_u8x8
+    var delta     : base.arm_neon_u8x8
+    var v3        : base.arm_neon_u8x8
+    var v4        : base.arm_neon_u8x8
+    var a3        : base.arm_neon_u8x8
+    var t1        : base.arm_neon_u8x8
+    var t2        : base.arm_neon_u8x8
+    var t3        : base.arm_neon_u8x8
+
+    if args.q0_off < (4 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - (4 * (this.uv_stride as base.u64))) <= wb.length() {
+        wb = wb[args.q0_off - (4 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows using uv_stride.
+    if 8 > wb.length() {
+        return nothing
+    }
+    p3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    p0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // Constants.
+    zero = util.make_u8x8_repeat(a: 0)
+    sign_bit = util.make_u8x8_repeat(a: 0x80)
+    kFE = util.make_u8x8_repeat(a: 0xFE)
+    m_thresh = util.make_u8x8_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x8_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x8_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_u8x8_repeat(a: 1)
+    k3 = util.make_u8x8_repeat(a: 3)
+    k4 = util.make_u8x8_repeat(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabd_u8(b: q1)
+    t2 = t1.vand_u8(b: kFE).vshr_n_u8(b: 1)
+    t3 = p0.vabd_u8(b: q0)
+    t3 = t3.vqadd_u8(b: t3)
+    t3 = t3.vqadd_u8(b: t2)
+    mask = t3.vqsub_u8(b: m_thresh).vceq_u8(b: zero)
+
+    t1 = p3.vabd_u8(b: p2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p2.vabd_u8(b: p1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p1.vabd_u8(b: p0)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q0.vabd_u8(b: q1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q1.vabd_u8(b: q2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q2.vabd_u8(b: q3)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabd_u8(b: p0)
+    t2 = q1.vabd_u8(b: q0)
+    t3 = t1.vqsub_u8(b: m_hthresh).vorr_u8(b: t2.vqsub_u8(b: m_hthresh))
+    not_hev = t3.vceq_u8(b: zero)
+
+    // ---- Convert to signed ----
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+
+    // ---- Delta (filter4: !HEV uses no p1-q1 term) ----
+    t1 = p1.vqsub_s8(b: q1)
+    t1 = t1.vbic_u8(b: not_hev)
+    t2 = q0.vqsub_s8(b: p0)
+    t1 = t1.vqadd_s8(b: t2)
+    t1 = t1.vqadd_s8(b: t2)
+    delta = t1.vqadd_s8(b: t2)
+    delta = delta.vand_u8(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta.vqadd_s8(b: k4)
+    v4 = v4.vshr_n_s8(b: 3)
+    v3 = delta.vqadd_s8(b: k3)
+    v3 = v3.vshr_n_s8(b: 3)
+
+    q0 = q0.vqsub_s8(b: v4)
+    p0 = p0.vqadd_s8(b: v3)
+
+    // ---- Filter4 !HEV: a3 ----
+    a3 = v4.vqadd_s8(b: k1)
+    a3 = a3.vshr_n_s8(b: 1)
+    a3 = a3.vand_u8(b: not_hev)
+
+    q1 = q1.vqsub_s8(b: a3)
+    p1 = p1.vqadd_s8(b: a3)
+
+    // ---- Convert back ----
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+
+    // ---- Store ----
+    if args.q0_off < (2 * (this.uv_stride as base.u64)) {
+        return nothing
+    }
+    if (args.q0_off - (2 * (this.uv_stride as base.u64))) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (2 * (this.uv_stride as base.u64)) ..]
+    } else {
+        return nothing
+    }
+
+    if 8 <= args.workbuf.length() {
+        p1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        p0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        q0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        q1.store_slice64!(a: args.workbuf[.. 8])
+    }
+}
+
+// VP8 normal loop filter (filter6) for 8-row U/V vertical MB edges, ARM NEON.
+//
+// Horizontal filter: processes a vertical edge where consecutive pixels are at
+// step=1 (same row). Uses transpose-filter-transpose: load 8 rows of 8 bytes,
+// 8x8 transpose to get column vectors, apply filter6, inverse transpose, store.
+
+pri func decoder.normal_hfilter_mb_8_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    // Row/scratch registers (reused across transpose phases).
+    var r0 : base.arm_neon_u8x8
+    var r1 : base.arm_neon_u8x8
+    var r2 : base.arm_neon_u8x8
+    var r3 : base.arm_neon_u8x8
+    var r4 : base.arm_neon_u8x8
+    var r5 : base.arm_neon_u8x8
+    var r6 : base.arm_neon_u8x8
+    var r7 : base.arm_neon_u8x8
+    var s0 : base.arm_neon_u8x8
+    var s1 : base.arm_neon_u8x8
+    var s2 : base.arm_neon_u8x8
+    var s3 : base.arm_neon_u8x8
+    var s4 : base.arm_neon_u8x8
+    var s5 : base.arm_neon_u8x8
+    var s6 : base.arm_neon_u8x8
+    var s7 : base.arm_neon_u8x8
+
+    // Pixel columns after forward transpose.
+    var p3 : base.arm_neon_u8x8
+    var p2 : base.arm_neon_u8x8
+    var p1 : base.arm_neon_u8x8
+    var p0 : base.arm_neon_u8x8
+    var q0 : base.arm_neon_u8x8
+    var q1 : base.arm_neon_u8x8
+    var q2 : base.arm_neon_u8x8
+    var q3 : base.arm_neon_u8x8
+
+    // Filter constants and temporaries.
+    var zero      : base.arm_neon_u8x8
+    var sign_bit  : base.arm_neon_u8x8
+    var kFE       : base.arm_neon_u8x8
+    var m_thresh  : base.arm_neon_u8x8
+    var m_ithresh : base.arm_neon_u8x8
+    var m_hthresh : base.arm_neon_u8x8
+    var k3        : base.arm_neon_u8x8
+    var k4        : base.arm_neon_u8x8
+    var mask      : base.arm_neon_u8x8
+    var not_hev   : base.arm_neon_u8x8
+    var delta     : base.arm_neon_u8x8
+    var v3        : base.arm_neon_u8x8
+    var v4        : base.arm_neon_u8x8
+    var a1        : base.arm_neon_u8x8
+    var a2        : base.arm_neon_u8x8
+    var a3        : base.arm_neon_u8x8
+    var t1        : base.arm_neon_u8x8
+    var t2        : base.arm_neon_u8x8
+    var t3        : base.arm_neon_u8x8
+    var p0_adj    : base.arm_neon_u8x8
+    var q0_adj    : base.arm_neon_u8x8
+
+    // Widening variables for filter6 multiply.
+    var wide   : base.arm_neon_u16x8
+    var tmp    : base.arm_neon_u16x8
+    var k63_16 : base.arm_neon_u16x8
+
+    // Need 4 bytes before q0 for p3..p0 columns.
+    if args.q0_off < 4 {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 8 rows of 8 bytes each ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // ==== Forward 8x8 transpose: rows → columns ====
+    // Step 1: byte-level transpose (2x2 blocks).
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    // Step 2: halfword-level transpose (4x4 blocks).
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    // Step 3: word-level transpose → pixel columns.
+    p3 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    q0 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    p2 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    q1 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    p1 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    q2 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    p0 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    q3 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Filter6 computation (same as normal_vfilter_mb_8_arm_neon) ====
+
+    // Constants.
+    zero = util.make_u8x8_repeat(a: 0)
+    sign_bit = util.make_u8x8_repeat(a: 0x80)
+    kFE = util.make_u8x8_repeat(a: 0xFE)
+    m_thresh = util.make_u8x8_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x8_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x8_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_u8x8_repeat(a: 3)
+    k4 = util.make_u8x8_repeat(a: 4)
+    k63_16 = util.make_u16x8_repeat(a: 63)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabd_u8(b: q1)
+    t2 = t1.vand_u8(b: kFE).vshr_n_u8(b: 1)
+    t3 = p0.vabd_u8(b: q0)
+    t3 = t3.vqadd_u8(b: t3)
+    t3 = t3.vqadd_u8(b: t2)
+    mask = t3.vqsub_u8(b: m_thresh).vceq_u8(b: zero)
+
+    t1 = p3.vabd_u8(b: p2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p2.vabd_u8(b: p1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p1.vabd_u8(b: p0)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q0.vabd_u8(b: q1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q1.vabd_u8(b: q2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q2.vabd_u8(b: q3)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabd_u8(b: p0)
+    t2 = q1.vabd_u8(b: q0)
+    t3 = t1.vqsub_u8(b: m_hthresh).vorr_u8(b: t2.vqsub_u8(b: m_hthresh))
+    not_hev = t3.vceq_u8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2.veor_u8(b: sign_bit)
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+    q2 = q2.veor_u8(b: sign_bit)
+
+    // ---- Delta ----
+    t1 = p1.vqsub_s8(b: q1)
+    t2 = q0.vqsub_s8(b: p0)
+    t1 = t1.vqadd_s8(b: t2)
+    t1 = t1.vqadd_s8(b: t2)
+    delta = t1.vqadd_s8(b: t2)
+    delta = delta.vand_u8(b: mask)
+
+    // ---- Filter2 (HEV path) ----
+    v4 = delta.vqadd_s8(b: k4)
+    v4 = v4.vshr_n_s8(b: 3)
+    v3 = delta.vqadd_s8(b: k3)
+    v3 = v3.vshr_n_s8(b: 3)
+
+    // ---- Filter6 (!HEV path): widen to i16, multiply by 27/18/9 ----
+    wide = delta.vmovl_s8()
+
+    tmp = wide.vmulq_n_u16(b: 27)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a1 = tmp.vqmovn_s16()
+
+    tmp = wide.vmulq_n_u16(b: 18)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a2 = tmp.vqmovn_s16()
+
+    tmp = wide.vmulq_n_u16(b: 9)
+    tmp = tmp.vaddq_u16(b: k63_16)
+    tmp = tmp.vshrq_n_s16(b: 7)
+    a3 = tmp.vqmovn_s16()
+
+    // ---- Merge HEV and !HEV results ----
+    p0_adj = v3.vbic_u8(b: not_hev)
+    p0_adj = p0_adj.vorr_u8(b: a1.vand_u8(b: not_hev))
+    p0 = p0.vqadd_s8(b: p0_adj)
+
+    q0_adj = v4.vbic_u8(b: not_hev)
+    q0_adj = q0_adj.vorr_u8(b: a1.vand_u8(b: not_hev))
+    q0 = q0.vqsub_s8(b: q0_adj)
+
+    p1 = p1.vqadd_s8(b: a2.vand_u8(b: not_hev))
+    q1 = q1.vqsub_s8(b: a2.vand_u8(b: not_hev))
+    p2 = p2.vqadd_s8(b: a3.vand_u8(b: not_hev))
+    q2 = q2.vqsub_s8(b: a3.vand_u8(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2.veor_u8(b: sign_bit)
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+    q2 = q2.veor_u8(b: sign_bit)
+
+    // ==== Inverse 8x8 transpose: columns → rows ====
+    // Step 1: byte-level transpose.
+    s0 = p3.vtrn1_u8(b: p2)
+    s1 = p3.vtrn2_u8(b: p2)
+    s2 = p1.vtrn1_u8(b: p0)
+    s3 = p1.vtrn2_u8(b: p0)
+    s4 = q0.vtrn1_u8(b: q1)
+    s5 = q0.vtrn2_u8(b: q1)
+    s6 = q2.vtrn1_u8(b: q3)
+    s7 = q2.vtrn2_u8(b: q3)
+
+    // Step 2: halfword-level transpose.
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    // Step 3: word-level transpose → output rows.
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store 8 rows ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+}
+
+// VP8 normal loop filter (filter4) for 8-row U/V vertical inner edges, ARM NEON.
+//
+// Same transpose approach as hfilter_mb_8 but uses filter4 (four_not_six=true).
+
+pri func decoder.normal_hfilter_inner_8_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var r0 : base.arm_neon_u8x8
+    var r1 : base.arm_neon_u8x8
+    var r2 : base.arm_neon_u8x8
+    var r3 : base.arm_neon_u8x8
+    var r4 : base.arm_neon_u8x8
+    var r5 : base.arm_neon_u8x8
+    var r6 : base.arm_neon_u8x8
+    var r7 : base.arm_neon_u8x8
+    var s0 : base.arm_neon_u8x8
+    var s1 : base.arm_neon_u8x8
+    var s2 : base.arm_neon_u8x8
+    var s3 : base.arm_neon_u8x8
+    var s4 : base.arm_neon_u8x8
+    var s5 : base.arm_neon_u8x8
+    var s6 : base.arm_neon_u8x8
+    var s7 : base.arm_neon_u8x8
+
+    var p3 : base.arm_neon_u8x8
+    var p2 : base.arm_neon_u8x8
+    var p1 : base.arm_neon_u8x8
+    var p0 : base.arm_neon_u8x8
+    var q0 : base.arm_neon_u8x8
+    var q1 : base.arm_neon_u8x8
+    var q2 : base.arm_neon_u8x8
+    var q3 : base.arm_neon_u8x8
+
+    var zero      : base.arm_neon_u8x8
+    var sign_bit  : base.arm_neon_u8x8
+    var kFE       : base.arm_neon_u8x8
+    var m_thresh  : base.arm_neon_u8x8
+    var m_ithresh : base.arm_neon_u8x8
+    var m_hthresh : base.arm_neon_u8x8
+    var k1        : base.arm_neon_u8x8
+    var k3        : base.arm_neon_u8x8
+    var k4        : base.arm_neon_u8x8
+    var mask      : base.arm_neon_u8x8
+    var not_hev   : base.arm_neon_u8x8
+    var delta     : base.arm_neon_u8x8
+    var v3        : base.arm_neon_u8x8
+    var v4        : base.arm_neon_u8x8
+    var a3        : base.arm_neon_u8x8
+    var t1        : base.arm_neon_u8x8
+    var t2        : base.arm_neon_u8x8
+    var t3        : base.arm_neon_u8x8
+
+    if args.q0_off < 4 {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 8 rows of 8 bytes each ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.uv_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.uv_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // ==== Forward 8x8 transpose ====
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    p3 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    q0 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    p2 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    q1 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    p1 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    q2 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    p0 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    q3 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Filter4 computation (same as normal_vfilter_inner_8_arm_neon) ====
+
+    zero = util.make_u8x8_repeat(a: 0)
+    sign_bit = util.make_u8x8_repeat(a: 0x80)
+    kFE = util.make_u8x8_repeat(a: 0xFE)
+    m_thresh = util.make_u8x8_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x8_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x8_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_u8x8_repeat(a: 1)
+    k3 = util.make_u8x8_repeat(a: 3)
+    k4 = util.make_u8x8_repeat(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabd_u8(b: q1)
+    t2 = t1.vand_u8(b: kFE).vshr_n_u8(b: 1)
+    t3 = p0.vabd_u8(b: q0)
+    t3 = t3.vqadd_u8(b: t3)
+    t3 = t3.vqadd_u8(b: t2)
+    mask = t3.vqsub_u8(b: m_thresh).vceq_u8(b: zero)
+
+    t1 = p3.vabd_u8(b: p2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p2.vabd_u8(b: p1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = p1.vabd_u8(b: p0)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q0.vabd_u8(b: q1)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q1.vabd_u8(b: q2)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+    t1 = q2.vabd_u8(b: q3)
+    mask = mask.vand_u8(b: t1.vqsub_u8(b: m_ithresh).vceq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabd_u8(b: p0)
+    t2 = q1.vabd_u8(b: q0)
+    t3 = t1.vqsub_u8(b: m_hthresh).vorr_u8(b: t2.vqsub_u8(b: m_hthresh))
+    not_hev = t3.vceq_u8(b: zero)
+
+    // ---- Convert to signed ----
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+
+    // ---- Delta (filter4: !HEV uses no p1-q1 term) ----
+    t1 = p1.vqsub_s8(b: q1)
+    t1 = t1.vbic_u8(b: not_hev)
+    t2 = q0.vqsub_s8(b: p0)
+    t1 = t1.vqadd_s8(b: t2)
+    t1 = t1.vqadd_s8(b: t2)
+    delta = t1.vqadd_s8(b: t2)
+    delta = delta.vand_u8(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta.vqadd_s8(b: k4)
+    v4 = v4.vshr_n_s8(b: 3)
+    v3 = delta.vqadd_s8(b: k3)
+    v3 = v3.vshr_n_s8(b: 3)
+
+    q0 = q0.vqsub_s8(b: v4)
+    p0 = p0.vqadd_s8(b: v3)
+
+    // ---- Filter4 !HEV: a3 ----
+    a3 = v4.vqadd_s8(b: k1)
+    a3 = a3.vshr_n_s8(b: 1)
+    a3 = a3.vand_u8(b: not_hev)
+
+    q1 = q1.vqsub_s8(b: a3)
+    p1 = p1.vqadd_s8(b: a3)
+
+    // ---- Convert back ----
+    p1 = p1.veor_u8(b: sign_bit)
+    p0 = p0.veor_u8(b: sign_bit)
+    q0 = q0.veor_u8(b: sign_bit)
+    q1 = q1.veor_u8(b: sign_bit)
+
+    // ==== Inverse 8x8 transpose ====
+    s0 = p3.vtrn1_u8(b: p2)
+    s1 = p3.vtrn2_u8(b: p2)
+    s2 = p1.vtrn1_u8(b: p0)
+    s3 = p1.vtrn2_u8(b: p0)
+    s4 = q0.vtrn1_u8(b: q1)
+    s5 = q0.vtrn2_u8(b: q1)
+    s6 = q2.vtrn1_u8(b: q3)
+    s7 = q2.vtrn2_u8(b: q3)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store 8 rows ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.uv_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.uv_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+}
+
+// VP8 normal loop filter (filter6) for 16-row Y horizontal MB edges, ARM NEON.
+//
+// Horizontal filter on 16 rows: two 8x8 transposes → u8x16 columns, filter6,
+// two inverse transposes → store. Uses y_stride for row stepping.
+
+pri func decoder.normal_hfilter_mb_16_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    // Row/scratch registers for 8x8 transpose.
+    var r0 : base.arm_neon_u8x8
+    var r1 : base.arm_neon_u8x8
+    var r2 : base.arm_neon_u8x8
+    var r3 : base.arm_neon_u8x8
+    var r4 : base.arm_neon_u8x8
+    var r5 : base.arm_neon_u8x8
+    var r6 : base.arm_neon_u8x8
+    var r7 : base.arm_neon_u8x8
+    var s0 : base.arm_neon_u8x8
+    var s1 : base.arm_neon_u8x8
+    var s2 : base.arm_neon_u8x8
+    var s3 : base.arm_neon_u8x8
+    var s4 : base.arm_neon_u8x8
+    var s5 : base.arm_neon_u8x8
+    var s6 : base.arm_neon_u8x8
+    var s7 : base.arm_neon_u8x8
+
+    // Low column halves from first 8x8 transpose.
+    var p3_lo : base.arm_neon_u8x8
+    var p2_lo : base.arm_neon_u8x8
+    var p1_lo : base.arm_neon_u8x8
+    var p0_lo : base.arm_neon_u8x8
+    var q0_lo : base.arm_neon_u8x8
+    var q1_lo : base.arm_neon_u8x8
+    var q2_lo : base.arm_neon_u8x8
+    var q3_lo : base.arm_neon_u8x8
+
+    // u8x16 pixel columns for filter.
+    var p3 : base.arm_neon_u8x16
+    var p2 : base.arm_neon_u8x16
+    var p1 : base.arm_neon_u8x16
+    var p0 : base.arm_neon_u8x16
+    var q0 : base.arm_neon_u8x16
+    var q1 : base.arm_neon_u8x16
+    var q2 : base.arm_neon_u8x16
+    var q3 : base.arm_neon_u8x16
+
+    // Filter constants and temporaries.
+    var zero      : base.arm_neon_u8x16
+    var sign_bit  : base.arm_neon_u8x16
+    var kFE       : base.arm_neon_u8x16
+    var m_thresh  : base.arm_neon_u8x16
+    var m_ithresh : base.arm_neon_u8x16
+    var m_hthresh : base.arm_neon_u8x16
+    var k3        : base.arm_neon_u8x16
+    var k4        : base.arm_neon_u8x16
+    var mask      : base.arm_neon_u8x16
+    var not_hev   : base.arm_neon_u8x16
+    var delta     : base.arm_neon_u8x16
+    var v3        : base.arm_neon_u8x16
+    var v4        : base.arm_neon_u8x16
+    var a1        : base.arm_neon_u8x16
+    var a2        : base.arm_neon_u8x16
+    var a3        : base.arm_neon_u8x16
+    var t1        : base.arm_neon_u8x16
+    var t2        : base.arm_neon_u8x16
+    var t3        : base.arm_neon_u8x16
+    var p0_adj    : base.arm_neon_u8x16
+    var q0_adj    : base.arm_neon_u8x16
+
+    // Widening variables for filter6 multiply (i8 -> i16).
+    var d_lo      : base.arm_neon_u8x8
+    var d_hi      : base.arm_neon_u8x8
+    var lo        : base.arm_neon_u16x8
+    var hi        : base.arm_neon_u16x8
+    var k63_16    : base.arm_neon_u16x8
+    var tmp_lo    : base.arm_neon_u16x8
+    var tmp_hi    : base.arm_neon_u16x8
+    var narrow_lo : base.arm_neon_u8x8
+    var narrow_hi : base.arm_neon_u8x8
+
+    // Need 4 bytes before q0 for p3..p0 columns.
+    if args.q0_off < 4 {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load rows 0-7 of 8 bytes each ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    // ==== Forward 8x8 transpose: rows 0-7 → lo column halves ====
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    p3_lo = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    q0_lo = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    p2_lo = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    q1_lo = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    p1_lo = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    q2_lo = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    p0_lo = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    q3_lo = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Load rows 8-15 of 8 bytes each ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // ==== Forward 8x8 transpose: rows 8-15 → hi halves, then vcombine ====
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    // Step 3 + vcombine: hi halves combined with lo halves → u8x16 columns.
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    p3 = p3_lo.vcombine_u8(b: s0)
+    s0 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    q0 = q0_lo.vcombine_u8(b: s0)
+
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    p2 = p2_lo.vcombine_u8(b: s1)
+    s1 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    q1 = q1_lo.vcombine_u8(b: s1)
+
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    p1 = p1_lo.vcombine_u8(b: s2)
+    s2 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    q2 = q2_lo.vcombine_u8(b: s2)
+
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    p0 = p0_lo.vcombine_u8(b: s3)
+    s3 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+    q3 = q3_lo.vcombine_u8(b: s3)
+
+    // ==== Filter6 computation (same as normal_vfilter_mb_16_arm_neon) ====
+
+    // Constants.
+    zero = util.make_u8x16_repeat(a: 0)
+    sign_bit = util.make_u8x16_repeat(a: 0x80)
+    kFE = util.make_u8x16_repeat(a: 0xFE)
+    m_thresh = util.make_u8x16_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x16_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x16_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_u8x16_repeat(a: 3)
+    k4 = util.make_u8x16_repeat(a: 4)
+    k63_16 = util.make_u16x8_repeat(a: 63)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabdq_u8(b: q1)
+    t2 = t1.vandq_u8(b: kFE).vshrq_n_u8(b: 1)
+    t3 = p0.vabdq_u8(b: q0)
+    t3 = t3.vqaddq_u8(b: t3)
+    t3 = t3.vqaddq_u8(b: t2)
+    mask = t3.vqsubq_u8(b: m_thresh).vceqq_u8(b: zero)
+
+    t1 = p3.vabdq_u8(b: p2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p2.vabdq_u8(b: p1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p1.vabdq_u8(b: p0)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q0.vabdq_u8(b: q1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q1.vabdq_u8(b: q2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q2.vabdq_u8(b: q3)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabdq_u8(b: p0)
+    t2 = q1.vabdq_u8(b: q0)
+    t3 = t1.vqsubq_u8(b: m_hthresh).vorrq_u8(b: t2.vqsubq_u8(b: m_hthresh))
+    not_hev = t3.vceqq_u8(b: zero)
+
+    // ---- Convert p2, p1, p0, q0, q1, q2 to signed ----
+    p2 = p2.veorq_u8(b: sign_bit)
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+    q2 = q2.veorq_u8(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) ----
+    t1 = p1.vqsubq_s8(b: q1)
+    t2 = q0.vqsubq_s8(b: p0)
+    t1 = t1.vqaddq_s8(b: t2)
+    t1 = t1.vqaddq_s8(b: t2)
+    delta = t1.vqaddq_s8(b: t2)
+    delta = delta.vandq_u8(b: mask)
+
+    // ---- Filter2 (HEV path): v4 = asr3(delta+4), v3 = asr3(delta+3) ----
+    v4 = delta.vqaddq_s8(b: k4)
+    v4 = v4.vshrq_n_s8(b: 3)
+
+    v3 = delta.vqaddq_s8(b: k3)
+    v3 = v3.vshrq_n_s8(b: 3)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    d_lo = delta.vget_low_u8()
+    d_hi = delta.vget_high_u8()
+    lo = d_lo.vmovl_s8()
+    hi = d_hi.vmovl_s8()
+
+    // a1 = (27 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 27)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 27)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a1 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // a2 = (18 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 18)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 18)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a2 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // a3 = (9 * delta + 63) >> 7
+    tmp_lo = lo.vmulq_n_u16(b: 9)
+    tmp_lo = tmp_lo.vaddq_u16(b: k63_16)
+    tmp_lo = tmp_lo.vshrq_n_s16(b: 7)
+    tmp_hi = hi.vmulq_n_u16(b: 9)
+    tmp_hi = tmp_hi.vaddq_u16(b: k63_16)
+    tmp_hi = tmp_hi.vshrq_n_s16(b: 7)
+    narrow_lo = tmp_lo.vqmovn_s16()
+    narrow_hi = tmp_hi.vqmovn_s16()
+    a3 = narrow_lo.vcombine_u8(b: narrow_hi)
+
+    // ---- Merge HEV (filter2) and !HEV (filter6) results ----
+    p0_adj = v3.vbicq_u8(b: not_hev)
+    p0_adj = p0_adj.vorrq_u8(b: a1.vandq_u8(b: not_hev))
+    p0 = p0.vqaddq_s8(b: p0_adj)
+
+    q0_adj = v4.vbicq_u8(b: not_hev)
+    q0_adj = q0_adj.vorrq_u8(b: a1.vandq_u8(b: not_hev))
+    q0 = q0.vqsubq_s8(b: q0_adj)
+
+    p1 = p1.vqaddq_s8(b: a2.vandq_u8(b: not_hev))
+    q1 = q1.vqsubq_s8(b: a2.vandq_u8(b: not_hev))
+    p2 = p2.vqaddq_s8(b: a3.vandq_u8(b: not_hev))
+    q2 = q2.vqsubq_s8(b: a3.vandq_u8(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2.veorq_u8(b: sign_bit)
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+    q2 = q2.veorq_u8(b: sign_bit)
+
+    // ==== Split columns back to lo halves, inverse transpose → rows 0-7 ====
+    p3_lo = p3.vget_low_u8()
+    p2_lo = p2.vget_low_u8()
+    p1_lo = p1.vget_low_u8()
+    p0_lo = p0.vget_low_u8()
+    q0_lo = q0.vget_low_u8()
+    q1_lo = q1.vget_low_u8()
+    q2_lo = q2.vget_low_u8()
+    q3_lo = q3.vget_low_u8()
+
+    s0 = p3_lo.vtrn1_u8(b: p2_lo)
+    s1 = p3_lo.vtrn2_u8(b: p2_lo)
+    s2 = p1_lo.vtrn1_u8(b: p0_lo)
+    s3 = p1_lo.vtrn2_u8(b: p0_lo)
+    s4 = q0_lo.vtrn1_u8(b: q1_lo)
+    s5 = q0_lo.vtrn2_u8(b: q1_lo)
+    s6 = q2_lo.vtrn1_u8(b: q3_lo)
+    s7 = q2_lo.vtrn2_u8(b: q3_lo)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store rows 0-7 ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    // ==== Extract hi halves, inverse transpose → rows 8-15 ====
+    r0 = p3.vget_high_u8()
+    r1 = p2.vget_high_u8()
+    r2 = p1.vget_high_u8()
+    r3 = p0.vget_high_u8()
+    r4 = q0.vget_high_u8()
+    r5 = q1.vget_high_u8()
+    r6 = q2.vget_high_u8()
+    r7 = q3.vget_high_u8()
+
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store rows 8-15 ====
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+}
+
+// VP8 normal loop filter (filter4) for 16-row Y horizontal inner edges, ARM NEON.
+//
+// Same two-8x8-transpose approach as hfilter_mb_16 but uses filter4.
+
+pri func decoder.normal_hfilter_inner_16_arm_neon!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= arm_neon,
+{
+    var util : base.arm_neon_utility
+    var wb   : slice base.u8
+
+    var r0 : base.arm_neon_u8x8
+    var r1 : base.arm_neon_u8x8
+    var r2 : base.arm_neon_u8x8
+    var r3 : base.arm_neon_u8x8
+    var r4 : base.arm_neon_u8x8
+    var r5 : base.arm_neon_u8x8
+    var r6 : base.arm_neon_u8x8
+    var r7 : base.arm_neon_u8x8
+    var s0 : base.arm_neon_u8x8
+    var s1 : base.arm_neon_u8x8
+    var s2 : base.arm_neon_u8x8
+    var s3 : base.arm_neon_u8x8
+    var s4 : base.arm_neon_u8x8
+    var s5 : base.arm_neon_u8x8
+    var s6 : base.arm_neon_u8x8
+    var s7 : base.arm_neon_u8x8
+
+    var p3_lo : base.arm_neon_u8x8
+    var p2_lo : base.arm_neon_u8x8
+    var p1_lo : base.arm_neon_u8x8
+    var p0_lo : base.arm_neon_u8x8
+    var q0_lo : base.arm_neon_u8x8
+    var q1_lo : base.arm_neon_u8x8
+    var q2_lo : base.arm_neon_u8x8
+    var q3_lo : base.arm_neon_u8x8
+
+    var p3 : base.arm_neon_u8x16
+    var p2 : base.arm_neon_u8x16
+    var p1 : base.arm_neon_u8x16
+    var p0 : base.arm_neon_u8x16
+    var q0 : base.arm_neon_u8x16
+    var q1 : base.arm_neon_u8x16
+    var q2 : base.arm_neon_u8x16
+    var q3 : base.arm_neon_u8x16
+
+    var zero      : base.arm_neon_u8x16
+    var sign_bit  : base.arm_neon_u8x16
+    var kFE       : base.arm_neon_u8x16
+    var m_thresh  : base.arm_neon_u8x16
+    var m_ithresh : base.arm_neon_u8x16
+    var m_hthresh : base.arm_neon_u8x16
+    var k1        : base.arm_neon_u8x16
+    var k3        : base.arm_neon_u8x16
+    var k4        : base.arm_neon_u8x16
+    var mask      : base.arm_neon_u8x16
+    var not_hev   : base.arm_neon_u8x16
+    var delta     : base.arm_neon_u8x16
+    var v3        : base.arm_neon_u8x16
+    var v4        : base.arm_neon_u8x16
+    var a3        : base.arm_neon_u8x16
+    var t1        : base.arm_neon_u8x16
+    var t2        : base.arm_neon_u8x16
+    var t3        : base.arm_neon_u8x16
+
+    if args.q0_off < 4 {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load rows 0-7 ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    // ==== Forward 8x8 transpose: rows 0-7 → lo column halves ====
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    p3_lo = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    q0_lo = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    p2_lo = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    q1_lo = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    p1_lo = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    q2_lo = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    p0_lo = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    q3_lo = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Load rows 8-15 ====
+    if 8 > wb.length() {
+        return nothing
+    }
+    r0 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r1 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r2 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r3 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r4 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r5 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r6 = util.make_u8x8_slice64(a: wb[.. 8])
+    if (this.y_stride as base.u64) > wb.length() {
+        return nothing
+    }
+    wb = wb[(this.y_stride as base.u64) ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    r7 = util.make_u8x8_slice64(a: wb[.. 8])
+
+    // ==== Forward 8x8 transpose: rows 8-15 → hi halves, then vcombine ====
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    p3 = p3_lo.vcombine_u8(b: s0)
+    s0 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    q0 = q0_lo.vcombine_u8(b: s0)
+
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    p2 = p2_lo.vcombine_u8(b: s1)
+    s1 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    q1 = q1_lo.vcombine_u8(b: s1)
+
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    p1 = p1_lo.vcombine_u8(b: s2)
+    s2 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    q2 = q2_lo.vcombine_u8(b: s2)
+
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    p0 = p0_lo.vcombine_u8(b: s3)
+    s3 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+    q3 = q3_lo.vcombine_u8(b: s3)
+
+    // ==== Filter4 computation (same as normal_vfilter_inner_16_arm_neon) ====
+
+    zero = util.make_u8x16_repeat(a: 0)
+    sign_bit = util.make_u8x16_repeat(a: 0x80)
+    kFE = util.make_u8x16_repeat(a: 0xFE)
+    m_thresh = util.make_u8x16_repeat(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_u8x16_repeat(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_u8x16_repeat(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_u8x16_repeat(a: 1)
+    k3 = util.make_u8x16_repeat(a: 3)
+    k4 = util.make_u8x16_repeat(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1.vabdq_u8(b: q1)
+    t2 = t1.vandq_u8(b: kFE).vshrq_n_u8(b: 1)
+    t3 = p0.vabdq_u8(b: q0)
+    t3 = t3.vqaddq_u8(b: t3)
+    t3 = t3.vqaddq_u8(b: t2)
+    mask = t3.vqsubq_u8(b: m_thresh).vceqq_u8(b: zero)
+
+    t1 = p3.vabdq_u8(b: p2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p2.vabdq_u8(b: p1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = p1.vabdq_u8(b: p0)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q0.vabdq_u8(b: q1)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q1.vabdq_u8(b: q2)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+    t1 = q2.vabdq_u8(b: q3)
+    mask = mask.vandq_u8(b: t1.vqsubq_u8(b: m_ithresh).vceqq_u8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1.vabdq_u8(b: p0)
+    t2 = q1.vabdq_u8(b: q0)
+    t3 = t1.vqsubq_u8(b: m_hthresh).vorrq_u8(b: t2.vqsubq_u8(b: m_hthresh))
+    not_hev = t3.vceqq_u8(b: zero)
+
+    // ---- Convert to signed ----
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+
+    // ---- Delta (filter4: !HEV zeroes p1-q1 term) ----
+    t1 = p1.vqsubq_s8(b: q1)
+    t1 = t1.vbicq_u8(b: not_hev)
+    t2 = q0.vqsubq_s8(b: p0)
+    t1 = t1.vqaddq_s8(b: t2)
+    t1 = t1.vqaddq_s8(b: t2)
+    delta = t1.vqaddq_s8(b: t2)
+    delta = delta.vandq_u8(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta.vqaddq_s8(b: k4)
+    v4 = v4.vshrq_n_s8(b: 3)
+    v3 = delta.vqaddq_s8(b: k3)
+    v3 = v3.vshrq_n_s8(b: 3)
+
+    q0 = q0.vqsubq_s8(b: v4)
+    p0 = p0.vqaddq_s8(b: v3)
+
+    // ---- Filter4 !HEV: a3 ----
+    a3 = v4.vqaddq_s8(b: k1)
+    a3 = a3.vshrq_n_s8(b: 1)
+    a3 = a3.vandq_u8(b: not_hev)
+
+    q1 = q1.vqsubq_s8(b: a3)
+    p1 = p1.vqaddq_s8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1.veorq_u8(b: sign_bit)
+    p0 = p0.veorq_u8(b: sign_bit)
+    q0 = q0.veorq_u8(b: sign_bit)
+    q1 = q1.veorq_u8(b: sign_bit)
+
+    // ==== Split columns back to lo halves, inverse transpose → rows 0-7 ====
+    p3_lo = p3.vget_low_u8()
+    p2_lo = p2.vget_low_u8()
+    p1_lo = p1.vget_low_u8()
+    p0_lo = p0.vget_low_u8()
+    q0_lo = q0.vget_low_u8()
+    q1_lo = q1.vget_low_u8()
+    q2_lo = q2.vget_low_u8()
+    q3_lo = q3.vget_low_u8()
+
+    s0 = p3_lo.vtrn1_u8(b: p2_lo)
+    s1 = p3_lo.vtrn2_u8(b: p2_lo)
+    s2 = p1_lo.vtrn1_u8(b: p0_lo)
+    s3 = p1_lo.vtrn2_u8(b: p0_lo)
+    s4 = q0_lo.vtrn1_u8(b: q1_lo)
+    s5 = q0_lo.vtrn2_u8(b: q1_lo)
+    s6 = q2_lo.vtrn1_u8(b: q3_lo)
+    s7 = q2_lo.vtrn2_u8(b: q3_lo)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store rows 0-7 ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    // ==== Extract hi halves, inverse transpose → rows 8-15 ====
+    r0 = p3.vget_high_u8()
+    r1 = p2.vget_high_u8()
+    r2 = p1.vget_high_u8()
+    r3 = p0.vget_high_u8()
+    r4 = q0.vget_high_u8()
+    r5 = q1.vget_high_u8()
+    r6 = q2.vget_high_u8()
+    r7 = q3.vget_high_u8()
+
+    s0 = r0.vtrn1_u8(b: r1)
+    s1 = r0.vtrn2_u8(b: r1)
+    s2 = r2.vtrn1_u8(b: r3)
+    s3 = r2.vtrn2_u8(b: r3)
+    s4 = r4.vtrn1_u8(b: r5)
+    s5 = r4.vtrn2_u8(b: r5)
+    s6 = r6.vtrn1_u8(b: r7)
+    s7 = r6.vtrn2_u8(b: r7)
+
+    r0 = s0.as_u16x4().vtrn1_u16(b: s2.as_u16x4()).as_u8x8()
+    r2 = s0.as_u16x4().vtrn2_u16(b: s2.as_u16x4()).as_u8x8()
+    r1 = s1.as_u16x4().vtrn1_u16(b: s3.as_u16x4()).as_u8x8()
+    r3 = s1.as_u16x4().vtrn2_u16(b: s3.as_u16x4()).as_u8x8()
+    r4 = s4.as_u16x4().vtrn1_u16(b: s6.as_u16x4()).as_u8x8()
+    r6 = s4.as_u16x4().vtrn2_u16(b: s6.as_u16x4()).as_u8x8()
+    r5 = s5.as_u16x4().vtrn1_u16(b: s7.as_u16x4()).as_u8x8()
+    r7 = s5.as_u16x4().vtrn2_u16(b: s7.as_u16x4()).as_u8x8()
+
+    s0 = r0.as_u32x2().vtrn1_u32(b: r4.as_u32x2()).as_u8x8()
+    s4 = r0.as_u32x2().vtrn2_u32(b: r4.as_u32x2()).as_u8x8()
+    s1 = r1.as_u32x2().vtrn1_u32(b: r5.as_u32x2()).as_u8x8()
+    s5 = r1.as_u32x2().vtrn2_u32(b: r5.as_u32x2()).as_u8x8()
+    s2 = r2.as_u32x2().vtrn1_u32(b: r6.as_u32x2()).as_u8x8()
+    s6 = r2.as_u32x2().vtrn2_u32(b: r6.as_u32x2()).as_u8x8()
+    s3 = r3.as_u32x2().vtrn1_u32(b: r7.as_u32x2()).as_u8x8()
+    s7 = r3.as_u32x2().vtrn2_u32(b: r7.as_u32x2()).as_u8x8()
+
+    // ==== Store rows 8-15 ====
+    if 8 <= args.workbuf.length() {
+        s0.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s1.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s2.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s3.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s4.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s5.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s6.store_slice64!(a: args.workbuf[.. 8])
+    }
+    if (this.y_stride as base.u64) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[(this.y_stride as base.u64) ..]
+    }
+
+    if 8 <= args.workbuf.length() {
+        s7.store_slice64!(a: args.workbuf[.. 8])
+    }
+}

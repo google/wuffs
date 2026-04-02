@@ -478,7 +478,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, returnTy
 	case id == t.IDARMCRC32Utility, id == t.IDARMCRC32U32:
 		return g.writeBuiltinCPUArchARMCRC32(b, recv, method, args, sideEffectsOnly, depth)
 	case id.IsBuiltInCPUArchARMNeon():
-		return g.writeBuiltinCPUArchARMNeon(b, recv, method, args, sideEffectsOnly, depth)
+		return g.writeBuiltinCPUArchARMNeon(b, recv, method, returnType, args, sideEffectsOnly, depth)
 	case id == t.IDX86SSE42Utility, id == t.IDX86M128I,
 		id == t.IDX86AVX2Utility, id == t.IDX86M256I:
 		return g.writeBuiltinCPUArchX86(b, recv, method, returnType, args, sideEffectsOnly, depth)
@@ -511,7 +511,7 @@ func (g *gen) writeBuiltinCPUArchARMCRC32(b *buffer, recv *a.Expr, method t.ID, 
 	return nil
 }
 
-func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, returnType *a.TypeExpr, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	methodStr := method.Str(g.tm)
 	if strings.HasPrefix(methodStr, "make_") {
 		before, after, ptr := "", ")", false
@@ -557,6 +557,8 @@ func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, a
 				before, ptr = "vld1_u8(", true
 			case "make_u8x16_slice128":
 				before, ptr = "vld1q_u8(", true
+			case "make_u32x4_slice_u32lex4":
+				before, ptr = "vld1q_u32(", true
 			default:
 				return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
 			}
@@ -577,6 +579,34 @@ func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, a
 			}
 		}
 		b.writes(after)
+		return nil
+
+	} else if strings.HasPrefix(methodStr, "store_") {
+		if !sideEffectsOnly {
+			b.writes("(")
+		}
+		prefix := ""
+		switch methodStr {
+		case "store_slice64":
+			prefix = "vst1_u8("
+		case "store_slice128":
+			prefix = "vst1q_u8("
+		}
+		if prefix == "" {
+			return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+		}
+		b.writes(prefix)
+		if err := g.writeExprDotPtr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes(", ")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")")
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
 		return nil
 
 	} else if strings.HasPrefix(methodStr, "as_") {
@@ -611,6 +641,102 @@ func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, a
 			methodStr = "vreinterpretq_u8_u32"
 		case t.IDARMNeonU64x2:
 			methodStr = "vreinterpretq_u8_u64"
+		}
+	}
+
+	// Signed reinterpret operations: call signed NEON intrinsics on unsigned
+	// types by wrapping with vreinterpret casts. Handles _s8 and _s16 suffixes.
+	if strings.HasSuffix(methodStr, "_s8") || strings.HasSuffix(methodStr, "_s16") {
+		intrinsic := methodStr
+
+		// Determine the signed cast for the receiver based on its type.
+		recvToSigned := ""
+		switch recv.MType().QID()[1] {
+		case t.IDARMNeonU8x8:
+			recvToSigned = "vreinterpret_s8_u8"
+		case t.IDARMNeonU8x16:
+			recvToSigned = "vreinterpretq_s8_u8"
+		case t.IDARMNeonU16x4:
+			recvToSigned = "vreinterpret_s16_u16"
+		case t.IDARMNeonU16x8:
+			recvToSigned = "vreinterpretq_s16_u16"
+		}
+
+		// Determine the unsigned cast for the result based on return type.
+		// Most _s8/_s16 intrinsics return a signed type that needs casting back
+		// to unsigned. Exception: "unsigned narrowing" intrinsics like vqmovun_s16
+		// already return an unsigned type (uint8x8_t), so no result cast is needed.
+		resultToUnsigned := ""
+		isUnsignedNarrow := strings.Contains(intrinsic, "un_s")
+		if returnType != nil {
+			switch returnType.QID()[1] {
+			case t.IDARMNeonU8x8:
+				if !isUnsignedNarrow {
+					resultToUnsigned = "vreinterpret_u8_s8"
+				}
+			case t.IDARMNeonU8x16:
+				if !isUnsignedNarrow {
+					resultToUnsigned = "vreinterpretq_u8_s8"
+				}
+			case t.IDARMNeonU16x4:
+				resultToUnsigned = "vreinterpret_u16_s16"
+			case t.IDARMNeonU16x8:
+				resultToUnsigned = "vreinterpretq_u16_s16"
+			}
+		}
+
+		if recvToSigned != "" {
+			if resultToUnsigned != "" {
+				b.printf("%s(", resultToUnsigned)
+			}
+			b.printf("%s(%s(", intrinsic, recvToSigned)
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			for _, o := range args {
+				b.writes(", ")
+				oVal := o.AsArg().Value()
+				// Only reinterpret NEON vector args, not scalar shift amounts.
+				qid1 := oVal.MType().QID()[1]
+				isNeonType := (qid1 >= t.IDARMNeonU8x8 && qid1 <= t.IDARMNeonU64x1) ||
+					(qid1 >= t.IDARMNeonU8x16 && qid1 <= t.IDARMNeonU64x2)
+				if isNeonType {
+					// Determine the signed cast for this arg's type.
+					argToSigned := ""
+					switch qid1 {
+					case t.IDARMNeonU8x8:
+						argToSigned = "vreinterpret_s8_u8"
+					case t.IDARMNeonU8x16:
+						argToSigned = "vreinterpretq_s8_u8"
+					case t.IDARMNeonU16x4:
+						argToSigned = "vreinterpret_s16_u16"
+					case t.IDARMNeonU16x8:
+						argToSigned = "vreinterpretq_s16_u16"
+					}
+					if argToSigned != "" {
+						b.printf("%s(", argToSigned)
+						if err := g.writeExpr(b, oVal, false, depth); err != nil {
+							return err
+						}
+						b.writes(")")
+					} else {
+						if err := g.writeExpr(b, oVal, false, depth); err != nil {
+							return err
+						}
+					}
+				} else {
+					// Scalar argument (shift amount, etc.).
+					if err := g.writeExpr(b, oVal, false, depth); err != nil {
+						return err
+					}
+				}
+			}
+			b.writes(")")
+			if resultToUnsigned != "" {
+				b.writes(")")
+			}
+			return nil
 		}
 	}
 
@@ -657,7 +783,9 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, retur
 			fName, tName = "_mm_cvtsi32_si128", "int32_t"
 		case "make_m128i_single_u64":
 			fName, tName = "_mm_cvtsi64_si128", "int64_t"
-		case "make_m128i_slice128", "make_m128i_slice_u16lex8":
+		case "make_m128i_slice64":
+			fName, tName, ptr = "_mm_loadl_epi64", "const __m128i*)(const void*", true
+		case "make_m128i_slice128", "make_m128i_slice_u16lex8", "make_m128i_slice_u32lex4":
 			fName, tName, ptr = "_mm_lddqu_si128", "const __m128i*)(const void*", true
 		case "make_m128i_zeroes":
 			fName, tName = "_mm_setzero_si128", ""
@@ -828,6 +956,37 @@ func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth 
 
 func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
+	case t.IDCountLeadingZeroes:
+		// "recv.count_leading_zeroes()" in C is:
+		//  - For u8:  "wuffs_base__count_leading_zeroes_u32(((uint32_t)(recv))) - 24u"
+		//  - For u16: "wuffs_base__count_leading_zeroes_u32(((uint32_t)(recv))) - 16u"
+		//  - For u32: "wuffs_base__count_leading_zeroes_u32(((uint32_t)(recv)))"
+		//  - For u64: "((uint32_t)(wuffs_base__count_leading_zeroes_u64(((uint64_t)(recv)))))"
+		sz, err := g.sizeof(recv.MType())
+		if err != nil {
+			return err
+		}
+		if sz == 8 {
+			b.writes("((uint32_t)(wuffs_base__count_leading_zeroes_u64(((uint64_t)(")
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(")))))")
+		} else {
+			if sz < 4 {
+				b.writes("(")
+			}
+			b.writes("wuffs_base__count_leading_zeroes_u32(((uint32_t)(")
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(")))")
+			if sz < 4 {
+				b.printf(" - %du)", (4-sz)*8)
+			}
+		}
+		return nil
+
 	case t.IDLowBits:
 		// "recv.low_bits(n:etc)" in C is one of:
 		//  - "((recv) & constant)"

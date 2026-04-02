@@ -33,6 +33,28 @@ wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2);
 
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
+
 #if defined(__GNUC__) && !defined(__clang__)
 // No-op.
 #else
@@ -48,6 +70,28 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     bool last_column);
 #endif
 #endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
+
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
+static void  //
+wuffs_private_impl__swizzle_ycc__convert_3_bgrx_arm_neon(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
+
+static void  //
+wuffs_private_impl__swizzle_ycc__convert_3_rgbx_arm_neon(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
 // --------
 
@@ -221,6 +265,69 @@ wuffs_private_impl__swizzle_ycc__convert_3_rgbx(wuffs_base__pixel_buffer* dst,
   for (; x < x_end; x++) {
     uint32_t color =                                //
         wuffs_base__color_ycc__as__color_u32_abgr(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+// BT.601 studio-range variants for VP8/H.264.
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_general(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  for (; x < x_end; x++) {
+    uint32_t color =                                  //
+        wuffs_base__color_ycc_bt601__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                 //
+        wuffs_base__color_ycc_bt601__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                      //
+        wuffs_base__color_ycc_bt601__as__color_u32_abgr(  //
             *up0++, *up1++, *up2++);
     wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
     dst_iter += 4u;
@@ -1226,6 +1333,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v3,
     bool is_rgb_or_cmyk,
     bool triangle_filter_for_2to1,
+    bool src_is_bt601,
     wuffs_base__slice_u8 scratch_buffer_2k) {
   if (!p) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
@@ -1442,6 +1550,37 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   if (is_rgb_or_cmyk) {
     conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
+  } else if (src_is_bt601) {
+    // BT.601 studio-range YCbCr (VP8, H.264).
+    switch (dst->pixcfg.private_impl.pixfmt.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
+        if (wuffs_base__cpu_arch__have_x86_avx2()) {
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx_x86_avx2;
+          break;
+        }
+#endif
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx;
+        break;
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
+        if (wuffs_base__cpu_arch__have_x86_avx2()) {
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx_x86_avx2;
+          break;
+        }
+#endif
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx;
+        break;
+      default:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601__convert_3_general;
+        break;
+    }
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
@@ -1453,6 +1592,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
           break;
         }
 #endif
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
+        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_arm_neon;
+        break;
+#endif
         conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx;
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
@@ -1463,6 +1606,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
           conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
           break;
         }
+#endif
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
+        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_arm_neon;
+        break;
 #endif
         conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx;
         break;

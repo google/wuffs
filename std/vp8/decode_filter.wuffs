@@ -1,0 +1,800 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 post-reconstruction deblocking filter.
+//
+// filter_type=1 is the simple filter: processes macroblock boundary edges and
+// sub-block (4x4) edges on the Y plane only. Each edge is filtered using a
+// 2-pixel kernel: a = 3*(q0-p0) + clamp127(p1-q1), then split into a1/a2
+// adjustments with clamp15.
+//
+// filter_type=0 is the normal filter: processes Y, U, V planes using a
+// 2/4/6-pixel kernel (filter246).
+//
+// The filter is applied AFTER all macroblocks are reconstructed (RFC 6386 §15).
+// Per-MB filter parameters (level, ilevel, hlevel, inner flag) are stored
+// during reconstruction and read back during this pass.
+
+// apply_simple_filter_all! applies the simple loop filter (filter_type=1).
+// Only processes the Y plane.
+pri func decoder.apply_simple_filter_all!(workbuf: slice base.u8) {
+    var mby : base.u32
+
+    mby = 0
+    while mby < this.mb_height {
+        this.apply_simple_filter_row!(workbuf: args.workbuf, mby: mby)
+        if mby < 0x3FF {
+            mby += 1
+        }
+    }
+}
+
+// apply_simple_filter_row! applies the simple loop filter to a single MB row.
+pri func decoder.apply_simple_filter_row!(workbuf: slice base.u8, mby: base.u32) {
+    var mbx       : base.u32
+    var mb_idx    : base.u32
+    var f_level   : base.u32
+    var has_inner : base.bool
+    var mb_lim    : base.u32
+    var sub_lim   : base.u32
+    var y_off     : base.u64
+    var r         : base.u32
+    var idx       : base.u64
+
+    mbx = 0
+    while mbx < this.mb_width {
+        mb_idx = ((args.mby & 1) * 0x400) ~mod+ mbx
+        if mb_idx >= 0x800 {
+            mbx ~mod+= 1
+            continue
+        }
+
+        f_level = this.mb_filter_level[mb_idx] as base.u32
+        if f_level == 0 {
+            mbx ~mod+= 1
+            continue
+        }
+
+        has_inner = this.mb_filter_inner[mb_idx] <> 0
+
+        sub_lim = f_level
+        mb_lim = sub_lim ~mod+ 4
+
+        y_off = ((args.mby as base.u64) * 16 * (this.y_stride as base.u64)) +
+                ((mbx as base.u64) * 16)
+
+        if mbx > 0 {
+            r = 0
+            while r < 16 {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                this.filter2!(workbuf: args.workbuf,
+                        q0_idx: idx, step: 1, limit: mb_lim)
+                r += 1
+            }
+        }
+
+        if has_inner {
+            r = 0
+            while r < 16 {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                this.filter2!(workbuf: args.workbuf,
+                        q0_idx: idx ~mod+ 4, step: 1, limit: sub_lim)
+                this.filter2!(workbuf: args.workbuf,
+                        q0_idx: idx ~mod+ 8, step: 1, limit: sub_lim)
+                this.filter2!(workbuf: args.workbuf,
+                        q0_idx: idx ~mod+ 12, step: 1, limit: sub_lim)
+                r += 1
+            }
+        }
+
+        if args.mby > 0 {
+            this.simple_vfilter_16!(workbuf: args.workbuf,
+                    q0_off: y_off, limit: mb_lim)
+        }
+
+        if has_inner {
+            this.simple_vfilter_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (4 * (this.y_stride as base.u64)), limit: sub_lim)
+            this.simple_vfilter_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (8 * (this.y_stride as base.u64)), limit: sub_lim)
+            this.simple_vfilter_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (12 * (this.y_stride as base.u64)), limit: sub_lim)
+        }
+
+        if mbx < 0x3FF {
+            mbx += 1
+        }
+    }
+}
+
+// simple_vfilter_16! filters 16 contiguous pixels at a horizontal edge.
+// q0_off is the offset of the first q0 pixel (the first pixel below the edge).
+// Stride is this.y_stride. Processes pixels q0_off[0..16], with p0 at -stride,
+// p1 at -2*stride, q1 at +stride.
+pri func decoder.simple_vfilter_16!(workbuf: slice base.u8, q0_off: base.u64, limit: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 16 {
+        this.filter2!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ (r as base.u64),
+                step: this.y_stride as base.u64,
+                limit: args.limit)
+        r += 1
+    }
+}
+
+// normal_vfilter_inner_16! filters 16 contiguous pixels at a horizontal edge
+// using the normal filter4 (inner sub-block edges, four_not_six=true).
+// q0_off is the offset of the first q0 pixel, stride is y_stride.
+pri func decoder.normal_vfilter_inner_16!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 16 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ (r as base.u64),
+                step: this.y_stride as base.u64,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: true)
+        r += 1
+    }
+}
+
+// normal_vfilter_mb_16! filters 16 contiguous pixels at a horizontal edge
+// using the normal filter6 (MB boundary edges, four_not_six=false).
+pri func decoder.normal_vfilter_mb_16!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 16 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ (r as base.u64),
+                step: this.y_stride as base.u64,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: false)
+        r += 1
+    }
+}
+
+// normal_vfilter_mb_8! filters 8 contiguous pixels at a horizontal edge
+// using the normal filter6 (MB boundary edges, four_not_six=false).
+// Used for U/V planes where the edge is 8 pixels wide.
+pri func decoder.normal_vfilter_mb_8!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 8 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ (r as base.u64),
+                step: this.uv_stride as base.u64,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: false)
+        r += 1
+    }
+}
+
+// normal_hfilter_mb_16! filters 16 rows at a vertical MB boundary edge
+// using the normal filter6. Each row's edge pixels (p3..q3) are at step=1
+// (consecutive bytes). Used for the Y plane.
+pri func decoder.normal_hfilter_mb_16!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 16 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64)),
+                step: 1,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: false)
+        r += 1
+    }
+}
+
+// normal_hfilter_mb_8! filters 8 rows at a vertical MB boundary edge
+// using the normal filter6. Used for U/V planes.
+pri func decoder.normal_hfilter_mb_8!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 8 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64)),
+                step: 1,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: false)
+        r += 1
+    }
+}
+
+// normal_hfilter_inner_16! filters 16 rows at a vertical inner sub-block edge
+// using the normal filter4. Used for the Y plane (3 inner edges per MB).
+pri func decoder.normal_hfilter_inner_16!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 16 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64)),
+                step: 1,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: true)
+        r += 1
+    }
+}
+
+// normal_hfilter_inner_8! filters 8 rows at a vertical inner sub-block edge
+// using the normal filter4. Used for U/V planes (1 inner edge per plane).
+pri func decoder.normal_hfilter_inner_8!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 8 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64)),
+                step: 1,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: true)
+        r += 1
+    }
+}
+
+// normal_vfilter_inner_8! filters 8 contiguous pixels at a horizontal inner
+// sub-block edge using the normal filter4. Used for U/V planes.
+pri func decoder.normal_vfilter_inner_8!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    var r : base.u32
+
+    r = 0
+    while r < 8 {
+        this.filter246!(workbuf: args.workbuf,
+                q0_idx: args.q0_off ~mod+ (r as base.u64),
+                step: this.uv_stride as base.u64,
+                level: args.level, ilevel: args.ilevel, hlevel: args.hlevel,
+                four_not_six: true)
+        r += 1
+    }
+}
+
+// ---- Combined U+V filter functions (scalar defaults) ----
+
+// normal_vfilter_mb_uv! filters both U and V planes at a horizontal MB boundary
+// edge using the normal filter6. Combines two normal_vfilter_mb_8 calls.
+pri func decoder.normal_vfilter_mb_uv!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    this.normal_vfilter_mb_8!(workbuf: args.workbuf,
+            q0_off: args.u_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+    this.normal_vfilter_mb_8!(workbuf: args.workbuf,
+            q0_off: args.v_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+}
+
+// normal_hfilter_mb_uv! filters both U and V planes at a vertical MB boundary
+// edge using the normal filter6. Combines two normal_hfilter_mb_8 calls.
+pri func decoder.normal_hfilter_mb_uv!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    this.normal_hfilter_mb_8!(workbuf: args.workbuf,
+            q0_off: args.u_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+    this.normal_hfilter_mb_8!(workbuf: args.workbuf,
+            q0_off: args.v_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+}
+
+// normal_vfilter_inner_uv! filters both U and V planes at a horizontal inner
+// sub-block edge using the normal filter4. Combines two normal_vfilter_inner_8 calls.
+pri func decoder.normal_vfilter_inner_uv!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    this.normal_vfilter_inner_8!(workbuf: args.workbuf,
+            q0_off: args.u_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+    this.normal_vfilter_inner_8!(workbuf: args.workbuf,
+            q0_off: args.v_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+}
+
+// normal_hfilter_inner_uv! filters both U and V planes at a vertical inner
+// sub-block edge using the normal filter4. Combines two normal_hfilter_inner_8 calls.
+pri func decoder.normal_hfilter_inner_uv!(workbuf: slice base.u8,
+        u_off: base.u64, v_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choosy,
+{
+    this.normal_hfilter_inner_8!(workbuf: args.workbuf,
+            q0_off: args.u_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+    this.normal_hfilter_inner_8!(workbuf: args.workbuf,
+            q0_off: args.v_off,
+            level: args.level, ilevel: args.ilevel, hlevel: args.hlevel)
+}
+
+// filter2! filters one pixel position along an edge using the simple filter.
+// Implements Go's filter2: adjust p0/q0 based on the 4-pixel neighborhood.
+// q0_idx is the index of q0 (first pixel inside the edge).
+// step is the distance between pixels across the edge (1=vertical, stride=horizontal).
+pri func decoder.filter2!(workbuf: slice base.u8, q0_idx: base.u64, step: base.u64, limit: base.u32) {
+    var p1_idx  : base.u64
+    var p0_idx  : base.u64
+    var q1_idx  : base.u64
+    var p1      : base.u32
+    var p0      : base.u32
+    var q0      : base.u32
+    var q1      : base.u32
+    var dp0q0   : base.u32
+    var dp1q1   : base.u32
+    var thresh  : base.u32
+    var a       : base.u32
+    var a1      : base.u32
+    var a2      : base.u32
+    var pq_diff : base.u32
+    var val     : base.u32
+
+    // Compute pixel indices: p1, p0 | q0, q1.
+    if args.q0_idx < args.step {
+        return nothing
+    }
+    p0_idx = args.q0_idx - args.step
+    if p0_idx < args.step {
+        return nothing
+    }
+    p1_idx = p0_idx - args.step
+    q1_idx = args.q0_idx ~mod+ args.step
+
+    // Bounds check.
+    if (q1_idx >= args.workbuf.length()) or
+            (args.q0_idx >= args.workbuf.length()) or
+            (p0_idx >= args.workbuf.length()) or
+            (p1_idx >= args.workbuf.length()) {
+        return nothing
+    }
+
+    p1 = args.workbuf[p1_idx] as base.u32
+    p0 = args.workbuf[p0_idx] as base.u32
+    q0 = args.workbuf[args.q0_idx] as base.u32
+    q1 = args.workbuf[q1_idx] as base.u32
+
+    // Threshold check: abs(p0-q0)*2 + abs(p1-q1)/2 <= limit.
+    // Use signed subtraction via u32 modular arithmetic.
+    dp0q0 = p0 ~mod- q0
+    if (dp0q0 & 0x8000_0000) <> 0 {
+        dp0q0 = 0 ~mod- dp0q0
+    }
+    dp0q0 = dp0q0 & 0xFF
+    dp1q1 = p1 ~mod- q1
+    if (dp1q1 & 0x8000_0000) <> 0 {
+        dp1q1 = 0 ~mod- dp1q1
+    }
+    dp1q1 = dp1q1 & 0xFF
+    thresh = (dp0q0 * 2) + (dp1q1 >> 1)
+    if thresh > args.limit {
+        return nothing
+    }
+
+    // a = 3*(q0-p0) + clamp127(p1-q1).
+    // All arithmetic in signed 32-bit via u32 modular ops.
+    pq_diff = p1 ~mod- q1
+    // clamp127: clamp to [-128, 127].
+    if (pq_diff & 0x8000_0000) <> 0 {
+        if pq_diff < 0xFFFF_FF80 {
+            pq_diff = 0xFFFF_FF80
+        }
+    } else {
+        if pq_diff > 127 {
+            pq_diff = 127
+        }
+    }
+
+    a = (3 ~mod* (q0 ~mod- p0)) ~mod+ pq_diff
+
+    // clamp15: a1 = clamp((a+4)>>3, -16, 15), a2 = clamp((a+3)>>3, -16, 15).
+    a1 = this.clamp15_asr3!(v: a ~mod+ 4)
+    a2 = this.clamp15_asr3!(v: a ~mod+ 3)
+
+    // p0 = clamp(p0 + a2, 0, 255).
+    val = p0 ~mod+ a2
+    if val > 255 {
+        if (val & 0x8000_0000) <> 0 {
+            val = 0
+        } else {
+            val = 255
+        }
+    }
+    args.workbuf[p0_idx] = (val & 0xFF) as base.u8
+
+    // q0 = clamp(q0 - a1, 0, 255).
+    val = q0 ~mod- a1
+    if val > 255 {
+        if (val & 0x8000_0000) <> 0 {
+            val = 0
+        } else {
+            val = 255
+        }
+    }
+    args.workbuf[args.q0_idx] = (val & 0xFF) as base.u8
+}
+
+// clamp15_asr3! performs arithmetic right shift by 3 and clamps to [-16, 15].
+// Input is in u32 two's complement.
+pri func decoder.clamp15_asr3!(v: base.u32) base.u32 {
+    var result : base.u32
+
+    // Arithmetic right shift by 3.
+    if (args.v & 0x8000_0000) <> 0 {
+        result = (args.v >> 3) | 0xE000_0000
+    } else {
+        result = args.v >> 3
+    }
+
+    // Clamp to [-16, 15].
+    if (result & 0x8000_0000) <> 0 {
+        // Negative.
+        if result < 0xFFFF_FFF0 {
+            result = 0xFFFF_FFF0
+        }
+    } else {
+        // Positive.
+        if result > 15 {
+            result = 15
+        }
+    }
+
+    return result
+}
+
+// clamp127! clamps a signed value (in u32 two's complement) to [-128, 127].
+pri func decoder.clamp127!(v: base.u32) base.u32 {
+    if (args.v & 0x8000_0000) <> 0 {
+        if args.v < 0xFFFF_FF80 {
+            return 0xFFFF_FF80
+        }
+    } else {
+        if args.v > 127 {
+            return 127
+        }
+    }
+    return args.v
+}
+
+// abs_u32! returns the absolute value of a signed value in u32 two's complement.
+// Result is always in [0, 0x8000_0000].
+pri func decoder.abs_u32!(v: base.u32) base.u32 {
+    if (args.v & 0x8000_0000) <> 0 {
+        return 0 ~mod- args.v
+    }
+    return args.v
+}
+
+// clamp255! clamps a signed value (in u32 two's complement) to [0, 255].
+pri func decoder.clamp255!(v: base.u32) base.u32 {
+    if (args.v & 0x8000_0000) <> 0 {
+        return 0
+    }
+    if args.v > 255 {
+        return 255
+    }
+    return args.v
+}
+
+// ---- Normal filter (filter_type=0) ----
+
+// apply_normal_filter_all! applies the normal loop filter (filter_type=0).
+// Processes Y, U, and V planes.
+pri func decoder.apply_normal_filter_all!(workbuf: slice base.u8) {
+    var mby : base.u32
+
+    mby = 0
+    while mby < this.mb_height {
+        this.apply_normal_filter_row!(workbuf: args.workbuf, mby: mby)
+        if mby < 0x3FF {
+            mby += 1
+        }
+    }
+}
+
+// apply_normal_filter_row! applies the normal loop filter to a single MB row.
+pri func decoder.apply_normal_filter_row!(workbuf: slice base.u8, mby: base.u32) {
+    var mbx       : base.u32
+    var mb_idx    : base.u32
+    var f_level   : base.u32
+    var f_ilevel  : base.u32
+    var f_hlevel  : base.u32
+    var has_inner : base.bool
+    var y_off     : base.u64
+    var u_off     : base.u64
+    var v_off     : base.u64
+
+    mbx = 0
+    while mbx < this.mb_width {
+        mb_idx = ((args.mby & 1) * 0x400) ~mod+ mbx
+        if mb_idx >= 0x800 {
+            mbx ~mod+= 1
+            continue
+        }
+
+        f_level = this.mb_filter_level[mb_idx] as base.u32
+        if f_level == 0 {
+            mbx ~mod+= 1
+            continue
+        }
+
+        f_ilevel = this.mb_filter_ilevel[mb_idx] as base.u32
+        f_hlevel = this.mb_filter_hlevel[mb_idx] as base.u32
+        has_inner = this.mb_filter_inner[mb_idx] <> 0
+
+        y_off = ((args.mby as base.u64) * 16 * (this.y_stride as base.u64)) +
+                ((mbx as base.u64) * 16)
+        u_off = this.workbuf_offset_y_end +
+                ((args.mby as base.u64) * 8 * (this.uv_stride as base.u64)) +
+                ((mbx as base.u64) * 8)
+        v_off = this.workbuf_offset_u_end +
+                ((args.mby as base.u64) * 8 * (this.uv_stride as base.u64)) +
+                ((mbx as base.u64) * 8)
+
+        // --- Vertical edges (left-to-right filtering) ---
+
+        if mbx > 0 {
+            this.normal_hfilter_mb_16!(workbuf: args.workbuf,
+                    q0_off: y_off,
+                    level: f_level ~mod+ 4, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_hfilter_mb_uv!(workbuf: args.workbuf,
+                    u_off: u_off, v_off: v_off,
+                    level: f_level ~mod+ 4, ilevel: f_ilevel, hlevel: f_hlevel)
+        }
+
+        if has_inner {
+            this.normal_hfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ 4,
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_hfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ 8,
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_hfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ 12,
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_hfilter_inner_uv!(workbuf: args.workbuf,
+                    u_off: u_off ~mod+ 4, v_off: v_off ~mod+ 4,
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+        }
+
+        // --- Horizontal edges (top-to-bottom filtering) ---
+
+        if args.mby > 0 {
+            this.normal_vfilter_mb_16!(workbuf: args.workbuf,
+                    q0_off: y_off,
+                    level: f_level ~mod+ 4, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_vfilter_mb_uv!(workbuf: args.workbuf,
+                    u_off: u_off, v_off: v_off,
+                    level: f_level ~mod+ 4, ilevel: f_ilevel, hlevel: f_hlevel)
+        }
+
+        if has_inner {
+            this.normal_vfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (4 * (this.y_stride as base.u64)),
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_vfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (8 * (this.y_stride as base.u64)),
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_vfilter_inner_16!(workbuf: args.workbuf,
+                    q0_off: y_off ~mod+ (12 * (this.y_stride as base.u64)),
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+            this.normal_vfilter_inner_uv!(workbuf: args.workbuf,
+                    u_off: u_off ~mod+ (4 * (this.uv_stride as base.u64)),
+                    v_off: v_off ~mod+ (4 * (this.uv_stride as base.u64)),
+                    level: f_level, ilevel: f_ilevel, hlevel: f_hlevel)
+        }
+
+        if mbx < 0x3FF {
+            mbx += 1
+        }
+    }
+}
+
+// filter246! implements Go's filter246 — the normal loop filter for one edge position.
+// Reads 8 pixels (p3,p2,p1,p0,q0,q1,q2,q3) and filters 2, 4, or 6 of them.
+pri func decoder.filter246!(workbuf: slice base.u8, q0_idx: base.u64, step: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32, four_not_six: base.bool) {
+    var p3_idx : base.u64
+    var p2_idx : base.u64
+    var p1_idx : base.u64
+    var p0_idx : base.u64
+    var q1_idx : base.u64
+    var q2_idx : base.u64
+    var q3_idx : base.u64
+    var p3     : base.u32
+    var p2     : base.u32
+    var p1     : base.u32
+    var p0     : base.u32
+    var q0     : base.u32
+    var q1     : base.u32
+    var q2     : base.u32
+    var q3     : base.u32
+    var a      : base.u32
+    var a1     : base.u32
+    var a2     : base.u32
+    var a3     : base.u32
+    var t1     : base.u32
+    var t2     : base.u32
+
+    // Compute pixel indices: p3, p2, p1, p0 | q0, q1, q2, q3.
+    if args.q0_idx < args.step {
+        return nothing
+    }
+    p0_idx = args.q0_idx - args.step
+    if p0_idx < args.step {
+        return nothing
+    }
+    p1_idx = p0_idx - args.step
+    if p1_idx < args.step {
+        return nothing
+    }
+    p2_idx = p1_idx - args.step
+    if p2_idx < args.step {
+        return nothing
+    }
+    p3_idx = p2_idx - args.step
+    q1_idx = args.q0_idx ~mod+ args.step
+    q2_idx = q1_idx ~mod+ args.step
+    q3_idx = q2_idx ~mod+ args.step
+
+    // Bounds check.
+    if (q3_idx >= args.workbuf.length()) or
+            (q2_idx >= args.workbuf.length()) or
+            (q1_idx >= args.workbuf.length()) or
+            (args.q0_idx >= args.workbuf.length()) or
+            (p0_idx >= args.workbuf.length()) or
+            (p1_idx >= args.workbuf.length()) or
+            (p2_idx >= args.workbuf.length()) or
+            (p3_idx >= args.workbuf.length()) {
+        return nothing
+    }
+
+    p3 = args.workbuf[p3_idx] as base.u32
+    p2 = args.workbuf[p2_idx] as base.u32
+    p1 = args.workbuf[p1_idx] as base.u32
+    p0 = args.workbuf[p0_idx] as base.u32
+    q0 = args.workbuf[args.q0_idx] as base.u32
+    q1 = args.workbuf[q1_idx] as base.u32
+    q2 = args.workbuf[q2_idx] as base.u32
+    q3 = args.workbuf[q3_idx] as base.u32
+
+    // First threshold: abs(p0-q0)*2 + abs(p1-q1)/2 > level.
+    t1 = this.abs_u32!(v: p0 ~mod- q0)
+    t1 = t1 & 0xFF
+    t2 = this.abs_u32!(v: p1 ~mod- q1)
+    t2 = t2 & 0xFF
+    if ((t1 * 2) + (t2 >> 1)) > args.level {
+        return nothing
+    }
+
+    // Second threshold (ilevel): check smoothness of all 8 pixels.
+    t1 = this.abs_u32!(v: p3 ~mod- p2)
+    if t1 > args.ilevel {
+        return nothing
+    }
+    t1 = this.abs_u32!(v: p2 ~mod- p1)
+    if t1 > args.ilevel {
+        return nothing
+    }
+    t1 = this.abs_u32!(v: p1 ~mod- p0)
+    if t1 > args.ilevel {
+        return nothing
+    }
+    t1 = this.abs_u32!(v: q1 ~mod- q0)
+    if t1 > args.ilevel {
+        return nothing
+    }
+    t1 = this.abs_u32!(v: q2 ~mod- q1)
+    if t1 > args.ilevel {
+        return nothing
+    }
+    t1 = this.abs_u32!(v: q3 ~mod- q2)
+    if t1 > args.ilevel {
+        return nothing
+    }
+
+    // Third threshold (hlevel): high edge variance check.
+    t1 = this.abs_u32!(v: p1 ~mod- p0)
+    t2 = this.abs_u32!(v: q1 ~mod- q0)
+    if (t1 > args.hlevel) or (t2 > args.hlevel) {
+        // Filter 2 pixels (same as simple filter core).
+        t1 = this.clamp127!(v: p1 ~mod- q1)
+        a = (3 ~mod* (q0 ~mod- p0)) ~mod+ t1
+        a1 = this.clamp15_asr3!(v: a ~mod+ 4)
+        a2 = this.clamp15_asr3!(v: a ~mod+ 3)
+        t1 = this.clamp255!(v: p0 ~mod+ a2)
+        args.workbuf[p0_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q0 ~mod- a1)
+        args.workbuf[args.q0_idx] = (t1 & 0xFF) as base.u8
+    } else if args.four_not_six {
+        // Filter 4 pixels.
+        a = 3 ~mod* (q0 ~mod- p0)
+        a1 = this.clamp15_asr3!(v: a ~mod+ 4)
+        a2 = this.clamp15_asr3!(v: a ~mod+ 3)
+        // a3 = (a1 + 1) >> 1, signed arithmetic shift.
+        a3 = a1 ~mod+ 1
+        if (a3 & 0x8000_0000) <> 0 {
+            a3 = (a3 >> 1) | 0x8000_0000
+        } else {
+            a3 >>= 1
+        }
+        t1 = this.clamp255!(v: p1 ~mod+ a3)
+        args.workbuf[p1_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: p0 ~mod+ a2)
+        args.workbuf[p0_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q0 ~mod- a1)
+        args.workbuf[args.q0_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q1 ~mod- a3)
+        args.workbuf[q1_idx] = (t1 & 0xFF) as base.u8
+    } else {
+        // Filter 6 pixels.
+        t1 = this.clamp127!(v: p1 ~mod- q1)
+        t2 = (3 ~mod* (q0 ~mod- p0)) ~mod+ t1
+        a = this.clamp127!(v: t2)
+        // Arithmetic right shift by 7 for signed values.
+        a1 = this.signed_shift_right_7!(v: (27 ~mod* a) ~mod+ 63)
+        a2 = this.signed_shift_right_7!(v: (18 ~mod* a) ~mod+ 63)
+        a3 = this.signed_shift_right_7!(v: (9 ~mod* a) ~mod+ 63)
+        t1 = this.clamp255!(v: p2 ~mod+ a3)
+        args.workbuf[p2_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: p1 ~mod+ a2)
+        args.workbuf[p1_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: p0 ~mod+ a1)
+        args.workbuf[p0_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q0 ~mod- a1)
+        args.workbuf[args.q0_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q1 ~mod- a2)
+        args.workbuf[q1_idx] = (t1 & 0xFF) as base.u8
+        t1 = this.clamp255!(v: q2 ~mod- a3)
+        args.workbuf[q2_idx] = (t1 & 0xFF) as base.u8
+    }
+}
+
+// signed_shift_right_7! performs arithmetic right shift by 7 on a u32 two's complement value.
+pri func decoder.signed_shift_right_7!(v: base.u32) base.u32 {
+    if (args.v & 0x8000_0000) <> 0 {
+        return (args.v >> 7) | 0xFE00_0000
+    }
+    return args.v >> 7
+}

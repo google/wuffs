@@ -96,6 +96,9 @@ var embedBaseMagicSubmoduleC EmbeddedString
 //go:embed base/pixconv-submodule-regular.c
 var embedBasePixConvSubmoduleRegularC EmbeddedString
 
+//go:embed base/pixconv-submodule-arm-neon.c
+var embedBasePixConvSubmoduleArmNeonC EmbeddedString
+
 //go:embed base/pixconv-submodule-x86-avx2.c
 var embedBasePixConvSubmoduleX86Avx2C EmbeddedString
 

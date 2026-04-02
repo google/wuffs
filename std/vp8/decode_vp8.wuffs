@@ -9,14 +9,23 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub status "#bad header"
+pub status "#bad coefficient"
 pub status "#truncated input"
 pub status "#unsupported VP8 file"
 
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+pri status "#internal error: inconsistent decoder state"
+
+// Max workbuf: 1024 * 1024 * 384 (planes) + 524288 (partition0) = 0x1808_0000.
+// For multi-partition VP8, the WebP container adds coefficient data space.
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x1808_0000
 
 pub struct decoder? implements base.image_decoder(
         width  : base.u32[..= 0x3FFF],
         height : base.u32[..= 0x3FFF],
+
+        // Macroblock grid dimensions.
+        mb_width  : base.u32[..= 0x400],
+        mb_height : base.u32[..= 0x400],
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -24,11 +33,205 @@ pub struct decoder? implements base.image_decoder(
 
         frame_config_io_position : base.u64,
 
+        // Frame header fields from 3-byte frame tag.
+        key_frame       : base.bool,
+        partition0_size : base.u32,
+
+        // ---- Boolean decoder state (partition 0: header + mode data) ----
+        // Wide-accumulator approach (matching partition 1):
+        //   bool_range stores (range - 1), in [0, 254].
+        //   bool_value (u64) is a wide accumulator.
+        //   bool_bits (u32) is the position counter.
+        bool_range : base.u32[..= 255],
+        bool_value : base.u64,
+        bool_bits  : base.u32,
+
+        // Boolean decoder buffer read/write indices (partition 0).
+        bool_ri : base.u32[..= 0x1000],
+        bool_wi : base.u32[..= 0x1000],
+
+        // ---- Boolean decoder state (partition 1: coefficient data) ----
+        // p1_range stores (range - 1), in [0, 254]. This saves one subtract
+        // in the split computation per bool read.
+        //
+        // Position-based value tracking (like libwebp's VP8GetBit):
+        // p1_value is a 64-bit accumulator. p1_bits tracks the bit position.
+        // Extraction: (p1_value >> ((p1_bits - 8) & 63)).
+        // Renormalization only decrements p1_bits (no value shifting).
+        // Byte loading shifts value left by 8 and ORs in new byte.
+        p1_range : base.u32[..= 255],
+        p1_value : base.u64,
+        p1_bits  : base.u32,
+        p1_ri    : base.u32[..= 0x1000],
+        p1_wi    : base.u32[..= 0x1000],
+
+        // ---- Segmentation ----
+        use_segment        : base.bool,
+        update_segment_map : base.bool,
+        segment_is_abs     : base.bool,
+        segment_quant      : array[4] base.i32,
+        segment_lf         : array[4] base.i32,
+        segment_prob       : array[3] base.u8,
+
+        // ---- Loop filter ----
+        filter_type      : base.u8[..= 1],
+        filter_level     : base.u8[..= 63],
+        sharpness_level  : base.u8[..= 7],
+        lf_delta_enabled : base.bool,
+        lf_ref_delta     : array[4] base.i32[..= 63],
+        lf_mode_delta    : array[4] base.i32[..= 63],
+        // Number of Y rows to defer at each MB row boundary for filter overlap.
+        // The V-MB filter for row N modifies pixels in row N-1, so we hold
+        // back these rows and output them with the next MB row's swizzle.
+        // 0 = no filter, 2 = simple filter, 6 = normal filter.
+        filter_extra_rows : base.u32[..= 8],
+
+        // ---- Quantization ----
+        quant_y_ac_qi     : base.u8[..= 127],
+        quant_y_dc_delta  : base.i32,
+        quant_y2_dc_delta : base.i32,
+        quant_y2_ac_delta : base.i32,
+        quant_uv_dc_delta : base.i32,
+        quant_uv_ac_delta : base.i32,
+
+        // Per-segment dequantization values.
+        dequant_y_dc  : array[4] base.u32,
+        dequant_y_ac  : array[4] base.u32,
+        dequant_y2_dc : array[4] base.u32,
+        dequant_y2_ac : array[4] base.u32,
+        dequant_uv_dc : array[4] base.u32,
+        dequant_uv_ac : array[4] base.u32,
+
+        // Per-segment filter levels (computed from filter_level, sharpness, segment_lf).
+        seg_filter_level : array[4] base.u32,
+
+        // Precomputed filter strengths per (segment, is_i4x4) combination.
+        // Indexed by segment*2 + is_i4x4. Avoids per-MB recomputation.
+        fstrength_level  : array[8] base.u8,
+        fstrength_ilevel : array[8] base.u8,
+        fstrength_hlevel : array[8] base.u8,
+
+        // ---- Partitions ----
+        num_partitions : base.u32[..= 8],
+
+        // Multi-partition state for coefficient data partitions.
+        // When num_partitions > 1, all coefficient data is copied to workbuf
+        // and per-partition boolean decoder state is saved/restored at row
+        // boundaries (MB rows cycle through partitions round-robin).
+        multi_partition      : base.bool,
+        current_partition    : base.u32[..= 7],
+        part_range           : array[8] base.u32,
+        part_value           : array[8] base.u64,
+        part_bits            : array[8] base.u32,
+        part_wbuf_ri         : array[8] base.u32,
+        part_wbuf_size       : array[8] base.u32,
+        part_wbuf_offset     : array[8] base.u64,
+        current_part_wbuf_ri : base.u32,
+
+        // ---- Macroblock state ----
+        mb_x : base.u32[..= 0x400],
+        mb_y : base.u32[..= 0x400],
+
+        segment_id       : base.u8[..= 3],
+        is_skip_coeff    : base.bool,
+        mb_no_skip_coeff : base.bool,
+        prob_skip_false  : base.u8,
+        mb_luma_mode     : base.u8,
+        mb_chroma_mode   : base.u8[..= 3],
+        left_nz_y2       : base.u8,
+
+        // ---- Workbuf layout ----
+        // Y plane:     [0 .. y_end)
+        // U plane:     [y_end .. u_end)
+        // V plane:     [u_end .. v_end)
+        // Partition 0: [v_end .. v_end + partition0_size)
+        // Coeff data:  [v_end + partition0_size .. ) (multi-partition only)
+        y_stride             : base.u32[..= 0x4000],
+        uv_stride            : base.u32[..= 0x2000],
+        workbuf_offset_y_end : base.u64[..= 0x1000_0000],
+        workbuf_offset_u_end : base.u64[..= 0x1400_0000],
+        workbuf_offset_v_end : base.u64[..= 0x1800_0000],
+
+        // Partition 0 data stored in workbuf: read index and actual count
+        // of bytes copied (may be less than partition0_size if input truncated).
+        p0_wbuf_ri    : base.u32,
+        p0_wbuf_count : base.u32,
+
+        // ---- Output ----
         dst_x : base.u32,
         dst_y : base.u32,
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
+) + (
+        // Boolean decoder buffer for partition 0 (mode data). 4096 bytes.
+        bool_buffer : array[0x1000] base.u8,
+
+        // Boolean decoder buffer for partition 1 (coefficient data). 4096 bytes.
+        p1_buffer : array[0x1000] base.u8,
+
+        // Current macroblock coefficients (u32 two's complement for signed).
+        // 25 blocks × 16 coefficients = 400 values.
+        mb_coeffs : array[400] base.u32,
+
+        // Per-block NZ tracking for DC-only IDCT optimization.
+        // mb_y_ac_nz[i]: 1 if Y block i has non-zero AC coefficients (16x16 mode).
+        // mb_uv_nz[i]: 0=all zero, 1=DC only, 2=has AC.
+        mb_y_ac_nz : array[16] base.u8,
+        mb_uv_nz   : array[8] base.u8,
+
+        // Side-effect output from decode_block_coeffs: 1 if any AC coefficient
+        // (index > 0) was non-zero.
+        block_ac_nz : base.u32,
+
+        // Coefficient probability table (mutable, updated per frame).
+        // [4 types][8 bands][3 contexts][11 tokens] = 1056 values.
+        coeff_probs : array[1056] base.u8,
+
+        // Scratch buffer for swizzle_ycck.
+        scratch_buffer_2k : array[2048] base.u8,
+
+        // Above-row context: number of non-zero coefficients per 4x4 block.
+        // Max mb_width * 4 = 4096 for Y, mb_width * 2 for U, mb_width * 2 for V.
+        // Total = mb_width * 8, max = 8192. Sized to 8200 so that mb_x (up to
+        // 0x400) * 8 + 7 = 8199 is always in-bounds without runtime guards.
+        above_nz : array[8200] base.u8,
+
+        // Left-column context for current macroblock row.
+        // 4 Y + 2 U + 2 V = 8.
+        left_nz : array[8] base.u8,
+
+        // Above-row 4x4 sub-block modes for B_PRED.
+        // Max mb_width * 4 = 4096.
+        above_modes : array[4096] base.u8,
+
+        // Left-column 4x4 sub-block modes for current macroblock.
+        left_modes : array[4] base.u8,
+
+        // Sub-block modes for current macroblock (4x4 grid = 16 modes).
+        sub_modes : array[16] base.u8,
+
+        // Upper-right pixels for B_PRED rightmost column sub-blocks.
+        // Saved from the first row (by=0) and reused for by>0.
+        mb_upper_right : array[4] base.u8,
+
+        // Above-row Y2 non-zero context, one per macroblock column.
+        // Sized to 0x401 so that mb_x (up to 0x400) is always in-bounds.
+        above_nz_y2 : array[0x401] base.u8,
+
+        // Per-macroblock filter parameters, ring-buffered by row (2 rows).
+        // Indexed by (mb_y & 1) * 0x400 + mb_x. Max index = 0x7FF.
+        //
+        // Only the current and previous rows are needed at any time (the
+        // interleaved decode-filter loop decodes row N, then filters row N-1).
+        //
+        // For normal filter: level = 2*base_level + ilevel (0..189).
+        // For simple filter: level = base_level (0..63).
+        // ilevel and hlevel are only used by the normal filter.
+        mb_filter_level  : array[0x800] base.u8,
+        mb_filter_ilevel : array[0x800] base.u8,
+        mb_filter_hlevel : array[0x800] base.u8,
+        mb_filter_inner  : array[0x800] base.u8,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
@@ -58,12 +261,15 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
+    // 3-byte frame tag.
     c32 = args.src.read_u24le_as_u32?()
-    if (c32 & 0x01) <> 0 {
-        // TODO: support non-key frames.
+    this.key_frame = ((c32 & 0x01) == 0)
+    if not this.key_frame {
         return "#unsupported VP8 file"
     }
+    this.partition0_size = (c32 >> 5) & 0x7_FFFF
 
+    // 7-byte key frame header: 3-byte start code + 4-byte dimensions.
     c32 = args.src.read_u24le_as_u32?()
     if c32 <> '\x9D\x01\x2A'le {
         return "#bad header"
@@ -72,6 +278,19 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     c32 = args.src.read_u32le?()
     this.width = 0x3FFF & (c32 >> 0)
     this.height = 0x3FFF & (c32 >> 16)
+
+    // Calculate macroblock grid dimensions.
+    this.mb_width = (this.width + 15) / 16
+    this.mb_height = (this.height + 15) / 16
+
+    // Calculate workbuf layout: Y, U, V planes.
+    this.y_stride = this.mb_width * 16
+    this.uv_stride = this.mb_width * 8
+    this.workbuf_offset_y_end = (this.y_stride as base.u64) * ((this.mb_height * 16) as base.u64)
+    this.workbuf_offset_u_end = this.workbuf_offset_y_end +
+            ((this.uv_stride as base.u64) * ((this.mb_height * 8) as base.u64))
+    this.workbuf_offset_v_end = this.workbuf_offset_u_end +
+            ((this.uv_stride as base.u64) * ((this.mb_height * 8) as base.u64))
 
     this.frame_config_io_position = args.src.position()
 
@@ -147,7 +366,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status : base.status
+    var status    : base.status
+    var remaining : base.u32
+    var off       : base.u64
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -157,9 +378,105 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return base."@end of data"
     }
 
-    this.dst_x = 0
-    this.dst_y = 0
+    if this.workbuf_offset_v_end > args.workbuf.length() {
+        return base."#bad workbuf length"
+    }
 
+    choose idct_add = [
+            idct_add_arm_neon,
+            idct_add_x86_sse42]
+    choose idct_dc_add = [
+            idct_dc_add_arm_neon,
+            idct_dc_add_x86_sse42]
+    choose idct_add_pair = [
+            idct_add_pair_x86_avx2]
+    choose idct_dc_add_pair = [
+            idct_dc_add_pair_x86_avx2]
+    choose predict_16x16 = [
+            predict_16x16_arm_neon,
+            predict_16x16_x86_sse42]
+    choose predict_8x8 = [
+            predict_8x8_arm_neon,
+            predict_8x8_x86_sse42]
+    choose simple_vfilter_16 = [
+            simple_vfilter_16_arm_neon,
+            simple_vfilter_16_x86_sse42]
+    choose normal_vfilter_inner_16 = [
+            normal_vfilter_inner_16_arm_neon,
+            normal_vfilter_inner_16_x86_sse42]
+    choose normal_vfilter_mb_16 = [
+            normal_vfilter_mb_16_arm_neon,
+            normal_vfilter_mb_16_x86_sse42]
+    choose normal_vfilter_mb_8 = [
+            normal_vfilter_mb_8_arm_neon,
+            normal_vfilter_mb_8_x86_sse42]
+    choose normal_hfilter_mb_16 = [
+            normal_hfilter_mb_16_arm_neon,
+            normal_hfilter_mb_16_x86_sse42]
+    choose normal_hfilter_mb_8 = [
+            normal_hfilter_mb_8_arm_neon,
+            normal_hfilter_mb_8_x86_sse42]
+    choose normal_hfilter_inner_16 = [
+            normal_hfilter_inner_16_arm_neon,
+            normal_hfilter_inner_16_x86_sse42]
+    choose normal_hfilter_inner_8 = [
+            normal_hfilter_inner_8_arm_neon,
+            normal_hfilter_inner_8_x86_sse42]
+    choose normal_vfilter_inner_8 = [
+            normal_vfilter_inner_8_arm_neon,
+            normal_vfilter_inner_8_x86_sse42]
+    choose normal_vfilter_mb_uv = [
+            normal_vfilter_mb_uv_x86_avx2]
+    choose normal_hfilter_mb_uv = [
+            normal_hfilter_mb_uv_x86_avx2]
+    choose normal_vfilter_inner_uv = [
+            normal_vfilter_inner_uv_x86_avx2]
+    choose normal_hfilter_inner_uv = [
+            normal_hfilter_inner_uv_x86_avx2]
+
+    // Ensure mb_coeffs is zeroed. IDCT/WHT rely on unwritten positions being 0.
+    // With LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, mb_coeffs starts as garbage.
+    this.init_mb_coeffs!()
+
+    // Initialize coefficient probabilities from defaults.
+    this.init_coeff_probs!()
+    // Copy partition 0 data from src into workbuf[v_end..] so that the
+    // boolean decoder can be refilled during MB mode decoding.
+    this.p0_wbuf_ri = 0
+    this.p0_wbuf_count = 0
+    off = this.workbuf_offset_v_end
+    remaining = this.partition0_size
+    while (remaining > 0) and (args.src.length() > 0) {
+        if off < args.workbuf.length() {
+            args.workbuf[off] = args.src.peek_u8()
+        }
+        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+        off ~mod+= 1
+        remaining ~mod-= 1
+        this.p0_wbuf_count ~mod+= 1
+    }
+
+    // Parse frame header from workbuf-stored partition 0 data.
+    this.decode_partition0!(workbuf: args.workbuf)
+
+    // Precompute filter strengths per (segment, mode) to avoid per-MB work.
+    this.precompute_filter_strengths!()
+
+    // The V-MB filter for row N modifies pixels in row N-1 (up to 3 rows in
+    // both Y and UV planes). We must hold back those rows from output until
+    // row N's filter has been applied. The number of extra luma rows:
+    //   Simple filter (Y only): filter2 modifies 1 Y row, round up to 2 (even)
+    //   Normal filter (Y+UV): filter246 modifies 3 UV rows = 6 luma rows
+    //   No filter: 0
+    if this.filter_level == 0 {
+        this.filter_extra_rows = 0
+    } else if this.filter_type == 1 {
+        this.filter_extra_rows = 2
+    } else {
+        this.filter_extra_rows = 6
+    }
+
+    // Prepare swizzler for per-row output during decode.
     status = this.swizzler.prepare!(
             dst_pixfmt: args.dst.pixel_format(),
             dst_palette: args.dst.palette(),
@@ -170,8 +487,8 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return status
     }
 
-    // TODO: actually decode the pixels.
-    status = this.make_a_placeholder_gradient!(dst: args.dst)
+    // Decode all macroblocks with per-row filtering and output.
+    status = this.decode_frame_mb!(src: args.src, dst: args.dst, workbuf: args.workbuf)
     if not status.is_ok() {
         return status
     }
@@ -179,58 +496,145 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     this.call_sequence = 0x60
 }
 
-pri func decoder.make_a_placeholder_gradient!(dst: ptr base.pixel_buffer) base.status {
-    var dst_pixfmt          : base.pixel_format
-    var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u32[..= 32]
-    var dst_bytes_per_row   : base.u64
-    var tab                 : table base.u8
-    var dst                 : slice base.u8
-    var i                   : base.u64
-    var bgrx                : array[4] base.u8
+pri func decoder.init_mb_coeffs!() {
+    var i : base.u32
 
-    // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
-    // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
-    dst_pixfmt = args.dst.pixel_format()
-    dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
-    if (dst_bits_per_pixel & 7) <> 0 {
-        return base."#unsupported option"
+    i = 0
+    while i < 400 {
+        assert i < 400 via "a < b: a < c; c <= b"(c: 400)
+        this.mb_coeffs[i] = 0
+        i += 1
     }
-    dst_bytes_per_pixel = dst_bits_per_pixel / 8
-    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
-    tab = args.dst.plane(p: 0)
+}
 
-    bgrx[0] = 0x80
+pri func decoder.init_coeff_probs!() {
+    var i : base.u32
 
-    while this.dst_y < this.height {
-        assert this.dst_y < 0x3FFF via "a < b: a < c; c <= b"(c: this.height)
-        bgrx[1] = (this.dst_y & 0xFF) as base.u8
+    i = 0
+    while i < 1056 {
+        assert i < 1056 via "a < b: a < c; c <= b"(c: 1056)
+        this.coeff_probs[i] = DEFAULT_COEFF_PROBS[i]
+        i += 1
+    }
+}
 
-        this.dst_x = 0
-        while this.dst_x < this.width,
-                inv this.dst_y < 0x3FFF,
-        {
-            assert this.dst_x < 0x3FFF via "a < b: a < c; c <= b"(c: this.width)
-            bgrx[2] = (this.dst_x & 0xFF) as base.u8
+// swizzle_mb_row! converts one MB row of YCbCr data to the output pixel format.
+// The swizzler must have been prepared before calling this function.
+//
+// The V-MB filter for row N modifies pixels in row N-1, so we hold back
+// filter_extra_rows from the bottom of each non-last MB row and include them
+// in the next row's output. This matches libwebp's FinishRow behavior.
+pri func decoder.swizzle_mb_row!(dst: ptr base.pixel_buffer, workbuf: slice base.u8, mby: base.u32[..= 0x3FF], is_last: base.bool) base.status {
+    var status   : base.status
+    var src0     : slice base.u8
+    var src1     : slice base.u8
+    var src2     : slice base.u8
+    var src3     : slice base.u8
+    var y_width  : base.u32
+    var uv_width : base.u32
+    var y_min    : base.u32
+    var y_max    : base.u32
+    var y_off    : base.u64
+    var uv_off   : base.u64
+    var u_start  : base.u64
+    var v_start  : base.u64
+    var rem_y_h  : base.u32
+    var rem_uv_h : base.u32
 
-            dst = tab.row_u32(y: this.dst_y)
-            if dst_bytes_per_row < dst.length() {
-                dst = dst[.. dst_bytes_per_row]
-            }
-            i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
-            if i < dst.length() {
-                this.swizzler.swizzle_interleaved_from_slice!(
-                        dst: dst[i ..],
-                        dst_palette: args.dst.palette(),
-                        src: bgrx[.. 4])
-            }
-
-            this.dst_x += 1
-        }
-        this.dst_y += 1
+    if this.workbuf_offset_v_end > args.workbuf.length() {
+        return base."#bad workbuf length"
+    }
+    if this.workbuf_offset_y_end > this.workbuf_offset_u_end {
+        return base."#bad workbuf length"
+    }
+    if this.workbuf_offset_u_end > this.workbuf_offset_v_end {
+        return base."#bad workbuf length"
     }
 
-    return ok
+    y_width = this.mb_width * 16
+    uv_width = this.mb_width * 8
+
+    // Compute output row range, accounting for filter overlap.
+    y_min = args.mby * 16
+    if args.mby > 0 {
+        // Include deferred rows from the previous MB row.
+        y_min ~sat-= this.filter_extra_rows
+    }
+    y_max = ((args.mby as base.u32) + 1) * 16
+    if not args.is_last {
+        // Defer bottom rows until next MB row's V-MB filter is applied.
+        y_max ~sat-= this.filter_extra_rows
+    }
+    y_max = y_max.min(no_more_than: this.height)
+
+    if y_min >= y_max {
+        return ok
+    }
+
+    // Source sub-slices starting at the adjusted y_min offset.
+    y_off = (y_min as base.u64) * (this.y_stride as base.u64)
+    uv_off = ((y_min / 2) as base.u64) * (this.uv_stride as base.u64)
+
+    assert this.workbuf_offset_u_end <= args.workbuf.length() via "a <= b: a <= c; c <= b"(
+            c: this.workbuf_offset_v_end)
+    assert this.workbuf_offset_y_end <= args.workbuf.length() via "a <= b: a <= c; c <= b"(
+            c: this.workbuf_offset_u_end)
+    if y_off <= this.workbuf_offset_y_end {
+        src0 = args.workbuf[y_off .. this.workbuf_offset_y_end]
+    }
+
+    u_start = this.workbuf_offset_y_end ~sat+ uv_off
+    if u_start <= this.workbuf_offset_u_end {
+        src1 = args.workbuf[u_start .. this.workbuf_offset_u_end]
+    }
+
+    v_start = this.workbuf_offset_u_end ~sat+ uv_off
+    if v_start <= this.workbuf_offset_v_end {
+        src2 = args.workbuf[v_start .. this.workbuf_offset_v_end]
+    }
+
+    src3 = this.util.empty_slice_u8()
+
+    // Remaining heights from y_min to end of planes.
+    rem_y_h = (this.mb_height * 16) ~sat- y_min
+    rem_uv_h = (this.mb_height * 8) ~sat- (y_min / 2)
+
+    status = this.swizzler.swizzle_ycck!(
+            dst: args.dst,
+            dst_palette: args.dst.palette(),
+            x_min_incl: 0,
+            x_max_excl: this.width,
+            y_min_incl: y_min,
+            y_max_excl: y_max,
+            src0: src0,
+            src1: src1,
+            src2: src2,
+            src3: src3,
+            width0: y_width,
+            width1: uv_width,
+            width2: uv_width,
+            width3: 0,
+            height0: rem_y_h,
+            height1: rem_uv_h,
+            height2: rem_uv_h,
+            height3: 0,
+            stride0: y_width,
+            stride1: uv_width,
+            stride2: uv_width,
+            stride3: 0,
+            h0: 2,
+            h1: 1,
+            h2: 1,
+            h3: 0,
+            v0: 2,
+            v1: 1,
+            v2: 1,
+            v3: 0,
+            is_rgb_or_cmyk: false,
+            triangle_filter_for_2to1: false,
+            src_is_bt601: true,
+            scratch_buffer_2k: this.scratch_buffer_2k[..])
+    return status
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
@@ -279,5 +683,14 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-    return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+    var total : base.u64
+    total = this.workbuf_offset_v_end ~sat+ (this.partition0_size as base.u64)
+    return this.util.make_range_ii_u64(
+            min_incl: total,
+            max_incl: total)
+}
+
+// workbuf_len_total returns the VP8 workbuf requirement as a plain u64.
+pub func decoder.workbuf_len_total() base.u64 {
+    return this.workbuf_offset_v_end ~sat+ (this.partition0_size as base.u64)
 }

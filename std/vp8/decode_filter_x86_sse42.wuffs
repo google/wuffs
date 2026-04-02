@@ -1,0 +1,2922 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 simple loop filter, SSE4.2 version.
+//
+// Filters 16 contiguous pixels at a horizontal edge in parallel.
+// Algorithm from libwebp (DoFilter2_SSE2):
+//   1. NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= limit (per-byte mask)
+//   2. Convert u8 to i8 (XOR with 0x80)
+//   3. GetBaseDelta: delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1))
+//   4. Mask delta: delta &= mask
+//   5. DoSimpleFilter: v4 = signed_byte_shr3(delta+4),
+//      v3 = signed_byte_shr3(delta+3), q0 -= v4, p0 += v3 (saturating i8)
+//   6. Convert back to u8
+
+pri func decoder.simple_vfilter_16_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64, limit: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    // SSE registers.
+    var p1       : base.x86_m128i
+    var p0       : base.x86_m128i
+    var q0       : base.x86_m128i
+    var q1       : base.x86_m128i
+    var sign_bit : base.x86_m128i
+    var zero     : base.x86_m128i
+    var kFE      : base.x86_m128i
+    var m_thresh : base.x86_m128i
+    var k3       : base.x86_m128i
+    var k4       : base.x86_m128i
+    var mask     : base.x86_m128i
+    var t1       : base.x86_m128i
+    var t2       : base.x86_m128i
+    var t3       : base.x86_m128i
+    var delta    : base.x86_m128i
+    var v3       : base.x86_m128i
+    var v4       : base.x86_m128i
+    var lo       : base.x86_m128i
+    var hi       : base.x86_m128i
+    var p1s      : base.x86_m128i
+    var q1s      : base.x86_m128i
+
+    stride = this.y_stride as base.u64
+    if stride < 16 {
+        return nothing
+    }
+    assert 16 <= stride via "a <= b: b >= a"()
+
+    // Need at least 2*stride bytes before q0_off for p1 and p0 rows.
+    if args.q0_off < (2 * stride) {
+        return nothing
+    }
+
+    // Use wb for loads (progressive reslicing).
+    // Use args.workbuf (unmodified until store phase) for stores.
+    wb = args.workbuf
+
+    // Reslice wb to p1 position: q0_off - 2*stride.
+    if (args.q0_off - (2 * stride)) <= wb.length() {
+        wb = wb[args.q0_off - (2 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    // Load p1 row (16 contiguous bytes).
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Advance by stride to p0 row.
+    wb = wb[stride ..]
+
+    // Load p0 row.
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Advance by stride to q0 row.
+    wb = wb[stride ..]
+
+    // Load q0 row.
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Advance by stride to q1 row.
+    wb = wb[stride ..]
+
+    // Load q1 row (last row, no stride advance).
+    if 16 > wb.length() {
+        return nothing
+    }
+    q1 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Set up constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.limit & 0xFF) as base.u8)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+
+    // ---- NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= limit ----
+    // abs(a-b) for u8: or(subs_epu8(a,b), subs_epu8(b,a))
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    // abs(p1-q1) / 2: clear LSB then shift right 1 (safe across byte boundaries
+    // because the cleared bit prevents cross-byte contamination in 16-bit shift).
+    t2 = t1._mm_and_si128(b: kFE)
+    t2 = t2._mm_srli_epi16(imm8: 1)
+    // abs(p0-q0) * 2
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    // abs(p0-q0)*2 + abs(p1-q1)/2
+    t3 = t3._mm_adds_epu8(b: t2)
+    // mask: 0xFF where value <= thresh, 0x00 where > thresh.
+    mask = t3._mm_subs_epu8(b: m_thresh)
+    mask = mask._mm_cmpeq_epi8(b: zero)
+
+    // ---- GetBaseDelta (i8 domain) ----
+    // Convert to signed by XOR with 0x80.
+    p1s = p1._mm_xor_si128(b: sign_bit)
+    q1s = q1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+
+    // delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1))
+    // Accumulate via saturating adds to avoid overflow.
+    t1 = p1s._mm_subs_epi8(b: q1s)  // p1 - q1 (saturating i8)
+    t2 = q0._mm_subs_epi8(b: p0)  // q0 - p0
+    t1 = t1._mm_adds_epi8(b: t2)  // (p1-q1) + 1*(q0-p0)
+    t1 = t1._mm_adds_epi8(b: t2)  // (p1-q1) + 2*(q0-p0)
+    delta = t1._mm_adds_epi8(b: t2)  // (p1-q1) + 3*(q0-p0)
+
+    // Mask: only apply filter where NeedsFilter passed.
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- DoSimpleFilter ----
+    // v4 = signed_byte_shr3(delta + 4)
+    v4 = delta._mm_adds_epi8(b: k4)
+    // Signed byte shift right by 3: place bytes in high byte of i16 words,
+    // arithmetic shift right by 11 (= 8 positioning + 3 actual), pack back.
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    // v3 = signed_byte_shr3(delta + 3)
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // Apply: q0 -= v4, p0 += v3 (saturating i8).
+    q0 = q0._mm_subs_epi8(b: v4)
+    p0 = p0._mm_adds_epi8(b: v3)
+
+    // Convert back to unsigned.
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+
+    // ---- Store p0 and q0 back ----
+    // Reslice args.workbuf to p0 position: q0_off - stride.
+    // We know q0_off >= 2*stride from the guard above, so q0_off >= stride.
+    if args.q0_off < stride {
+        return nothing
+    }
+    if (args.q0_off - stride) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - stride ..]
+    } else {
+        return nothing
+    }
+
+    // Store p0 row.
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Store q0 row (last row, no stride advance).
+    if 16 > args.workbuf.length() {
+        return nothing
+    }
+    q0.store_slice128!(a: args.workbuf[.. 16])
+}
+
+// VP8 normal loop filter (filter4), SSE4.2 version.
+//
+// Filters 16 contiguous pixels at a horizontal inner sub-block edge.
+// Loads 8 rows (p3..q3), computes NeedsFilter2 + HEV masks, then applies
+// filter2 (HEV) or filter4 (!HEV).
+
+pri func decoder.normal_vfilter_inner_16_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var p3        : base.x86_m128i
+    var p2        : base.x86_m128i
+    var p1        : base.x86_m128i
+    var p0        : base.x86_m128i
+    var q0        : base.x86_m128i
+    var q1        : base.x86_m128i
+    var q2        : base.x86_m128i
+    var q3        : base.x86_m128i
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k1        : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var mask      : base.x86_m128i
+    var not_hev   : base.x86_m128i
+    var delta     : base.x86_m128i
+    var v3        : base.x86_m128i
+    var v4        : base.x86_m128i
+    var a3        : base.x86_m128i
+    var t1        : base.x86_m128i
+    var t2        : base.x86_m128i
+    var t3        : base.x86_m128i
+    var lo        : base.x86_m128i
+    var hi        : base.x86_m128i
+
+    stride = this.y_stride as base.u64
+    if stride < 16 {
+        return nothing
+    }
+    assert 16 <= stride via "a <= b: b >= a"()
+
+    // Need at least 4*stride bytes before q0_off for p3 row.
+    if args.q0_off < (4 * stride) {
+        return nothing
+    }
+
+    wb = args.workbuf
+
+    // Reslice to p3 position.
+    if (args.q0_off - (4 * stride)) <= wb.length() {
+        wb = wb[args.q0_off - (4 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows: p3, p2, p1, p0, q0, q1, q2, q3.
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p3 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q2 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m128i_repeat_u8(a: 1)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+
+    // ---- NeedsFilter: abs(p0-q0)*2 + abs(p1-q1)/2 <= level ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    // ---- NeedsFilter2: ilevel checks on 6 adjacent pairs ----
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV: 0xFF where abs(p1-p0) <= hlevel AND abs(q1-q0) <= hlevel ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert p1, p0, q0, q1 to signed (XOR 0x80) ----
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // ---- Combined delta ----
+    // HEV: delta = 3*(q0-p0) + (p1-q1)    [filter2]
+    // !HEV: delta = 3*(q0-p0)              [filter4 uses no p1-q1]
+    t1 = p1._mm_subs_epi8(b: q1)  // p1-q1 (sat i8)
+    t1 = not_hev._mm_andnot_si128(b: t1)  // zero where !HEV
+    t2 = q0._mm_subs_epi8(b: p0)  // q0-p0
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)  // 3*(q0-p0) + hev*(p1-q1)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- v4 = SignedShift(delta+4, 3), v3 = SignedShift(delta+3, 3) ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // Apply to p0, q0 (both HEV and !HEV use these).
+    q0 = q0._mm_subs_epi8(b: v4)
+    p0 = p0._mm_adds_epi8(b: v3)
+
+    // ---- Filter4 !HEV: a3 = SignedShift(v4+1, 1) & not_hev ----
+    a3 = v4._mm_adds_epi8(b: k1)
+    lo = zero._mm_unpacklo_epi8(b: a3)
+    hi = zero._mm_unpackhi_epi8(b: a3)
+    lo = lo._mm_srai_epi16(imm8: 9)
+    hi = hi._mm_srai_epi16(imm8: 9)
+    a3 = lo._mm_packs_epi16(b: hi)
+    a3 = a3._mm_and_si128(b: not_hev)
+
+    // Apply to p1, q1 (only !HEV).
+    q1 = q1._mm_subs_epi8(b: a3)
+    p1 = p1._mm_adds_epi8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // ---- Store p1, p0, q0, q1 ----
+    if args.q0_off < (2 * stride) {
+        return nothing
+    }
+    if (args.q0_off - (2 * stride)) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (2 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if 16 > args.workbuf.length() {
+        return nothing
+    }
+    q1.store_slice128!(a: args.workbuf[.. 16])
+}
+
+// VP8 normal loop filter (filter6), SSE4.2 version.
+//
+// Filters 16 contiguous pixels at a horizontal MB boundary edge.
+// Applies filter2 (HEV) or filter6 (!HEV, weighted: 27/18/9 * delta).
+
+pri func decoder.normal_vfilter_mb_16_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var p3        : base.x86_m128i
+    var p2        : base.x86_m128i
+    var p1        : base.x86_m128i
+    var p0        : base.x86_m128i
+    var q0        : base.x86_m128i
+    var q1        : base.x86_m128i
+    var q2        : base.x86_m128i
+    var q3        : base.x86_m128i
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var k63       : base.x86_m128i
+    var k27       : base.x86_m128i
+    var k18       : base.x86_m128i
+    var k9        : base.x86_m128i
+    var mask      : base.x86_m128i
+    var not_hev   : base.x86_m128i
+    var delta     : base.x86_m128i
+    var v3        : base.x86_m128i
+    var v4        : base.x86_m128i
+    var a1        : base.x86_m128i
+    var a2        : base.x86_m128i
+    var a3        : base.x86_m128i
+    var t1        : base.x86_m128i
+    var t2        : base.x86_m128i
+    var t3        : base.x86_m128i
+    var lo        : base.x86_m128i
+    var hi        : base.x86_m128i
+    var d_lo      : base.x86_m128i
+    var d_hi      : base.x86_m128i
+    var p0_adj    : base.x86_m128i
+    var q0_adj    : base.x86_m128i
+
+    stride = this.y_stride as base.u64
+    if stride < 16 {
+        return nothing
+    }
+    assert 16 <= stride via "a <= b: b >= a"()
+
+    // Need at least 4*stride bytes before q0_off.
+    if args.q0_off < (4 * stride) {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - (4 * stride)) <= wb.length() {
+        wb = wb[args.q0_off - (4 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows.
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p3 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 16 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q2 = util.make_m128i_slice128(a: wb[.. 16])
+    wb = wb[stride ..]
+
+    if 16 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_m128i_slice128(a: wb[.. 16])
+
+    // Constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+    k63 = util.make_m128i_repeat_u16(a: 63)
+    k27 = util.make_m128i_repeat_u16(a: 27)
+    k18 = util.make_m128i_repeat_u16(a: 18)
+    k9 = util.make_m128i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert p2, p1, p0, q0, q1, q2 to signed ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) for ALL positions ----
+    // Filter6 uses p1-q1 in both HEV and !HEV paths.
+    t1 = p1._mm_subs_epi8(b: q1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- Filter2 (HEV path): v4, v3 ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    // Sign-extend delta bytes to i16: unpack(zero, delta) puts delta in high
+    // byte of each i16 word, then srai by 8 sign-extends.
+    d_lo = zero._mm_unpacklo_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+    d_hi = zero._mm_unpackhi_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+
+    // a1 = (27*delta + 63) >> 7
+    lo = d_lo._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a1 = lo._mm_packs_epi16(b: hi)
+
+    // a2 = (18*delta + 63) >> 7
+    lo = d_lo._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a2 = lo._mm_packs_epi16(b: hi)
+
+    // a3 = (9*delta + 63) >> 7
+    lo = d_lo._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Merge HEV (filter2) and !HEV (filter6) results ----
+    // p0 += select(hev, v3, a1): hev gets v3, !hev gets a1
+    p0_adj = not_hev._mm_andnot_si128(b: v3)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    p0 = p0._mm_adds_epi8(b: p0_adj)
+    // q0 -= select(hev, v4, a1)
+    q0_adj = not_hev._mm_andnot_si128(b: v4)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    q0 = q0._mm_subs_epi8(b: q0_adj)
+    // p1 += a2 & not_hev (only !HEV)
+    p1 = p1._mm_adds_epi8(b: a2._mm_and_si128(b: not_hev))
+    // q1 -= a2 & not_hev
+    q1 = q1._mm_subs_epi8(b: a2._mm_and_si128(b: not_hev))
+    // p2 += a3 & not_hev
+    p2 = p2._mm_adds_epi8(b: a3._mm_and_si128(b: not_hev))
+    // q2 -= a3 & not_hev
+    q2 = q2._mm_subs_epi8(b: a3._mm_and_si128(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Store p2, p1, p0, q0, q1, q2 ----
+    if args.q0_off < (3 * stride) {
+        return nothing
+    }
+    if (args.q0_off - (3 * stride)) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (3 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 16 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1.store_slice128!(a: args.workbuf[.. 16])
+    args.workbuf = args.workbuf[stride ..]
+
+    if 16 > args.workbuf.length() {
+        return nothing
+    }
+    q2.store_slice128!(a: args.workbuf[.. 16])
+}
+
+// VP8 normal loop filter (filter6) for 8-pixel U/V horizontal MB edges, SSE4.2.
+// Same algorithm as normal_vfilter_mb_16 but loads/stores only 8 bytes per row
+// (upper 8 bytes of each register are zero/unused). Uses uv_stride for step.
+
+pri func decoder.normal_vfilter_mb_8_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var p3        : base.x86_m128i
+    var p2        : base.x86_m128i
+    var p1        : base.x86_m128i
+    var p0        : base.x86_m128i
+    var q0        : base.x86_m128i
+    var q1        : base.x86_m128i
+    var q2        : base.x86_m128i
+    var q3        : base.x86_m128i
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var k63       : base.x86_m128i
+    var k27       : base.x86_m128i
+    var k18       : base.x86_m128i
+    var k9        : base.x86_m128i
+    var mask      : base.x86_m128i
+    var not_hev   : base.x86_m128i
+    var delta     : base.x86_m128i
+    var v3        : base.x86_m128i
+    var v4        : base.x86_m128i
+    var a1        : base.x86_m128i
+    var a2        : base.x86_m128i
+    var a3        : base.x86_m128i
+    var t1        : base.x86_m128i
+    var t2        : base.x86_m128i
+    var t3        : base.x86_m128i
+    var lo        : base.x86_m128i
+    var hi        : base.x86_m128i
+    var d_lo      : base.x86_m128i
+    var d_hi      : base.x86_m128i
+    var p0_adj    : base.x86_m128i
+    var q0_adj    : base.x86_m128i
+
+    stride = this.uv_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    if args.q0_off < (4 * stride) {
+        return nothing
+    }
+
+    wb = args.workbuf
+    if (args.q0_off - (4 * stride)) <= wb.length() {
+        wb = wb[args.q0_off - (4 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows using 8-byte loads (upper 8 bytes are zero).
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p3 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q2 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_m128i_slice64(a: wb[.. 8])
+
+    // Constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+    k63 = util.make_m128i_repeat_u16(a: 63)
+    k27 = util.make_m128i_repeat_u16(a: 27)
+    k18 = util.make_m128i_repeat_u16(a: 18)
+    k9 = util.make_m128i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Delta ----
+    t1 = p1._mm_subs_epi8(b: q1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- Filter2 (HEV path) ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path) ----
+    d_lo = zero._mm_unpacklo_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+    d_hi = zero._mm_unpackhi_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+
+    lo = d_lo._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a1 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a2 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Merge HEV/!HEV ----
+    p0_adj = not_hev._mm_andnot_si128(b: v3)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    p0 = p0._mm_adds_epi8(b: p0_adj)
+    q0_adj = not_hev._mm_andnot_si128(b: v4)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    q0 = q0._mm_subs_epi8(b: q0_adj)
+    p1 = p1._mm_adds_epi8(b: a2._mm_and_si128(b: not_hev))
+    q1 = q1._mm_subs_epi8(b: a2._mm_and_si128(b: not_hev))
+    p2 = p2._mm_adds_epi8(b: a3._mm_and_si128(b: not_hev))
+    q2 = q2._mm_subs_epi8(b: a3._mm_and_si128(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Store p2, p1, p0, q0, q1, q2 using 8-byte stores ----
+    if args.q0_off < (3 * stride) {
+        return nothing
+    }
+    if (args.q0_off - (3 * stride)) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (3 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    q2.store_slice64!(a: args.workbuf[.. 8])
+}
+
+// VP8 normal loop filter (filter6) for 16-row Y vertical MB edges, SSE4.2.
+//
+// Filters a vertical MB boundary edge on the Y plane: 16 rows, 8 pixels per row
+// (p3..q3 at step=1). Uses a 16x8 -> 8x16 transpose to convert column-oriented
+// pixel data into row-oriented SSE registers, applies the same filter6 as
+// normal_vfilter_mb_16, then transposes back and stores.
+
+pri func decoder.normal_hfilter_mb_16_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    // Row load temporaries.
+    var ra : base.x86_m128i
+    var rb : base.x86_m128i
+
+    // Transpose scratch (reused across phases).
+    var f0 : base.x86_m128i
+    var f1 : base.x86_m128i
+    var f2 : base.x86_m128i
+    var f3 : base.x86_m128i
+    var f4 : base.x86_m128i
+    var f5 : base.x86_m128i
+    var f6 : base.x86_m128i
+    var f7 : base.x86_m128i
+    var g0 : base.x86_m128i
+    var g1 : base.x86_m128i
+    var g2 : base.x86_m128i
+    var g3 : base.x86_m128i
+    var g4 : base.x86_m128i
+    var g5 : base.x86_m128i
+    var g6 : base.x86_m128i
+    var g7 : base.x86_m128i
+
+    // Pixel columns after forward transpose.
+    var p3 : base.x86_m128i
+    var p2 : base.x86_m128i
+    var p1 : base.x86_m128i
+    var p0 : base.x86_m128i
+    var q0 : base.x86_m128i
+    var q1 : base.x86_m128i
+    var q2 : base.x86_m128i
+    var q3 : base.x86_m128i
+
+    // Filter constants.
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var k63       : base.x86_m128i
+    var k27       : base.x86_m128i
+    var k18       : base.x86_m128i
+    var k9        : base.x86_m128i
+
+    // Filter temporaries.
+    var mask    : base.x86_m128i
+    var not_hev : base.x86_m128i
+    var delta   : base.x86_m128i
+    var v3      : base.x86_m128i
+    var v4      : base.x86_m128i
+    var a1      : base.x86_m128i
+    var a2      : base.x86_m128i
+    var a3      : base.x86_m128i
+    var t1      : base.x86_m128i
+    var t2      : base.x86_m128i
+    var t3      : base.x86_m128i
+    var lo      : base.x86_m128i
+    var hi      : base.x86_m128i
+    var d_lo    : base.x86_m128i
+    var d_hi    : base.x86_m128i
+    var p0_adj  : base.x86_m128i
+    var q0_adj  : base.x86_m128i
+
+    stride = this.y_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    // Bounds: need 4 bytes before q0 for p3 column.
+    if args.q0_off < 4 {
+        return nothing
+    }
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 16 rows of 8 bytes + forward transpose phase 1 ====
+    // Each pair of rows is loaded and interleaved via unpacklo_epi8.
+
+    // Rows 0,1
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f0 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 2,3
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f1 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 4,5
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f2 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 6,7
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f3 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 8,9
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f4 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 10,11
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f5 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 12,13
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f6 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 14,15
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if 8 > wb.length() {
+        return nothing
+    }
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    f7 = ra._mm_unpacklo_epi8(b: rb)
+
+    // ==== Forward transpose phase 2: unpacklo/hi_epi16 ====
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+    g4 = f4._mm_unpacklo_epi16(b: f5)
+    g5 = f4._mm_unpackhi_epi16(b: f5)
+    g6 = f6._mm_unpacklo_epi16(b: f7)
+    g7 = f6._mm_unpackhi_epi16(b: f7)
+
+    // ==== Forward transpose phase 3: unpacklo/hi_epi32 ====
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+    f4 = g4._mm_unpacklo_epi32(b: g6)
+    f5 = g4._mm_unpackhi_epi32(b: g6)
+    f6 = g5._mm_unpacklo_epi32(b: g7)
+    f7 = g5._mm_unpackhi_epi32(b: g7)
+
+    // ==== Forward transpose phase 4: unpacklo/hi_epi64 → pixel columns ====
+    p3 = f0._mm_unpacklo_epi64(b: f4)
+    p2 = f0._mm_unpackhi_epi64(b: f4)
+    p1 = f1._mm_unpacklo_epi64(b: f5)
+    p0 = f1._mm_unpackhi_epi64(b: f5)
+    q0 = f2._mm_unpacklo_epi64(b: f6)
+    q1 = f2._mm_unpackhi_epi64(b: f6)
+    q2 = f3._mm_unpacklo_epi64(b: f7)
+    q3 = f3._mm_unpackhi_epi64(b: f7)
+
+    // ==== Filter computation (identical to normal_vfilter_mb_16) ====
+
+    // Constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+    k63 = util.make_m128i_repeat_u16(a: 63)
+    k27 = util.make_m128i_repeat_u16(a: 27)
+    k18 = util.make_m128i_repeat_u16(a: 18)
+    k9 = util.make_m128i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert p2, p1, p0, q0, q1, q2 to signed ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) ----
+    t1 = p1._mm_subs_epi8(b: q1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- Filter2 (HEV path): v4, v3 ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    d_lo = zero._mm_unpacklo_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+    d_hi = zero._mm_unpackhi_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+
+    lo = d_lo._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a1 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a2 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Merge HEV/!HEV ----
+    p0_adj = not_hev._mm_andnot_si128(b: v3)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    p0 = p0._mm_adds_epi8(b: p0_adj)
+    q0_adj = not_hev._mm_andnot_si128(b: v4)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    q0 = q0._mm_subs_epi8(b: q0_adj)
+    p1 = p1._mm_adds_epi8(b: a2._mm_and_si128(b: not_hev))
+    q1 = q1._mm_subs_epi8(b: a2._mm_and_si128(b: not_hev))
+    p2 = p2._mm_adds_epi8(b: a3._mm_and_si128(b: not_hev))
+    q2 = q2._mm_subs_epi8(b: a3._mm_and_si128(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ==== Reverse transpose: 8 columns (16 values each) → 16 rows (8 bytes each) ====
+
+    // Phase R1: interleave adjacent column pairs.
+    f0 = p3._mm_unpacklo_epi8(b: p2)
+    f1 = p3._mm_unpackhi_epi8(b: p2)
+    f2 = p1._mm_unpacklo_epi8(b: p0)
+    f3 = p1._mm_unpackhi_epi8(b: p0)
+    f4 = q0._mm_unpacklo_epi8(b: q1)
+    f5 = q0._mm_unpackhi_epi8(b: q1)
+    f6 = q2._mm_unpacklo_epi8(b: q3)
+    f7 = q2._mm_unpackhi_epi8(b: q3)
+
+    // Phase R2: interleave 16-bit pairs.
+    g0 = f0._mm_unpacklo_epi16(b: f2)
+    g1 = f0._mm_unpackhi_epi16(b: f2)
+    g2 = f4._mm_unpacklo_epi16(b: f6)
+    g3 = f4._mm_unpackhi_epi16(b: f6)
+    g4 = f1._mm_unpacklo_epi16(b: f3)
+    g5 = f1._mm_unpackhi_epi16(b: f3)
+    g6 = f5._mm_unpacklo_epi16(b: f7)
+    g7 = f5._mm_unpackhi_epi16(b: f7)
+
+    // Phase R3: interleave 32-bit pairs → each register has 2 rows.
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+    f4 = g4._mm_unpacklo_epi32(b: g6)
+    f5 = g4._mm_unpackhi_epi32(b: g6)
+    f6 = g5._mm_unpacklo_epi32(b: g7)
+    f7 = g5._mm_unpackhi_epi32(b: g7)
+
+    // ==== Store 16 rows of 8 bytes ====
+    // Each f register has [row_even, row_odd] in low/high 64-bit halves.
+
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    // Rows 0,1
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f0._mm_unpackhi_epi64(b: f0)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 2,3
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f1._mm_unpackhi_epi64(b: f1)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 4,5
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f2.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f2._mm_unpackhi_epi64(b: f2)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 6,7
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f3.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f3._mm_unpackhi_epi64(b: f3)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 8,9
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f4.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f4._mm_unpackhi_epi64(b: f4)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 10,11
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f5.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f5._mm_unpackhi_epi64(b: f5)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 12,13
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f6.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f6._mm_unpackhi_epi64(b: f6)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 14,15
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f7.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    ra = f7._mm_unpackhi_epi64(b: f7)
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    ra.store_slice64!(a: args.workbuf[.. 8])
+}
+
+// VP8 normal loop filter (filter6) for 8-row U/V vertical MB edges, SSE4.2.
+//
+// Filters a vertical MB boundary edge on the U/V plane: 8 rows, 8 pixels per
+// row (p3..q3 at step=1). Uses an 8x8 transpose to convert column-oriented
+// pixel data into row-oriented SSE registers, applies filter6, then transposes
+// back and stores.
+
+pri func decoder.normal_hfilter_mb_8_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    // Row load temporaries.
+    var ra : base.x86_m128i
+    var rb : base.x86_m128i
+
+    // Transpose scratch.
+    var f0 : base.x86_m128i
+    var f1 : base.x86_m128i
+    var f2 : base.x86_m128i
+    var f3 : base.x86_m128i
+    var g0 : base.x86_m128i
+    var g1 : base.x86_m128i
+    var g2 : base.x86_m128i
+    var g3 : base.x86_m128i
+
+    // Pixel columns after forward transpose.
+    var p3 : base.x86_m128i
+    var p2 : base.x86_m128i
+    var p1 : base.x86_m128i
+    var p0 : base.x86_m128i
+    var q0 : base.x86_m128i
+    var q1 : base.x86_m128i
+    var q2 : base.x86_m128i
+    var q3 : base.x86_m128i
+
+    // Filter constants.
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var k63       : base.x86_m128i
+    var k27       : base.x86_m128i
+    var k18       : base.x86_m128i
+    var k9        : base.x86_m128i
+
+    // Filter temporaries.
+    var mask    : base.x86_m128i
+    var not_hev : base.x86_m128i
+    var delta   : base.x86_m128i
+    var v3      : base.x86_m128i
+    var v4      : base.x86_m128i
+    var a1      : base.x86_m128i
+    var a2      : base.x86_m128i
+    var a3      : base.x86_m128i
+    var t1      : base.x86_m128i
+    var t2      : base.x86_m128i
+    var t3      : base.x86_m128i
+    var lo      : base.x86_m128i
+    var hi      : base.x86_m128i
+    var d_lo    : base.x86_m128i
+    var d_hi    : base.x86_m128i
+    var p0_adj  : base.x86_m128i
+    var q0_adj  : base.x86_m128i
+
+    stride = this.uv_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    // Bounds: need 4 bytes before q0 for p3 column.
+    if args.q0_off < 4 {
+        return nothing
+    }
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 8 rows of 8 bytes + forward transpose phase 1 ====
+    // Each pair of rows is loaded and interleaved via unpacklo_epi8.
+
+    // Rows 0,1
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f0 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 2,3
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f1 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 4,5
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f2 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 6,7
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if 8 > wb.length() {
+        return nothing
+    }
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    f3 = ra._mm_unpacklo_epi8(b: rb)
+
+    // ==== Forward transpose phase 2: unpacklo/hi_epi16 ====
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+
+    // ==== Forward transpose phase 3: unpacklo/hi_epi32 ====
+    // Each result has two columns packed in low/high 64-bit halves.
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+
+    // ==== Extract individual columns via unpackhi_epi64 ====
+    p3 = f0
+    p2 = f0._mm_unpackhi_epi64(b: f0)
+    p1 = f1
+    p0 = f1._mm_unpackhi_epi64(b: f1)
+    q0 = f2
+    q1 = f2._mm_unpackhi_epi64(b: f2)
+    q2 = f3
+    q3 = f3._mm_unpackhi_epi64(b: f3)
+
+    // ==== Filter computation (identical to normal_vfilter_mb_8) ====
+
+    // Constants.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+    k63 = util.make_m128i_repeat_u16(a: 63)
+    k27 = util.make_m128i_repeat_u16(a: 27)
+    k18 = util.make_m128i_repeat_u16(a: 18)
+    k9 = util.make_m128i_repeat_u16(a: 9)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert to signed ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ---- Delta = sat_i8(3*(q0-p0) + sat_i8(p1-q1)) ----
+    t1 = p1._mm_subs_epi8(b: q1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- Filter2 (HEV path): v4, v3 ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Filter6 (!HEV path): widen delta to i16, multiply by 27/18/9 ----
+    d_lo = zero._mm_unpacklo_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+    d_hi = zero._mm_unpackhi_epi8(b: delta)._mm_srai_epi16(imm8: 8)
+
+    lo = d_lo._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k27)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a1 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k18)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a2 = lo._mm_packs_epi16(b: hi)
+
+    lo = d_lo._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    hi = d_hi._mm_mullo_epi16(b: k9)._mm_add_epi16(b: k63)._mm_srai_epi16(imm8: 7)
+    a3 = lo._mm_packs_epi16(b: hi)
+
+    // ---- Merge HEV/!HEV ----
+    p0_adj = not_hev._mm_andnot_si128(b: v3)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    p0 = p0._mm_adds_epi8(b: p0_adj)
+    q0_adj = not_hev._mm_andnot_si128(b: v4)._mm_or_si128(b: a1._mm_and_si128(b: not_hev))
+    q0 = q0._mm_subs_epi8(b: q0_adj)
+    p1 = p1._mm_adds_epi8(b: a2._mm_and_si128(b: not_hev))
+    q1 = q1._mm_subs_epi8(b: a2._mm_and_si128(b: not_hev))
+    p2 = p2._mm_adds_epi8(b: a3._mm_and_si128(b: not_hev))
+    q2 = q2._mm_subs_epi8(b: a3._mm_and_si128(b: not_hev))
+
+    // ---- Convert back to unsigned ----
+    p2 = p2._mm_xor_si128(b: sign_bit)
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+    q2 = q2._mm_xor_si128(b: sign_bit)
+
+    // ==== Reverse transpose: 8 columns → 8 rows (8 bytes each) ====
+
+    // Phase R1: interleave adjacent column pairs (unpacklo_epi8 reads low 8 bytes only).
+    f0 = p3._mm_unpacklo_epi8(b: p2)
+    f1 = p1._mm_unpacklo_epi8(b: p0)
+    f2 = q0._mm_unpacklo_epi8(b: q1)
+    f3 = q2._mm_unpacklo_epi8(b: q3)
+
+    // Phase R2: interleave 16-bit pairs.
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+
+    // Phase R3: interleave 32-bit pairs → each register has 2 rows.
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+
+    // ==== Store 8 rows of 8 bytes ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    // Rows 0,1
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f0._mm_unpackhi_epi64(b: f0)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 2,3
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f1._mm_unpackhi_epi64(b: f1)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 4,5
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f2.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f2._mm_unpackhi_epi64(b: f2)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 6,7
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f3.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    ra = f3._mm_unpackhi_epi64(b: f3)
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    ra.store_slice64!(a: args.workbuf[.. 8])
+}
+
+// VP8 normal loop filter (filter4) for 16-row Y vertical inner edges, SSE4.2.
+//
+// Filters a vertical sub-block boundary on the Y plane: 16 rows, 8 pixels per
+// row (p3..q3 at step=1). Uses 16x8 → 8x16 transpose, filter4 (not filter6),
+// then transposes back. Only p1, p0, q0, q1 are modified.
+
+pri func decoder.normal_hfilter_inner_16_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var ra : base.x86_m128i
+    var rb : base.x86_m128i
+
+    var f0 : base.x86_m128i
+    var f1 : base.x86_m128i
+    var f2 : base.x86_m128i
+    var f3 : base.x86_m128i
+    var f4 : base.x86_m128i
+    var f5 : base.x86_m128i
+    var f6 : base.x86_m128i
+    var f7 : base.x86_m128i
+    var g0 : base.x86_m128i
+    var g1 : base.x86_m128i
+    var g2 : base.x86_m128i
+    var g3 : base.x86_m128i
+    var g4 : base.x86_m128i
+    var g5 : base.x86_m128i
+    var g6 : base.x86_m128i
+    var g7 : base.x86_m128i
+
+    var p3 : base.x86_m128i
+    var p2 : base.x86_m128i
+    var p1 : base.x86_m128i
+    var p0 : base.x86_m128i
+    var q0 : base.x86_m128i
+    var q1 : base.x86_m128i
+    var q2 : base.x86_m128i
+    var q3 : base.x86_m128i
+
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k1        : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+
+    var mask    : base.x86_m128i
+    var not_hev : base.x86_m128i
+    var delta   : base.x86_m128i
+    var v3      : base.x86_m128i
+    var v4      : base.x86_m128i
+    var a3      : base.x86_m128i
+    var t1      : base.x86_m128i
+    var t2      : base.x86_m128i
+    var t3      : base.x86_m128i
+    var lo      : base.x86_m128i
+    var hi      : base.x86_m128i
+
+    stride = this.y_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    if args.q0_off < 4 {
+        return nothing
+    }
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 16 rows of 8 bytes + forward transpose phase 1 ====
+    // With stride >= 8, the stride check subsumes the 8-byte load check.
+
+    // Rows 0,1
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f0 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 2,3
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f1 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 4,5
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f2 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 6,7
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f3 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 8,9
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f4 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 10,11
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f5 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 12,13
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f6 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 14,15
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if 8 > wb.length() {
+        return nothing
+    }
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    f7 = ra._mm_unpacklo_epi8(b: rb)
+
+    // ==== Forward transpose phases 2-4 ====
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+    g4 = f4._mm_unpacklo_epi16(b: f5)
+    g5 = f4._mm_unpackhi_epi16(b: f5)
+    g6 = f6._mm_unpacklo_epi16(b: f7)
+    g7 = f6._mm_unpackhi_epi16(b: f7)
+
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+    f4 = g4._mm_unpacklo_epi32(b: g6)
+    f5 = g4._mm_unpackhi_epi32(b: g6)
+    f6 = g5._mm_unpacklo_epi32(b: g7)
+    f7 = g5._mm_unpackhi_epi32(b: g7)
+
+    p3 = f0._mm_unpacklo_epi64(b: f4)
+    p2 = f0._mm_unpackhi_epi64(b: f4)
+    p1 = f1._mm_unpacklo_epi64(b: f5)
+    p0 = f1._mm_unpackhi_epi64(b: f5)
+    q0 = f2._mm_unpacklo_epi64(b: f6)
+    q1 = f2._mm_unpackhi_epi64(b: f6)
+    q2 = f3._mm_unpacklo_epi64(b: f7)
+    q3 = f3._mm_unpackhi_epi64(b: f7)
+
+    // ==== Filter4 computation (from normal_vfilter_inner_16) ====
+
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m128i_repeat_u8(a: 1)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+
+    // ---- NeedsFilter + NeedsFilter2 ----
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    // ---- GetNotHEV ----
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    // ---- Convert p1, p0, q0, q1 to signed ----
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // ---- Combined delta: HEV uses (p1-q1), !HEV zeroes it ----
+    t1 = p1._mm_subs_epi8(b: q1)
+    t1 = not_hev._mm_andnot_si128(b: t1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    // ---- v4, v3 ----
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    q0 = q0._mm_subs_epi8(b: v4)
+    p0 = p0._mm_adds_epi8(b: v3)
+
+    // ---- Filter4 !HEV: a3 = SignedShift(v4+1, 1) & not_hev ----
+    a3 = v4._mm_adds_epi8(b: k1)
+    lo = zero._mm_unpacklo_epi8(b: a3)
+    hi = zero._mm_unpackhi_epi8(b: a3)
+    lo = lo._mm_srai_epi16(imm8: 9)
+    hi = hi._mm_srai_epi16(imm8: 9)
+    a3 = lo._mm_packs_epi16(b: hi)
+    a3 = a3._mm_and_si128(b: not_hev)
+
+    q1 = q1._mm_subs_epi8(b: a3)
+    p1 = p1._mm_adds_epi8(b: a3)
+
+    // ---- Convert back to unsigned ----
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // ==== Reverse transpose: columns → 16 rows of 8 bytes ====
+    // p3, p2, q2, q3 are unchanged; p1, p0, q0, q1 are modified.
+
+    f0 = p3._mm_unpacklo_epi8(b: p2)
+    f1 = p3._mm_unpackhi_epi8(b: p2)
+    f2 = p1._mm_unpacklo_epi8(b: p0)
+    f3 = p1._mm_unpackhi_epi8(b: p0)
+    f4 = q0._mm_unpacklo_epi8(b: q1)
+    f5 = q0._mm_unpackhi_epi8(b: q1)
+    f6 = q2._mm_unpacklo_epi8(b: q3)
+    f7 = q2._mm_unpackhi_epi8(b: q3)
+
+    g0 = f0._mm_unpacklo_epi16(b: f2)
+    g1 = f0._mm_unpackhi_epi16(b: f2)
+    g2 = f4._mm_unpacklo_epi16(b: f6)
+    g3 = f4._mm_unpackhi_epi16(b: f6)
+    g4 = f1._mm_unpacklo_epi16(b: f3)
+    g5 = f1._mm_unpackhi_epi16(b: f3)
+    g6 = f5._mm_unpacklo_epi16(b: f7)
+    g7 = f5._mm_unpackhi_epi16(b: f7)
+
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+    f4 = g4._mm_unpacklo_epi32(b: g6)
+    f5 = g4._mm_unpackhi_epi32(b: g6)
+    f6 = g5._mm_unpacklo_epi32(b: g7)
+    f7 = g5._mm_unpackhi_epi32(b: g7)
+
+    // ==== Store 16 rows ====
+    // Same stride >= 8 optimization as load phase.
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    // Rows 0,1
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f0._mm_unpackhi_epi64(b: f0)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 2,3
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f1._mm_unpackhi_epi64(b: f1)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 4,5
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f2.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f2._mm_unpackhi_epi64(b: f2)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 6,7
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f3.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f3._mm_unpackhi_epi64(b: f3)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 8,9
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f4.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f4._mm_unpackhi_epi64(b: f4)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 10,11
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f5.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f5._mm_unpackhi_epi64(b: f5)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 12,13
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f6.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f6._mm_unpackhi_epi64(b: f6)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    // Rows 14,15
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f7.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    ra = f7._mm_unpackhi_epi64(b: f7)
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    ra.store_slice64!(a: args.workbuf[.. 8])
+}
+
+// VP8 normal loop filter (filter4) for 8-row U/V vertical inner edges, SSE4.2.
+//
+// Filters a vertical sub-block boundary on the U/V plane: 8 rows, 8 pixels per
+// row (p3..q3 at step=1). Uses 8x8 transpose, filter4, then transposes back.
+
+pri func decoder.normal_hfilter_inner_8_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var ra : base.x86_m128i
+    var rb : base.x86_m128i
+
+    var f0 : base.x86_m128i
+    var f1 : base.x86_m128i
+    var f2 : base.x86_m128i
+    var f3 : base.x86_m128i
+    var g0 : base.x86_m128i
+    var g1 : base.x86_m128i
+    var g2 : base.x86_m128i
+    var g3 : base.x86_m128i
+
+    var p3 : base.x86_m128i
+    var p2 : base.x86_m128i
+    var p1 : base.x86_m128i
+    var p0 : base.x86_m128i
+    var q0 : base.x86_m128i
+    var q1 : base.x86_m128i
+    var q2 : base.x86_m128i
+    var q3 : base.x86_m128i
+
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k1        : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+
+    var mask    : base.x86_m128i
+    var not_hev : base.x86_m128i
+    var delta   : base.x86_m128i
+    var v3      : base.x86_m128i
+    var v4      : base.x86_m128i
+    var a3      : base.x86_m128i
+    var t1      : base.x86_m128i
+    var t2      : base.x86_m128i
+    var t3      : base.x86_m128i
+    var lo      : base.x86_m128i
+    var hi      : base.x86_m128i
+
+    stride = this.uv_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    if args.q0_off < 4 {
+        return nothing
+    }
+    wb = args.workbuf
+    if (args.q0_off - 4) > wb.length() {
+        return nothing
+    }
+    wb = wb[(args.q0_off - 4) ..]
+
+    // ==== Load 8 rows + forward transpose ====
+
+    // Rows 0,1
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f0 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 2,3
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f1 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 4,5
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    f2 = ra._mm_unpacklo_epi8(b: rb)
+
+    // Rows 6,7
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+    if 8 > wb.length() {
+        return nothing
+    }
+    rb = util.make_m128i_slice64(a: wb[.. 8])
+    f3 = ra._mm_unpacklo_epi8(b: rb)
+
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+
+    p3 = f0
+    p2 = f0._mm_unpackhi_epi64(b: f0)
+    p1 = f1
+    p0 = f1._mm_unpackhi_epi64(b: f1)
+    q0 = f2
+    q1 = f2._mm_unpackhi_epi64(b: f2)
+    q2 = f3
+    q3 = f3._mm_unpackhi_epi64(b: f3)
+
+    // ==== Filter4 computation ====
+
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m128i_repeat_u8(a: 1)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    t1 = p1._mm_subs_epi8(b: q1)
+    t1 = not_hev._mm_andnot_si128(b: t1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    q0 = q0._mm_subs_epi8(b: v4)
+    p0 = p0._mm_adds_epi8(b: v3)
+
+    a3 = v4._mm_adds_epi8(b: k1)
+    lo = zero._mm_unpacklo_epi8(b: a3)
+    hi = zero._mm_unpackhi_epi8(b: a3)
+    lo = lo._mm_srai_epi16(imm8: 9)
+    hi = hi._mm_srai_epi16(imm8: 9)
+    a3 = lo._mm_packs_epi16(b: hi)
+    a3 = a3._mm_and_si128(b: not_hev)
+
+    q1 = q1._mm_subs_epi8(b: a3)
+    p1 = p1._mm_adds_epi8(b: a3)
+
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // ==== Reverse transpose ====
+    f0 = p3._mm_unpacklo_epi8(b: p2)
+    f1 = p1._mm_unpacklo_epi8(b: p0)
+    f2 = q0._mm_unpacklo_epi8(b: q1)
+    f3 = q2._mm_unpacklo_epi8(b: q3)
+
+    g0 = f0._mm_unpacklo_epi16(b: f1)
+    g1 = f0._mm_unpackhi_epi16(b: f1)
+    g2 = f2._mm_unpacklo_epi16(b: f3)
+    g3 = f2._mm_unpackhi_epi16(b: f3)
+
+    f0 = g0._mm_unpacklo_epi32(b: g2)
+    f1 = g0._mm_unpackhi_epi32(b: g2)
+    f2 = g1._mm_unpacklo_epi32(b: g3)
+    f3 = g1._mm_unpackhi_epi32(b: g3)
+
+    // ==== Store 8 rows ====
+    if (args.q0_off - 4) > args.workbuf.length() {
+        return nothing
+    }
+    args.workbuf = args.workbuf[(args.q0_off - 4) ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f0._mm_unpackhi_epi64(b: f0)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f1._mm_unpackhi_epi64(b: f1)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f2.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    ra = f2._mm_unpackhi_epi64(b: f2)
+    ra.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    f3.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+    ra = f3._mm_unpackhi_epi64(b: f3)
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    ra.store_slice64!(a: args.workbuf[.. 8])
+}
+
+// VP8 normal loop filter (filter4) for 8-pixel U/V horizontal inner edges, SSE4.2.
+//
+// Filters a horizontal sub-block boundary on U/V plane: 8 contiguous pixels.
+// Same as normal_vfilter_inner_16 but loads/stores only 8 bytes per row.
+
+pri func decoder.normal_vfilter_inner_8_x86_sse42!(workbuf: slice base.u8, q0_off: base.u64,
+        level: base.u32, ilevel: base.u32, hlevel: base.u32),
+        choose cpu_arch >= x86_sse42,
+{
+    var util   : base.x86_sse42_utility
+    var wb     : slice base.u8
+    var stride : base.u64
+
+    var p3        : base.x86_m128i
+    var p2        : base.x86_m128i
+    var p1        : base.x86_m128i
+    var p0        : base.x86_m128i
+    var q0        : base.x86_m128i
+    var q1        : base.x86_m128i
+    var q2        : base.x86_m128i
+    var q3        : base.x86_m128i
+    var zero      : base.x86_m128i
+    var sign_bit  : base.x86_m128i
+    var kFE       : base.x86_m128i
+    var m_thresh  : base.x86_m128i
+    var m_ithresh : base.x86_m128i
+    var m_hthresh : base.x86_m128i
+    var k1        : base.x86_m128i
+    var k3        : base.x86_m128i
+    var k4        : base.x86_m128i
+    var mask      : base.x86_m128i
+    var not_hev   : base.x86_m128i
+    var delta     : base.x86_m128i
+    var v3        : base.x86_m128i
+    var v4        : base.x86_m128i
+    var a3        : base.x86_m128i
+    var t1        : base.x86_m128i
+    var t2        : base.x86_m128i
+    var t3        : base.x86_m128i
+    var lo        : base.x86_m128i
+    var hi        : base.x86_m128i
+
+    stride = this.uv_stride as base.u64
+    if stride < 8 {
+        return nothing
+    }
+    assert 8 <= stride via "a <= b: b >= a"()
+
+    if args.q0_off < (4 * stride) {
+        return nothing
+    }
+    wb = args.workbuf
+    if (args.q0_off - (4 * stride)) <= wb.length() {
+        wb = wb[args.q0_off - (4 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    // Load 8 rows using 8-byte loads.
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p3 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p2 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q1 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if stride > wb.length() {
+        return nothing
+    }
+    assert 8 <= wb.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q2 = util.make_m128i_slice64(a: wb[.. 8])
+    wb = wb[stride ..]
+
+    if 8 > wb.length() {
+        return nothing
+    }
+    q3 = util.make_m128i_slice64(a: wb[.. 8])
+
+    // Filter4 computation.
+    zero = util.make_m128i_zeroes()
+    sign_bit = util.make_m128i_repeat_u8(a: 0x80)
+    kFE = util.make_m128i_repeat_u8(a: 0xFE)
+    m_thresh = util.make_m128i_repeat_u8(a: (args.level & 0xFF) as base.u8)
+    m_ithresh = util.make_m128i_repeat_u8(a: (args.ilevel & 0xFF) as base.u8)
+    m_hthresh = util.make_m128i_repeat_u8(a: (args.hlevel & 0xFF) as base.u8)
+    k1 = util.make_m128i_repeat_u8(a: 1)
+    k3 = util.make_m128i_repeat_u8(a: 3)
+    k4 = util.make_m128i_repeat_u8(a: 4)
+
+    t1 = p1._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: p1))
+    t2 = t1._mm_and_si128(b: kFE)._mm_srli_epi16(imm8: 1)
+    t3 = p0._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: p0))
+    t3 = t3._mm_adds_epu8(b: t3)
+    t3 = t3._mm_adds_epu8(b: t2)
+    mask = t3._mm_subs_epu8(b: m_thresh)._mm_cmpeq_epi8(b: zero)
+
+    t1 = p3._mm_subs_epu8(b: p2)._mm_or_si128(b: p2._mm_subs_epu8(b: p3))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p2._mm_subs_epu8(b: p1)._mm_or_si128(b: p1._mm_subs_epu8(b: p2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q0._mm_subs_epu8(b: q1)._mm_or_si128(b: q1._mm_subs_epu8(b: q0))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q1._mm_subs_epu8(b: q2)._mm_or_si128(b: q2._mm_subs_epu8(b: q1))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+    t1 = q2._mm_subs_epu8(b: q3)._mm_or_si128(b: q3._mm_subs_epu8(b: q2))
+    mask = mask._mm_and_si128(b: t1._mm_subs_epu8(b: m_ithresh)._mm_cmpeq_epi8(b: zero))
+
+    t1 = p1._mm_subs_epu8(b: p0)._mm_or_si128(b: p0._mm_subs_epu8(b: p1))
+    t2 = q1._mm_subs_epu8(b: q0)._mm_or_si128(b: q0._mm_subs_epu8(b: q1))
+    t3 = t1._mm_subs_epu8(b: m_hthresh)._mm_or_si128(b: t2._mm_subs_epu8(b: m_hthresh))
+    not_hev = t3._mm_cmpeq_epi8(b: zero)
+
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    t1 = p1._mm_subs_epi8(b: q1)
+    t1 = not_hev._mm_andnot_si128(b: t1)
+    t2 = q0._mm_subs_epi8(b: p0)
+    t1 = t1._mm_adds_epi8(b: t2)
+    t1 = t1._mm_adds_epi8(b: t2)
+    delta = t1._mm_adds_epi8(b: t2)
+    delta = delta._mm_and_si128(b: mask)
+
+    v4 = delta._mm_adds_epi8(b: k4)
+    lo = zero._mm_unpacklo_epi8(b: v4)
+    hi = zero._mm_unpackhi_epi8(b: v4)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v4 = lo._mm_packs_epi16(b: hi)
+
+    v3 = delta._mm_adds_epi8(b: k3)
+    lo = zero._mm_unpacklo_epi8(b: v3)
+    hi = zero._mm_unpackhi_epi8(b: v3)
+    lo = lo._mm_srai_epi16(imm8: 11)
+    hi = hi._mm_srai_epi16(imm8: 11)
+    v3 = lo._mm_packs_epi16(b: hi)
+
+    q0 = q0._mm_subs_epi8(b: v4)
+    p0 = p0._mm_adds_epi8(b: v3)
+
+    a3 = v4._mm_adds_epi8(b: k1)
+    lo = zero._mm_unpacklo_epi8(b: a3)
+    hi = zero._mm_unpackhi_epi8(b: a3)
+    lo = lo._mm_srai_epi16(imm8: 9)
+    hi = hi._mm_srai_epi16(imm8: 9)
+    a3 = lo._mm_packs_epi16(b: hi)
+    a3 = a3._mm_and_si128(b: not_hev)
+
+    q1 = q1._mm_subs_epi8(b: a3)
+    p1 = p1._mm_adds_epi8(b: a3)
+
+    p1 = p1._mm_xor_si128(b: sign_bit)
+    p0 = p0._mm_xor_si128(b: sign_bit)
+    q0 = q0._mm_xor_si128(b: sign_bit)
+    q1 = q1._mm_xor_si128(b: sign_bit)
+
+    // Store p1, p0, q0, q1 using 8-byte stores.
+    if args.q0_off < (2 * stride) {
+        return nothing
+    }
+    if (args.q0_off - (2 * stride)) <= args.workbuf.length() {
+        args.workbuf = args.workbuf[args.q0_off - (2 * stride) ..]
+    } else {
+        return nothing
+    }
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p1.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    p0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if stride > args.workbuf.length() {
+        return nothing
+    }
+    assert 8 <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: stride)
+    q0.store_slice64!(a: args.workbuf[.. 8])
+    args.workbuf = args.workbuf[stride ..]
+
+    if 8 > args.workbuf.length() {
+        return nothing
+    }
+    q1.store_slice64!(a: args.workbuf[.. 8])
+}

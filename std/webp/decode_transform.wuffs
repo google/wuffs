@@ -8,7 +8,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: roslice base.u8) {
+pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: roslice base.u8),
+        choosy,
+{
     var w4       : base.u64[..= 0x1_0000]
     var prev_row : roslice base.u8
     var curr_row : slice base.u8
@@ -283,14 +285,17 @@ pri func decoder.mode13(l: base.u8, t: base.u8, tl: base.u8) base.u8 {
     return 0
 }
 
-pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: roslice base.u8) {
-    var tile_size_log2 : base.u32[..= 9]
-    var tiles_per_row  : base.u32[..= 16895]
-    var mask           : base.u32
-    var y              : base.u32[..= 0x4000]
-    var x              : base.u32[..= 0x4000]
-    var t              : base.u64
-    var tile_data      : roslice base.u8
+pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: roslice base.u8),
+        choosy,
+{
+    var tile_size_log2    : base.u32[..= 9]
+    var tiles_per_row     : base.u32[..= 16895]
+    var mask              : base.u32
+    var do_subtract_green : base.bool
+    var y                 : base.u32[..= 0x4000]
+    var x                 : base.u32[..= 0x4000]
+    var t                 : base.u64
+    var tile_data         : roslice base.u8
 
     var g2r : base.u32
     var g2b : base.u32
@@ -303,6 +308,7 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
     tile_size_log2 = this.transform_tile_size_log2[1] as base.u32
     tiles_per_row = (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
     mask = ((1 as base.u32) << tile_size_log2) - 1
+    do_subtract_green = this.fuse_subtract_green
 
     y = 0
     while y < this.height {
@@ -331,9 +337,15 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
                 b = args.pix[0]
                 g = args.pix[1]
                 r = args.pix[2]
+                // Apply cross_color first, then subtract_green. The r2b term
+                // must use red before green is added (subtract_green order).
                 r ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2r) >> 5) & 0xFF) as base.u8
                 b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2b) >> 5) & 0xFF) as base.u8
                 b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: r) ~mod* r2b) >> 5) & 0xFF) as base.u8
+                if do_subtract_green {
+                    r ~mod+= g
+                    b ~mod+= g
+                }
                 args.pix[0] = b
                 args.pix[2] = r
                 args.pix = args.pix[4 ..]
@@ -346,7 +358,9 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
     }
 }
 
-pri func decoder.apply_transform_subtract_green!(pix: slice base.u8) {
+pri func decoder.apply_transform_subtract_green!(pix: slice base.u8),
+        choosy,
+{
     var p : slice base.u8
     var g : base.u8
 

@@ -132,6 +132,7 @@ func Do(args []string) error {
 				"// ¡ INSERT base/intconv-submodule.c.\n":          insertBaseIntConvSubmoduleC,
 				"// ¡ INSERT base/magic-submodule.c.\n":            insertBaseMagicSubmoduleC,
 				"// ¡ INSERT base/pixconv-submodule-regular.c.\n":  insertBasePixConvSubmoduleRegularC,
+				"// ¡ INSERT base/pixconv-submodule-arm-neon.c.\n":  insertBasePixConvSubmoduleArmNeonC,
 				"// ¡ INSERT base/pixconv-submodule-x86-avx2.c.\n": insertBasePixConvSubmoduleX86Avx2C,
 				"// ¡ INSERT base/pixconv-submodule-ycck.c.\n":     insertBasePixConvSubmoduleYcckC,
 				"// ¡ INSERT base/utf8-submodule.c.\n":             insertBaseUTF8SubmoduleC,
@@ -393,6 +394,11 @@ func insertBaseMagicSubmoduleC(buf *buffer) error {
 
 func insertBasePixConvSubmoduleRegularC(buf *buffer) error {
 	buf.writes(embedBasePixConvSubmoduleRegularC.Trim())
+	return nil
+}
+
+func insertBasePixConvSubmoduleArmNeonC(buf *buffer) error {
+	buf.writes(embedBasePixConvSubmoduleArmNeonC.Trim())
 	return nil
 }
 

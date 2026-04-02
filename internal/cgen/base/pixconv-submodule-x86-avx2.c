@@ -433,6 +433,311 @@ wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
   }
 }
 
+// --------
+
+// BT.601 studio-range YCbCr to BGRX/RGBX, AVX2.
+//
+// This matches the scalar wuffs_base__color_ycc_bt601__as__color_u32 formula:
+//  yc    = (Y  * 19077) >> 8
+//  rc    = (Cr * 26149) >> 8
+//  gc_u  = (Cb *  6419) >> 8
+//  gc_v  = (Cr * 13320) >> 8
+//  bc    = (Cb * 33050) >> 8
+//  R = clip((yc + rc    - 14234) >> 6, 0, 255)
+//  G = clip((yc - gc_u  - gc_v + 8708) >> 6, 0, 255)
+//  B = clip((yc + bc    - 17685) >> 6, 0, 255)
+//
+// SIMD approach: compute (X * K) >> 8 via mullo+mulhi_epu16, combine as i16,
+// shift right by 6, and use packus_epi16 for [0,255] clamping. The B channel
+// uses adds_epi16 to avoid overflow (yc+bc can exceed i16 max).
+
+// Helper: compute (X * K) >> 8 in i16 lanes, where X is u8-in-i16 [0..255]
+// and K is a u16 constant. Uses mullo_epi16 (low 16 bits) and mulhi_epu16
+// (unsigned high 16 bits) to form the result.
+#define WUFFS_PRIVATE_IMPL__MULDIV256(x, k)                                   \
+  _mm256_or_si256(_mm256_srli_epi16(_mm256_mullo_epi16((x), (k)), 8),         \
+                  _mm256_slli_epi16(_mm256_mulhi_epu16((x), (k)), 8))
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  if ((x + 32u) > x_end) {
+    wuffs_private_impl__swizzle_ycc_bt601__convert_3_bgrx(  //
+        dst, x, x_end, y, up0, up1, up2);
+    return;
+  }
+
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  const __m256i u00FF = _mm256_set1_epi16(+0x00FF);
+  const __m256i uFFFF = _mm256_set1_epi16(-0x0001);
+
+  // BT.601 fixed-point constants for (X * K) >> 8 via MULDIV256.
+  const __m256i k_19077 = _mm256_set1_epi16(19077);
+  const __m256i k_26149 = _mm256_set1_epi16(26149);
+  const __m256i k_6419 = _mm256_set1_epi16(6419);
+  const __m256i k_13320 = _mm256_set1_epi16(13320);
+
+  // For the B channel, (Cb * 33050) >> 8 can exceed i16 max (32920 for Cb=255).
+  // We center: bc_c = ((Cb-128) * 33050) >> 8, range [-16525, 16395].
+  // Decompose 33050 = 129*256 + 26, so (x*33050)>>8 = x*129 + (x*26)>>8.
+  const __m256i k_128 = _mm256_set1_epi16(128);
+  const __m256i k_26 = _mm256_set1_epi16(26);
+
+  const __m256i k_r_off = _mm256_set1_epi16(-14234);
+  const __m256i k_g_off = _mm256_set1_epi16(+8708);
+  // B offset: (128*33050)>>8 = 16525, so 16525 - 17685 = -1160.
+  const __m256i k_b_off = _mm256_set1_epi16(-1160);
+
+  while (x < x_end) {
+    __m256i yy_all = _mm256_lddqu_si256((const __m256i*)(const void*)up0);
+    __m256i cb_all = _mm256_lddqu_si256((const __m256i*)(const void*)up1);
+    __m256i cr_all = _mm256_lddqu_si256((const __m256i*)(const void*)up2);
+
+    // Split into even and odd i16 lanes.
+    __m256i yy_eve = _mm256_and_si256(yy_all, u00FF);
+    __m256i yy_odd = _mm256_srli_epi16(yy_all, 8);
+    __m256i cb_eve = _mm256_and_si256(cb_all, u00FF);
+    __m256i cb_odd = _mm256_srli_epi16(cb_all, 8);
+    __m256i cr_eve = _mm256_and_si256(cr_all, u00FF);
+    __m256i cr_odd = _mm256_srli_epi16(cr_all, 8);
+
+    // yc = (Y * 19077) >> 8.  Range [0, 18977].
+    __m256i yc_eve = WUFFS_PRIVATE_IMPL__MULDIV256(yy_eve, k_19077);
+    __m256i yc_odd = WUFFS_PRIVATE_IMPL__MULDIV256(yy_odd, k_19077);
+
+    // rc = (Cr * 26149) >> 8.  Range [0, 26046].
+    __m256i rc_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cr_eve, k_26149);
+    __m256i rc_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cr_odd, k_26149);
+
+    // gc_u = (Cb * 6419) >> 8.  Range [0, 6393].
+    __m256i gc_u_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cb_eve, k_6419);
+    __m256i gc_u_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cb_odd, k_6419);
+
+    // gc_v = (Cr * 13320) >> 8.  Range [0, 13270].
+    __m256i gc_v_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cr_eve, k_13320);
+    __m256i gc_v_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cr_odd, k_13320);
+
+    // bc_c = ((Cb-128) * 33050) >> 8 = (Cb-128)*129 + ((Cb-128)*26)>>8.
+    // Range [-16525, 16395], fits i16.
+    __m256i cb_c_eve = _mm256_sub_epi16(cb_eve, k_128);
+    __m256i cb_c_odd = _mm256_sub_epi16(cb_odd, k_128);
+    __m256i bc_c_eve = _mm256_add_epi16(
+        _mm256_add_epi16(_mm256_slli_epi16(cb_c_eve, 7), cb_c_eve),
+        _mm256_srai_epi16(_mm256_mullo_epi16(cb_c_eve, k_26), 8));
+    __m256i bc_c_odd = _mm256_add_epi16(
+        _mm256_add_epi16(_mm256_slli_epi16(cb_c_odd, 7), cb_c_odd),
+        _mm256_srai_epi16(_mm256_mullo_epi16(cb_c_odd, k_26), 8));
+
+    // R = (yc + rc - 14234) >> 6.  Max = 18977+26046-14234 = 30789 < 32767.
+    __m256i r_eve = _mm256_srai_epi16(
+        _mm256_add_epi16(_mm256_add_epi16(yc_eve, rc_eve), k_r_off), 6);
+    __m256i r_odd = _mm256_srai_epi16(
+        _mm256_add_epi16(_mm256_add_epi16(yc_odd, rc_odd), k_r_off), 6);
+
+    // G = (yc - gc_u - gc_v + 8708) >> 6.  Range [-10955, 27685], fits i16.
+    __m256i g_eve = _mm256_srai_epi16(
+        _mm256_add_epi16(
+            _mm256_sub_epi16(_mm256_sub_epi16(yc_eve, gc_u_eve), gc_v_eve),
+            k_g_off),
+        6);
+    __m256i g_odd = _mm256_srai_epi16(
+        _mm256_add_epi16(
+            _mm256_sub_epi16(_mm256_sub_epi16(yc_odd, gc_u_odd), gc_v_odd),
+            k_g_off),
+        6);
+
+    // B = (yc + bc_c - 1160) >> 6.  Range [-17685, 34212].  Use adds_epi16
+    // for the final sum: saturates to 32767 for sums > 32767, which after
+    // >>6 = 511 gets clamped to 255 by packus.  Correct.
+    __m256i b_eve = _mm256_srai_epi16(
+        _mm256_adds_epi16(_mm256_add_epi16(yc_eve, k_b_off), bc_c_eve), 6);
+    __m256i b_odd = _mm256_srai_epi16(
+        _mm256_adds_epi16(_mm256_add_epi16(yc_odd, k_b_off), bc_c_odd), 6);
+
+    // Pack i16 to u8 with saturation.
+    __m256i packed_b_eve = _mm256_packus_epi16(b_eve, b_eve);
+    __m256i packed_b_odd = _mm256_packus_epi16(b_odd, b_odd);
+    __m256i packed_g_eve = _mm256_packus_epi16(g_eve, g_eve);
+    __m256i packed_g_odd = _mm256_packus_epi16(g_odd, g_odd);
+    __m256i packed_r_eve = _mm256_packus_epi16(r_eve, r_eve);
+    __m256i packed_r_odd = _mm256_packus_epi16(r_odd, r_odd);
+
+    // Interleave to BGRX, same as the JFIF converter.
+    __m256i mix00 = _mm256_unpacklo_epi8(packed_b_eve, packed_g_eve);
+    __m256i mix01 = _mm256_unpacklo_epi8(packed_b_odd, packed_g_odd);
+    __m256i mix02 = _mm256_unpacklo_epi8(packed_r_eve, uFFFF);
+    __m256i mix03 = _mm256_unpacklo_epi8(packed_r_odd, uFFFF);
+
+    __m256i mix10 = _mm256_unpacklo_epi16(mix00, mix02);
+    __m256i mix11 = _mm256_unpacklo_epi16(mix01, mix03);
+    __m256i mix12 = _mm256_unpackhi_epi16(mix00, mix02);
+    __m256i mix13 = _mm256_unpackhi_epi16(mix01, mix03);
+
+    __m256i mix20 = _mm256_unpacklo_epi32(mix10, mix11);
+    __m256i mix21 = _mm256_unpackhi_epi32(mix10, mix11);
+    __m256i mix22 = _mm256_unpacklo_epi32(mix12, mix13);
+    __m256i mix23 = _mm256_unpackhi_epi32(mix12, mix13);
+
+    __m256i mix30 = _mm256_permute2x128_si256(mix20, mix21, 0x20);
+    __m256i mix31 = _mm256_permute2x128_si256(mix22, mix23, 0x20);
+    __m256i mix32 = _mm256_permute2x128_si256(mix20, mix21, 0x31);
+    __m256i mix33 = _mm256_permute2x128_si256(mix22, mix23, 0x31);
+
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x00), mix30);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x20), mix31);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x40), mix32);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x60), mix33);
+
+    uint32_t n = 32u - (31u & (x - x_end));
+    dst_iter += 4u * n;
+    up0 += n;
+    up1 += n;
+    up2 += n;
+    x += n;
+  }
+}
+
+// The rgbx flavor is the same as the bgrx flavor above but swaps B and R in
+// the interleave stage.
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  if ((x + 32u) > x_end) {
+    wuffs_private_impl__swizzle_ycc_bt601__convert_3_rgbx(  //
+        dst, x, x_end, y, up0, up1, up2);
+    return;
+  }
+
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  const __m256i u00FF = _mm256_set1_epi16(+0x00FF);
+  const __m256i uFFFF = _mm256_set1_epi16(-0x0001);
+
+  const __m256i k_19077 = _mm256_set1_epi16(19077);
+  const __m256i k_26149 = _mm256_set1_epi16(26149);
+  const __m256i k_6419 = _mm256_set1_epi16(6419);
+  const __m256i k_13320 = _mm256_set1_epi16(13320);
+  const __m256i k_128 = _mm256_set1_epi16(128);
+  const __m256i k_26 = _mm256_set1_epi16(26);
+
+  const __m256i k_r_off = _mm256_set1_epi16(-14234);
+  const __m256i k_g_off = _mm256_set1_epi16(+8708);
+  const __m256i k_b_off = _mm256_set1_epi16(-1160);
+
+  while (x < x_end) {
+    __m256i yy_all = _mm256_lddqu_si256((const __m256i*)(const void*)up0);
+    __m256i cb_all = _mm256_lddqu_si256((const __m256i*)(const void*)up1);
+    __m256i cr_all = _mm256_lddqu_si256((const __m256i*)(const void*)up2);
+
+    __m256i yy_eve = _mm256_and_si256(yy_all, u00FF);
+    __m256i yy_odd = _mm256_srli_epi16(yy_all, 8);
+    __m256i cb_eve = _mm256_and_si256(cb_all, u00FF);
+    __m256i cb_odd = _mm256_srli_epi16(cb_all, 8);
+    __m256i cr_eve = _mm256_and_si256(cr_all, u00FF);
+    __m256i cr_odd = _mm256_srli_epi16(cr_all, 8);
+
+    __m256i yc_eve = WUFFS_PRIVATE_IMPL__MULDIV256(yy_eve, k_19077);
+    __m256i yc_odd = WUFFS_PRIVATE_IMPL__MULDIV256(yy_odd, k_19077);
+    __m256i rc_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cr_eve, k_26149);
+    __m256i rc_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cr_odd, k_26149);
+    __m256i gc_u_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cb_eve, k_6419);
+    __m256i gc_u_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cb_odd, k_6419);
+    __m256i gc_v_eve = WUFFS_PRIVATE_IMPL__MULDIV256(cr_eve, k_13320);
+    __m256i gc_v_odd = WUFFS_PRIVATE_IMPL__MULDIV256(cr_odd, k_13320);
+
+    __m256i cb_c_eve = _mm256_sub_epi16(cb_eve, k_128);
+    __m256i cb_c_odd = _mm256_sub_epi16(cb_odd, k_128);
+    __m256i bc_c_eve = _mm256_add_epi16(
+        _mm256_add_epi16(_mm256_slli_epi16(cb_c_eve, 7), cb_c_eve),
+        _mm256_srai_epi16(_mm256_mullo_epi16(cb_c_eve, k_26), 8));
+    __m256i bc_c_odd = _mm256_add_epi16(
+        _mm256_add_epi16(_mm256_slli_epi16(cb_c_odd, 7), cb_c_odd),
+        _mm256_srai_epi16(_mm256_mullo_epi16(cb_c_odd, k_26), 8));
+
+    __m256i r_eve = _mm256_srai_epi16(
+        _mm256_add_epi16(_mm256_add_epi16(yc_eve, rc_eve), k_r_off), 6);
+    __m256i r_odd = _mm256_srai_epi16(
+        _mm256_add_epi16(_mm256_add_epi16(yc_odd, rc_odd), k_r_off), 6);
+
+    __m256i g_eve = _mm256_srai_epi16(
+        _mm256_add_epi16(
+            _mm256_sub_epi16(_mm256_sub_epi16(yc_eve, gc_u_eve), gc_v_eve),
+            k_g_off),
+        6);
+    __m256i g_odd = _mm256_srai_epi16(
+        _mm256_add_epi16(
+            _mm256_sub_epi16(_mm256_sub_epi16(yc_odd, gc_u_odd), gc_v_odd),
+            k_g_off),
+        6);
+
+    __m256i b_eve = _mm256_srai_epi16(
+        _mm256_adds_epi16(_mm256_add_epi16(yc_eve, k_b_off), bc_c_eve), 6);
+    __m256i b_odd = _mm256_srai_epi16(
+        _mm256_adds_epi16(_mm256_add_epi16(yc_odd, k_b_off), bc_c_odd), 6);
+
+    __m256i packed_b_eve = _mm256_packus_epi16(b_eve, b_eve);
+    __m256i packed_b_odd = _mm256_packus_epi16(b_odd, b_odd);
+    __m256i packed_g_eve = _mm256_packus_epi16(g_eve, g_eve);
+    __m256i packed_g_odd = _mm256_packus_epi16(g_odd, g_odd);
+    __m256i packed_r_eve = _mm256_packus_epi16(r_eve, r_eve);
+    __m256i packed_r_odd = _mm256_packus_epi16(r_odd, r_odd);
+
+    // § Note the swapped B and R channels compared to bgrx.
+    __m256i mix00 = _mm256_unpacklo_epi8(packed_r_eve, packed_g_eve);
+    __m256i mix01 = _mm256_unpacklo_epi8(packed_r_odd, packed_g_odd);
+    __m256i mix02 = _mm256_unpacklo_epi8(packed_b_eve, uFFFF);
+    __m256i mix03 = _mm256_unpacklo_epi8(packed_b_odd, uFFFF);
+
+    __m256i mix10 = _mm256_unpacklo_epi16(mix00, mix02);
+    __m256i mix11 = _mm256_unpacklo_epi16(mix01, mix03);
+    __m256i mix12 = _mm256_unpackhi_epi16(mix00, mix02);
+    __m256i mix13 = _mm256_unpackhi_epi16(mix01, mix03);
+
+    __m256i mix20 = _mm256_unpacklo_epi32(mix10, mix11);
+    __m256i mix21 = _mm256_unpackhi_epi32(mix10, mix11);
+    __m256i mix22 = _mm256_unpacklo_epi32(mix12, mix13);
+    __m256i mix23 = _mm256_unpackhi_epi32(mix12, mix13);
+
+    __m256i mix30 = _mm256_permute2x128_si256(mix20, mix21, 0x20);
+    __m256i mix31 = _mm256_permute2x128_si256(mix22, mix23, 0x20);
+    __m256i mix32 = _mm256_permute2x128_si256(mix20, mix21, 0x31);
+    __m256i mix33 = _mm256_permute2x128_si256(mix22, mix23, 0x31);
+
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x00), mix30);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x20), mix31);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x40), mix32);
+    _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x60), mix33);
+
+    uint32_t n = 32u - (31u & (x - x_end));
+    dst_iter += 4u * n;
+    up0 += n;
+    up1 += n;
+    up2 += n;
+    x += n;
+  }
+}
+
+#undef WUFFS_PRIVATE_IMPL__MULDIV256
+
 #if defined(__GNUC__) && !defined(__clang__)
 // No-op.
 #else

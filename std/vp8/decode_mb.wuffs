@@ -1,0 +1,1183 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+pri func decoder.decode_frame_mb!(src: base.io_reader, dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+    var swizzle_status : base.status
+    var prev_mby       : base.u32[..= 0x3FF]
+    var i              : base.u32
+    var part_size      : base.u32
+    var total_size     : base.u32
+    var n_copied       : base.u32
+    var coeff_start    : base.u64
+    var off            : base.u64
+    var new_part       : base.u32
+    var p              : base.u32[..= 7]
+    var unconsumed     : base.u32
+
+    if this.num_partitions > 1 {
+        // Multi-partition: read partition sizes, copy all coefficient data
+        // to workbuf, and set up per-partition boolean decoder state.
+        this.multi_partition = true
+
+        // Read (num_partitions - 1) 3-byte LE partition sizes.
+        total_size = 0
+        i = 0
+        while (i < 7) and ((i + 1) < this.num_partitions) {
+            if args.src.length() >= 3 {
+                part_size = args.src.peek_u24le_as_u32()
+                args.src.skip_u32_fast!(actual: 3, worst_case: 3)
+            } else {
+                part_size = 0
+            }
+            if i < 8 {
+                this.part_wbuf_size[i] = part_size
+            }
+            total_size ~mod+= part_size
+            i += 1
+        }
+
+        // Copy all coefficient data from src to workbuf.
+        coeff_start = this.workbuf_offset_v_end ~mod+ (this.partition0_size as base.u64)
+        off = coeff_start
+        n_copied = 0
+        while args.src.length() > 0 {
+            if off < args.workbuf.length() {
+                args.workbuf[off] = args.src.peek_u8()
+            }
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+            off ~mod+= 1
+            n_copied ~mod+= 1
+        }
+
+        // Last partition size = total copied - sum of first (N-1) sizes.
+        if this.num_partitions > 0 {
+            i = this.num_partitions - 1
+        } else {
+            i = 0
+        }
+        if i < 8 {
+            if n_copied > total_size {
+                this.part_wbuf_size[i] = n_copied - total_size
+            } else {
+                this.part_wbuf_size[i] = 0
+            }
+        }
+
+        // Compute per-partition workbuf offsets.
+        off = coeff_start
+        i = 0
+        while (i < this.num_partitions) and (i < 8) {
+            this.part_wbuf_offset[i] = off
+            off ~mod+= this.part_wbuf_size[i] as base.u64
+            i += 1
+        }
+
+        // Initialize per-partition boolean decoder state.
+        i = 0
+        while i < 8 {
+            this.part_range[i] = 254
+            this.part_value[i] = 0
+            this.part_bits[i] = 0
+            this.part_wbuf_ri[i] = 0
+            i += 1
+        }
+
+        // Activate partition 0.
+        this.current_partition = 0
+        this.current_part_wbuf_ri = 0
+        this.p1_ri = 0
+        this.p1_wi = 0
+        this.p1_fill_from_workbuf!(workbuf: args.workbuf)
+        this.p1_init!()
+    } else {
+        // Single partition: stream coefficient data from src.
+        this.multi_partition = false
+        this.p1_ri = 0
+        this.p1_wi = 0
+        this.p1_fill_buffer!(src: args.src, n: 0x1000)
+        this.p1_init!()
+    }
+
+    this.above_nz[.. 8200].bulk_memset!(byte_value: 0)
+    this.above_nz_y2[.. 0x401].bulk_memset!(byte_value: 0)
+    this.above_modes[.. 4096].bulk_memset!(byte_value: 0)
+
+    // Interleaved decode-filter loop: decode row N, then filter row N-1.
+    //
+    // The prediction for row N reads the above row's UNFILTERED pixels (per
+    // RFC 6386 §15, the loop filter is post-reconstruction). So we must decode
+    // row N before filtering row N-1. After decoding row N, row N-1's data is
+    // hot in L1 cache (accessed during row N's prediction), making the filter
+    // fast. This eliminates the separate full-image filter pass.
+    //
+    // Filter parameters use a 2-row ring buffer indexed by (mb_y & 1) * 0x400.
+    this.mb_y = 0
+    while this.mb_y < this.mb_height {
+        // Multi-partition: switch to the correct partition for this MB row.
+        if this.multi_partition and (this.mb_y > 0) {
+            // Save current partition state.
+            p = this.current_partition
+            this.part_range[p] = this.p1_range
+            this.part_value[p] = this.p1_value
+            this.part_bits[p] = this.p1_bits
+            // Adjust wbuf_ri for unconsumed bytes still in p1_buffer.
+            if this.p1_wi >= this.p1_ri {
+                unconsumed = this.p1_wi - this.p1_ri
+            } else {
+                unconsumed = 0
+            }
+            this.part_wbuf_ri[p] = this.current_part_wbuf_ri ~sat- unconsumed
+
+            // Advance to next partition (round-robin).
+            new_part = (this.current_partition as base.u32) + 1
+            if new_part >= this.num_partitions {
+                new_part = 0
+            }
+
+            // Restore new partition state.
+            if new_part < 8 {
+                this.p1_range = this.part_range[new_part] & 0xFF
+                this.p1_value = this.part_value[new_part]
+                this.p1_bits = this.part_bits[new_part]
+                this.current_part_wbuf_ri = this.part_wbuf_ri[new_part]
+                this.current_partition = new_part as base.u32[..= 7]
+            }
+
+            // Refill p1_buffer from new partition's workbuf region.
+            this.p1_ri = 0
+            this.p1_wi = 0
+            this.p1_fill_from_workbuf!(workbuf: args.workbuf)
+        }
+
+        // Zero the current row's filter params in the ring buffer.
+        if (this.mb_y & 1) == 0 {
+            this.mb_filter_level[0x000 .. 0x400].bulk_memset!(byte_value: 0)
+            this.mb_filter_inner[0x000 .. 0x400].bulk_memset!(byte_value: 0)
+        } else {
+            this.mb_filter_level[0x400 .. 0x800].bulk_memset!(byte_value: 0)
+            this.mb_filter_inner[0x400 .. 0x800].bulk_memset!(byte_value: 0)
+        }
+
+        this.left_nz[.. 8].bulk_memset!(byte_value: 0)
+        this.left_nz_y2 = 0
+        this.left_modes[.. 4].bulk_memset!(byte_value: 0)
+
+        this.mb_x = 0
+        while this.mb_x < this.mb_width {
+            // Refill partition 0 (mode data) buffer when running low.
+            if (this.bool_ri ~mod+ 256) >= this.bool_wi {
+                this.bool_fill_from_workbuf!(workbuf: args.workbuf)
+            }
+
+            // Refill partition 1 (coefficient data) buffer when running low.
+            // Threshold 2048 ensures the buffer has enough data for a full
+            // MB's coefficient decode (~1200 bytes worst case), preventing
+            // mid-block buffer exhaustion that would corrupt the bool state.
+            if (this.p1_ri ~mod+ 2048) >= this.p1_wi {
+                if this.multi_partition {
+                    this.p1_fill_from_workbuf!(workbuf: args.workbuf)
+                } else {
+                    this.p1_fill_buffer!(src: args.src, n: 0x800)
+                }
+            }
+
+            this.decode_one_mb!(workbuf: args.workbuf)
+
+            if this.mb_x < 0x3FF {
+                this.mb_x += 1
+            }
+        }
+
+        // Filter the PREVIOUS row (now safe: this row's prediction already
+        // used the previous row's unfiltered pixels), then swizzle to output
+        // while the data is still cache-hot.
+        if this.mb_y > 0 {
+            prev_mby = this.mb_y - 1
+            if (this.filter_type == 1) and (this.filter_level > 0) {
+                this.apply_simple_filter_row!(workbuf: args.workbuf, mby: prev_mby)
+            } else if this.filter_level > 0 {
+                this.apply_normal_filter_row!(workbuf: args.workbuf, mby: prev_mby)
+            }
+            swizzle_status = this.swizzle_mb_row!(dst: args.dst, workbuf: args.workbuf, mby: prev_mby, is_last: false)
+        }
+
+        if this.mb_y < 0x3FF {
+            this.mb_y += 1
+        }
+    }
+
+    // Filter and swizzle the last row.
+    if this.mb_height > 0 {
+        prev_mby = this.mb_height - 1
+        if prev_mby <= 0x3FF {
+            if (this.filter_type == 1) and (this.filter_level > 0) {
+                this.apply_simple_filter_row!(workbuf: args.workbuf, mby: prev_mby)
+            } else if this.filter_level > 0 {
+                this.apply_normal_filter_row!(workbuf: args.workbuf, mby: prev_mby)
+            }
+            swizzle_status = this.swizzle_mb_row!(dst: args.dst, workbuf: args.workbuf, mby: prev_mby, is_last: true)
+        }
+    }
+
+    return swizzle_status
+}
+
+pri func decoder.decode_one_mb!(workbuf: slice base.u8) {
+    var i            : base.u32
+    var v            : base.u32[..= 1]
+    var block_offset : base.u32[..= 384]
+    var y_off        : base.u64
+    var uv_off       : base.u64
+    var dst          : slice base.u8
+    var mb_idx       : base.u32
+    var seg          : base.u32
+
+    // Cached stride and base offset locals. These avoid re-reading struct
+    // fields after choosy (indirect) IDCT/prediction calls, since the Wuffs
+    // compiler must assume struct fields may have changed.
+    var ys      : base.u32[..= 0x4000]
+    var uvs     : base.u32[..= 0x2000]
+    var y_base  : base.u64
+    var uv_base : base.u64
+
+    // mb_coeffs is guaranteed to be zero on entry: the struct is zero-initialized,
+    // and idct_add/wht clear their coefficients after use.
+
+    // Parse segment ID.
+    if this.use_segment and this.update_segment_map {
+        v = this.bool_read_bool!(prob: this.segment_prob[0])
+        if v == 0 {
+            v = this.bool_read_bool!(prob: this.segment_prob[1])
+            if v == 0 {
+                this.segment_id = 0
+            } else {
+                this.segment_id = 1
+            }
+        } else {
+            v = this.bool_read_bool!(prob: this.segment_prob[2])
+            if v == 0 {
+                this.segment_id = 2
+            } else {
+                this.segment_id = 3
+            }
+        }
+    } else {
+        this.segment_id = 0
+    }
+
+    // Parse skip coefficient flag.
+    if this.mb_no_skip_coeff {
+        v = this.bool_read_bool!(prob: this.prob_skip_false)
+        this.is_skip_coeff = (v <> 0)
+    } else {
+        this.is_skip_coeff = false
+    }
+
+    // Parse luma and chroma prediction modes.
+    this.decode_luma_mode!()
+    this.decode_chroma_mode!()
+
+    // Decode coefficients.
+    if not this.is_skip_coeff {
+        this.decode_mb_coefficients!()
+    } else {
+        // Skip: clear non-zero context for this macroblock.
+        this.clear_mb_nz_context!()
+    }
+
+    // Cache strides and base offsets as locals to avoid re-reading struct
+    // fields after choosy calls (IDCT, prediction).
+    ys = this.y_stride
+    uvs = this.uv_stride
+    y_base = ((this.mb_y as base.u64) * 16 * (ys as base.u64)) +
+            ((this.mb_x as base.u64) * 16)
+
+    // Apply prediction and reconstruction. For skip blocks (all-zero coefficients),
+    // IDCT adds nothing to the prediction, so we skip both WHT and IDCT.
+    if this.mb_luma_mode < 4 {
+        this.predict_16x16!(workbuf: args.workbuf, mode: this.mb_luma_mode as base.u8[..= 3])
+
+        if not this.is_skip_coeff {
+            this.wht!(coeff_offset: 384)
+
+            i = 0
+            while i < 16 {
+                block_offset = i * 16
+                y_off = (y_base ~mod+ (((i >> 2) as base.u64) * 4 * (ys as base.u64))) ~mod+ (((i & 3) as base.u64) * 4)
+                if y_off < args.workbuf.length() {
+                    dst = args.workbuf[y_off ..]
+                    if this.mb_y_ac_nz[i] >= 2 {
+                        this.idct_add!(dst: dst, stride: ys, coeff_offset: block_offset)
+                    } else if this.mb_coeffs[block_offset] <> 0 {
+                        this.idct_dc_add!(dst: dst, stride: ys, coeff_offset: block_offset)
+                    }
+                }
+                i += 1
+            }
+        }
+    } else {
+        // Compute the upper-right pixels for B_PRED rightmost column.
+        // These are the same for all sub-block rows and come from the row
+        // above the macroblock, matching Go's ybr[0][24..27] duplication.
+        if this.mb_y > 0 {
+            // Compute offset of row (mb_y*16-1) in the Y plane.
+            // y_off = mb_y * 16 * y_stride - y_stride + mb_x * 16
+            y_off = ((this.mb_y as base.u64) ~mod* 16) ~mod* (this.y_stride as base.u64)
+            y_off = y_off ~mod- (this.y_stride as base.u64)
+            y_off = y_off ~mod+ ((this.mb_x as base.u64) ~mod* 16)
+            if (this.mb_x as base.u32) < (this.mb_width ~mod- 1) {
+                // Upper-right from the row above, to the right of this MB.
+                y_off = y_off ~mod+ 16
+                if y_off < args.workbuf.length() {
+                    dst = args.workbuf[y_off ..]
+                    if dst.length() >= 4 {
+                        mb_idx = dst.peek_u32le()
+                        this.mb_upper_right[0] = (mb_idx & 0xFF) as base.u8
+                        this.mb_upper_right[1] = ((mb_idx >> 8) & 0xFF) as base.u8
+                        this.mb_upper_right[2] = ((mb_idx >> 16) & 0xFF) as base.u8
+                        this.mb_upper_right[3] = (mb_idx >> 24) as base.u8
+                    }
+                }
+            } else {
+                // Rightmost MB column: replicate last pixel of above row.
+                y_off = y_off ~mod+ 15
+                if y_off < args.workbuf.length() {
+                    this.mb_upper_right[0] = args.workbuf[y_off]
+                    this.mb_upper_right[1] = args.workbuf[y_off]
+                    this.mb_upper_right[2] = args.workbuf[y_off]
+                    this.mb_upper_right[3] = args.workbuf[y_off]
+                }
+            }
+        } else {
+            // mby=0: above border is 127.
+            this.mb_upper_right[0] = 127
+            this.mb_upper_right[1] = 127
+            this.mb_upper_right[2] = 127
+            this.mb_upper_right[3] = 127
+        }
+
+        i = 0
+        while i < 16 {
+            block_offset = i * 16
+            this.predict_4x4!(workbuf: args.workbuf, block_idx: i as base.u32[..= 15], mode: this.sub_modes[i])
+            if (not this.is_skip_coeff) and (this.mb_y_ac_nz[i] > 0) {
+                y_off = (y_base ~mod+ (((i >> 2) as base.u64) * 4 * (ys as base.u64))) ~mod+ (((i & 3) as base.u64) * 4)
+                if y_off < args.workbuf.length() {
+                    dst = args.workbuf[y_off ..]
+                    if this.mb_y_ac_nz[i] >= 2 {
+                        this.idct_add!(dst: dst, stride: ys, coeff_offset: block_offset)
+                    } else {
+                        this.idct_dc_add!(dst: dst, stride: ys, coeff_offset: block_offset)
+                    }
+                }
+            }
+            i += 1
+        }
+    }
+
+    // Chroma prediction and IDCT.
+    this.predict_8x8!(workbuf: args.workbuf, mode: this.mb_chroma_mode, plane_offset: this.workbuf_offset_y_end)
+    this.predict_8x8!(workbuf: args.workbuf, mode: this.mb_chroma_mode, plane_offset: this.workbuf_offset_u_end)
+
+    if not this.is_skip_coeff {
+        // U blocks (indices 0-3 in mb_uv_nz).
+        uv_base = (this.workbuf_offset_y_end ~mod+
+                ((this.mb_y as base.u64) * 8 * (uvs as base.u64))) ~mod+
+                ((this.mb_x as base.u64) * 8)
+        i = 0
+        while i < 4 {
+            block_offset = (16 + i) * 16
+            if this.mb_uv_nz[i] > 0 {
+                uv_off = (uv_base ~mod+ (((i >> 1) as base.u64) * 4 * (uvs as base.u64))) ~mod+ (((i & 1) as base.u64) * 4)
+                if uv_off < args.workbuf.length() {
+                    dst = args.workbuf[uv_off ..]
+                    if this.mb_uv_nz[i] >= 2 {
+                        this.idct_add!(dst: dst, stride: uvs, coeff_offset: block_offset)
+                    } else {
+                        this.idct_dc_add!(dst: dst, stride: uvs, coeff_offset: block_offset)
+                    }
+                }
+            }
+            i += 1
+        }
+
+        // V blocks (indices 4-7 in mb_uv_nz).
+        uv_base = (this.workbuf_offset_u_end ~mod+
+                ((this.mb_y as base.u64) * 8 * (uvs as base.u64))) ~mod+
+                ((this.mb_x as base.u64) * 8)
+        i = 0
+        while i < 4 {
+            block_offset = (20 + i) * 16
+            if this.mb_uv_nz[i + 4] > 0 {
+                uv_off = (uv_base ~mod+ (((i >> 1) as base.u64) * 4 * (uvs as base.u64))) ~mod+ (((i & 1) as base.u64) * 4)
+                if uv_off < args.workbuf.length() {
+                    dst = args.workbuf[uv_off ..]
+                    if this.mb_uv_nz[i + 4] >= 2 {
+                        this.idct_add!(dst: dst, stride: uvs, coeff_offset: block_offset)
+                    } else {
+                        this.idct_dc_add!(dst: dst, stride: uvs, coeff_offset: block_offset)
+                    }
+                }
+            }
+            i += 1
+        }
+    }
+
+    // Store per-MB filter parameters from precomputed table.
+    mb_idx = ((this.mb_y & 1) * 0x400) + this.mb_x
+    if mb_idx < 0x800 {
+        // Lookup precomputed filter strength by (segment, is_i4x4).
+        seg = ((this.segment_id & 3) as base.u32) * 2
+        if this.mb_luma_mode == 4 {
+            seg += 1
+        }
+        if seg < 8 {
+            this.mb_filter_level[mb_idx] = this.fstrength_level[seg]
+            this.mb_filter_ilevel[mb_idx] = this.fstrength_ilevel[seg]
+            this.mb_filter_hlevel[mb_idx] = this.fstrength_hlevel[seg]
+        }
+        // Store inner flag: filter sub-block edges if MB uses B_PRED (4x4)
+        // or has non-zero coefficients (matches libwebp: f_inner = i4x4 | !skip).
+        if (this.mb_luma_mode == 4) or (not this.is_skip_coeff) {
+            this.mb_filter_inner[mb_idx] = 1
+        }
+    }
+}
+
+pri func decoder.decode_luma_mode!() {
+    var v          : base.u32[..= 1]
+    var val        : base.u32
+    var mode       : base.u32
+    var i          : base.u32
+    var above_mode : base.u32
+    var left_mode  : base.u32
+    var prob_idx   : base.u32
+    var above_idx  : base.u32
+
+    // Key frame luma mode tree (RFC 6386 section 11.2):
+    //   bit=0 → B_PRED(4)
+    //   bit=1 → prob[1]: bit=0 → (prob[2]: 0→DC, 1→V)
+    //                     bit=1 → (prob[3]: 0→H, 1→TM)
+    v = this.bool_read_bool!(prob: KF_Y_MODE_PROBS[0])
+    if v == 0 {
+        mode = 4
+    } else {
+        v = this.bool_read_bool!(prob: KF_Y_MODE_PROBS[1])
+        if v == 0 {
+            v = this.bool_read_bool!(prob: KF_Y_MODE_PROBS[2])
+            if v == 0 {
+                mode = 0
+            } else {
+                mode = 1
+            }
+        } else {
+            v = this.bool_read_bool!(prob: KF_Y_MODE_PROBS[3])
+            if v == 0 {
+                mode = 2
+            } else {
+                mode = 3
+            }
+        }
+    }
+
+    this.mb_luma_mode = (mode & 0xFF) as base.u8
+
+    if mode == 4 {
+        i = 0
+        while i < 16 {
+            assert i < 16 via "a < b: a < c; c <= b"(c: 16)
+            if i < 4 {
+                above_idx = (this.mb_x * 4) + (i & 3)
+                if above_idx < 4096 {
+                    above_mode = this.above_modes[above_idx] as base.u32
+                }
+            } else {
+                above_mode = this.sub_modes[i - 4] as base.u32
+            }
+            if (i & 3) == 0 {
+                if (i >> 2) < 4 {
+                    left_mode = this.left_modes[i >> 2] as base.u32
+                }
+            } else if i > 0 {
+                left_mode = this.sub_modes[i - 1] as base.u32
+            }
+
+            if above_mode > 9 {
+                above_mode = 0
+            }
+            if left_mode > 9 {
+                left_mode = 0
+            }
+            above_mode = above_mode & 0x0F
+            left_mode = left_mode & 0x0F
+
+            prob_idx = ((above_mode * 10) + left_mode) * 9
+            val = this.decode_sub_block_mode!(prob_offset: prob_idx)
+            this.sub_modes[i] = val as base.u8
+
+            i += 1
+        }
+
+        above_idx = this.mb_x * 4
+        if above_idx < 4093 {
+            this.above_modes[above_idx + 0] = this.sub_modes[12]
+            this.above_modes[above_idx + 1] = this.sub_modes[13]
+            this.above_modes[above_idx + 2] = this.sub_modes[14]
+            this.above_modes[above_idx + 3] = this.sub_modes[15]
+        }
+
+        this.left_modes[0] = this.sub_modes[3]
+        this.left_modes[1] = this.sub_modes[7]
+        this.left_modes[2] = this.sub_modes[11]
+        this.left_modes[3] = this.sub_modes[15]
+    } else {
+        // 16x16 mode: update above_modes/left_modes with the equivalent
+        // sub-block mode value for B_PRED context in neighboring MBs.
+        // Map 16x16 mode (DC=0, V=1, H=2, TM=3) to context numbering
+        // (DC=0, TM=1, VE=2, HE=3) matching Go/predProb table order.
+        val = mode
+        if mode == 1 {
+            val = 2
+        } else if mode == 2 {
+            val = 3
+        } else if mode == 3 {
+            val = 1
+        }
+
+        above_idx = this.mb_x * 4
+        if above_idx < 4093 {
+            this.above_modes[above_idx + 0] = (val & 0xFF) as base.u8
+            this.above_modes[above_idx + 1] = (val & 0xFF) as base.u8
+            this.above_modes[above_idx + 2] = (val & 0xFF) as base.u8
+            this.above_modes[above_idx + 3] = (val & 0xFF) as base.u8
+        }
+
+        this.left_modes[0] = (val & 0xFF) as base.u8
+        this.left_modes[1] = (val & 0xFF) as base.u8
+        this.left_modes[2] = (val & 0xFF) as base.u8
+        this.left_modes[3] = (val & 0xFF) as base.u8
+    }
+}
+
+pri func decoder.decode_sub_block_mode!(prob_offset: base.u32) base.u32[..= 9] {
+    var v : base.u32[..= 1]
+    var p : base.u32
+
+    p = args.prob_offset
+    if p > 891 {
+        return 0
+    }
+
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p])
+    if v == 0 {
+        return 0
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 1])
+    if v == 0 {
+        return 1
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 2])
+    if v == 0 {
+        return 2
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 3])
+    if v == 0 {
+        v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 4])
+        if v == 0 {
+            return 3
+        }
+        v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 5])
+        if v == 0 {
+            return 5
+        }
+        return 6
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 6])
+    if v == 0 {
+        return 4
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 7])
+    if v == 0 {
+        return 7
+    }
+    v = this.bool_read_bool!(prob: KF_B_MODE_PROBS[p + 8])
+    if v == 0 {
+        return 8
+    }
+    return 9
+}
+
+pri func decoder.decode_chroma_mode!() {
+    var v : base.u32[..= 1]
+
+    v = this.bool_read_bool!(prob: KF_UV_MODE_PROBS[0])
+    if v == 0 {
+        this.mb_chroma_mode = 0
+    } else {
+        v = this.bool_read_bool!(prob: KF_UV_MODE_PROBS[1])
+        if v == 0 {
+            this.mb_chroma_mode = 1
+        } else {
+            v = this.bool_read_bool!(prob: KF_UV_MODE_PROBS[2])
+            if v == 0 {
+                this.mb_chroma_mode = 2
+            } else {
+                this.mb_chroma_mode = 3
+            }
+        }
+    }
+}
+
+pri func decoder.clear_mb_nz_context!() {
+    var i         : base.u32
+    var above_idx : base.u32
+
+    // Clear Y columns (4 entries).
+    i = 0
+    while i < 4 {
+        above_idx = (this.mb_x * 8) + i
+        this.above_nz[above_idx] = 0
+        this.left_nz[i] = 0
+        i += 1
+    }
+    // Clear U columns (2 entries).
+    i = 0
+    while i < 2 {
+        above_idx = (this.mb_x * 8) + 4 + i
+        this.above_nz[above_idx] = 0
+        this.left_nz[4 + i] = 0
+        i += 1
+    }
+    // Clear V columns (2 entries).
+    i = 0
+    while i < 2 {
+        above_idx = (this.mb_x * 8) + 6 + i
+        this.above_nz[above_idx] = 0
+        this.left_nz[6 + i] = 0
+        i += 1
+    }
+    // Clear Y2 context only for Y16 mode. B_PRED (mode >= 4) has no Y2 block,
+    // so its skip path must preserve the Y2 NZ state from the previous MB at
+    // this position (matching libwebp's VP8DecodeMB which only clears nz_dc
+    // when !is_i4x4).
+    if this.mb_luma_mode < 4 {
+        this.above_nz_y2[this.mb_x] = 0
+        this.left_nz_y2 = 0
+    }
+}
+
+pri func decoder.decode_mb_coefficients!() {
+    var block_idx : base.u32
+    var ctx       : base.u32[..= 2]
+    var raw_ctx   : base.u32
+    var nz        : base.u32[..= 1]
+    var above_idx : base.u32
+    var left_idx  : base.u32
+    var any_nz    : base.u32
+    var uv_idx    : base.u32
+
+    if this.mb_luma_mode < 4 {
+        // Y2 block (block 24) for 16x16 mode.
+        raw_ctx = this.above_nz_y2[this.mb_x] as base.u32
+        raw_ctx ~mod+= this.left_nz_y2 as base.u32
+        if raw_ctx <= 2 {
+            ctx = raw_ctx as base.u32[..= 2]
+        } else {
+            ctx = 2
+        }
+        nz = this.decode_block_coeffs!(block_offset: 384, block_type: 1, start_coeff: 0, init_ctx: ctx)
+        any_nz |= nz
+        this.above_nz_y2[this.mb_x] = nz as base.u8
+        this.left_nz_y2 = nz as base.u8
+
+        // Y blocks 0-15 (skip DC, already in Y2).
+        block_idx = 0
+        while block_idx < 16 {
+            above_idx = (this.mb_x * 8) + (block_idx & 3)
+            left_idx = block_idx >> 2
+            raw_ctx = (this.above_nz[above_idx] as base.u32) ~mod+
+                    (this.left_nz[left_idx] as base.u32)
+            if raw_ctx <= 2 {
+                ctx = raw_ctx as base.u32[..= 2]
+            } else {
+                ctx = 2
+            }
+            nz = this.decode_block_coeffs!(block_offset: block_idx * 16, block_type: 0, start_coeff: 1, init_ctx: ctx)
+            any_nz |= nz
+            // Store per-block NZ info: 0=zero, 2=has AC (never 1 for start_coeff=1).
+            if nz == 0 {
+                this.mb_y_ac_nz[block_idx] = 0
+            } else {
+                this.mb_y_ac_nz[block_idx] = 2
+            }
+            this.above_nz[above_idx] = nz as base.u8
+            this.left_nz[left_idx] = nz as base.u8
+            block_idx += 1
+        }
+    } else {
+        // 4x4 mode: Y blocks 0-15 (full decode, no Y2).
+        block_idx = 0
+        while block_idx < 16 {
+            above_idx = (this.mb_x * 8) + (block_idx & 3)
+            left_idx = block_idx >> 2
+            raw_ctx = (this.above_nz[above_idx] as base.u32) ~mod+
+                    (this.left_nz[left_idx] as base.u32)
+            if raw_ctx <= 2 {
+                ctx = raw_ctx as base.u32[..= 2]
+            } else {
+                ctx = 2
+            }
+            nz = this.decode_block_coeffs!(block_offset: block_idx * 16, block_type: 3, start_coeff: 0, init_ctx: ctx)
+            any_nz |= nz
+            // Branchless NZ: 0=zero, 1=DC only, 2=has AC.
+            this.mb_y_ac_nz[block_idx] = (nz + (nz & (this.block_ac_nz & 1))) as base.u8
+            this.above_nz[above_idx] = nz as base.u8
+            this.left_nz[left_idx] = nz as base.u8
+            block_idx += 1
+        }
+    }
+
+    // U blocks 16-19 and V blocks 20-23 (merged: same block_type/start_coeff).
+    uv_idx = 0
+    while uv_idx < 8 {
+        block_idx = 16 + uv_idx
+        above_idx = (this.mb_x * 8) + 4 + ((uv_idx >> 2) * 2) + (uv_idx & 1)
+        left_idx = 4 + ((uv_idx >> 2) * 2) + ((uv_idx >> 1) & 1)
+        raw_ctx = (this.above_nz[above_idx] as base.u32) ~mod+
+                (this.left_nz[left_idx] as base.u32)
+        if raw_ctx <= 2 {
+            ctx = raw_ctx as base.u32[..= 2]
+        } else {
+            ctx = 2
+        }
+        nz = this.decode_block_coeffs!(block_offset: block_idx * 16, block_type: 2, start_coeff: 0, init_ctx: ctx)
+        any_nz |= nz
+        // Branchless NZ: 0=zero, 1=DC only, 2=has AC.
+        this.mb_uv_nz[uv_idx] = (nz + (nz & (this.block_ac_nz & 1))) as base.u8
+        this.above_nz[above_idx] = nz as base.u8
+        this.left_nz[left_idx] = nz as base.u8
+        uv_idx += 1
+    }
+
+    // Update is_skip_coeff: if all coefficients decoded to zero, treat as
+    // skipped for filter purposes (matches libwebp: skip = ParseResiduals()).
+    if any_nz == 0 {
+        this.is_skip_coeff = true
+    }
+}
+
+// decode_coeff_category! decodes a large coefficient value (5+) from the
+// category tables (CAT1-CAT6). Separated from decode_block_coeffs so the
+// compiler keeps the cold category path out of the hot loop's register
+// pressure, matching libwebp's GetCoeffsFast/GetLargeValue split.
+// Uses a loop for extra bits to minimize code size (30 inlined p1_read_bool
+// calls → 5 tree reads + 1 looped read).
+pri func decoder.decode_coeff_category!(prob_idx: base.u32[..= 1045]) base.u32 {
+    var v         : base.u32[..= 1]
+    var cat       : base.u32[..= 5]
+    var extra_val : base.u32
+    var i         : base.u32
+    var n_extra   : base.u32[..= 11]
+    var cat_off   : base.u32[..= 15]
+    var cat_end   : base.u32
+
+    // Navigate the category tree using prob[6-10].
+    v = this.p1_read_bool!(prob: this.coeff_probs[args.prob_idx + 6])
+    if v == 0 {
+        v = this.p1_read_bool!(prob: this.coeff_probs[args.prob_idx + 7])
+        if v == 0 {
+            cat = 0  // CAT1
+        } else {
+            cat = 1  // CAT2
+        }
+    } else {
+        v = this.p1_read_bool!(prob: this.coeff_probs[args.prob_idx + 8])
+        if v == 0 {
+            v = this.p1_read_bool!(prob: this.coeff_probs[args.prob_idx + 9])
+            if v == 0 {
+                cat = 2  // CAT3
+            } else {
+                cat = 3  // CAT4
+            }
+        } else {
+            v = this.p1_read_bool!(prob: this.coeff_probs[args.prob_idx + 10])
+            if v == 0 {
+                cat = 4  // CAT5
+            } else {
+                cat = 5  // CAT6
+            }
+        }
+    }
+
+    // Read extra bits in a loop. Loop from cat_off to cat_end, with
+    // explicit i < 26 guard so the checker can prove array bounds.
+    cat_off = CAT_PROBS_OFFSET[cat] as base.u32[..= 15]
+    n_extra = CAT_EXTRA_BITS[cat] as base.u32[..= 11]
+    cat_end = cat_off + n_extra
+    extra_val = 0
+    i = cat_off
+    while (i < cat_end) and (i < 26) {
+        v = this.p1_read_bool!(prob: CAT_PROBS[i])
+        extra_val = (extra_val ~mod<< 1) | (v as base.u32)
+        i += 1
+    }
+    return (CAT_BASE_VALUE[cat] as base.u32) ~mod+ extra_val
+}
+
+// decode_block_coeffs! decodes one 4x4 block of DCT coefficients from
+// partition 1. Bool decoder state (p1_range/p1_value/p1_bits) is copied to
+// local variables to keep them in CPU registers, avoiding the store-reload
+// overhead the C compiler emits between each bool read and array access
+// (it cannot prove struct fields don't alias with coeff_probs/mb_coeffs).
+//
+// The 7 most frequent reads are inline with local variables: ZERO, ONE-vs-more,
+// prob[3-5] for values 2-4, sign, and EOB. Only category values (5+) sync to
+// struct and call decode_coeff_category.
+// Byte loading at the top of each coefficient ensures >= 49 bits available.
+// A second reload before prob[3-5] ensures enough bits for values >= 2.
+pri func decoder.decode_block_coeffs!(block_offset: base.u32[..= 384], block_type: base.u32[..= 3], start_coeff: base.u32[..= 1], init_ctx: base.u32[..= 2]) base.u32[..= 1] {
+    var coeff_idx : base.u32
+    var ctx       : base.u32[..= 2]
+    var prob_idx  : base.u32[..= 1045]
+    var bt_base   : base.u32[..= 792]
+    var v         : base.u32[..= 1]
+    var abs_val   : base.u32
+    var sign      : base.u32[..= 1]
+    var zi        : base.u32[..= 15]
+    var dq        : base.u32
+    var seg       : base.u32[..= 3]
+    var ci        : base.u32
+    var has_nz    : base.u32[..= 1]
+    var has_ac    : base.u32
+    var dq_dc     : base.u32
+    var dq_ac     : base.u32
+    var lr        : base.u32
+    var lv        : base.u64
+    var lb        : base.u32
+    var s         : base.u32
+    var pos       : base.u32
+    var bval      : base.u32
+    var nshift    : base.u32[..= 7]
+    var bb        : base.u64
+    var lri       : base.u32[..= 0x1000]
+    var lwi       : base.u32[..= 0x1000]
+    var lr_taken  : base.u32
+    var neg_mask  : base.u32
+
+    seg = this.segment_id as base.u32
+    has_nz = 0
+    has_ac = 0
+
+    bt_base = args.block_type * 264
+
+    if args.block_type == 1 {
+        dq_dc = this.dequant_y2_dc[seg]
+        dq_ac = this.dequant_y2_ac[seg]
+    } else if args.block_type == 2 {
+        dq_dc = this.dequant_uv_dc[seg]
+        dq_ac = this.dequant_uv_ac[seg]
+    } else {
+        dq_dc = this.dequant_y_dc[seg]
+        dq_ac = this.dequant_y_ac[seg]
+    }
+
+    lr = this.p1_range
+    lv = this.p1_value
+    lb = this.p1_bits
+    lri = this.p1_ri
+    lwi = this.p1_wi
+
+    coeff_idx = args.start_coeff
+    ctx = args.init_ctx
+    prob_idx = bt_base + (COEFF_BAND_OFFSET[coeff_idx] as base.u32) + (ctx * 11)
+
+    // Byte loading for initial EOB check. 4-byte bulk fast path
+    // eliminates the multi-iteration while loop (saves ~8 branches per refill).
+    if lb < 16 {
+        if ((lri ~mod+ 4) <= lwi) and (lri < 0xFFD) {
+            lv = (lv ~mod<< 32) |
+                    ((this.p1_buffer[lri + 0] as base.u64) ~mod<< 24) |
+                    ((this.p1_buffer[lri + 1] as base.u64) ~mod<< 16) |
+                    ((this.p1_buffer[lri + 2] as base.u64) ~mod<< 8) |
+                    (this.p1_buffer[lri + 3] as base.u64)
+            lri += 4
+            lb ~mod+= 32
+        } else {
+            while (lb <= 48) and (lri < lwi) {
+                assert lri < 0x1000 via "a < b: a < c; c <= b"(c: lwi)
+                bb = this.p1_buffer[lri] as base.u64
+                lri += 1
+                lv = (lv ~mod<< 8) | bb
+                lb ~mod+= 8
+            }
+        }
+    }
+
+    // Initial EOB check (prob[0]) using local variables.
+    s = (lr ~mod* (this.coeff_probs[prob_idx] as base.u32)) >> 8
+    pos = (lb ~mod- 8) & 63
+    bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+    if bval > s {
+        lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+        lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+    } else {
+        lr = s
+        nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+        lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+        lb ~mod-= nshift
+        this.p1_range = lr & 0xFF
+        this.p1_value = lv
+        this.p1_bits = lb
+        this.p1_ri = lri
+        this.block_ac_nz = 0
+        return 0
+    }
+    nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+    lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+    lb ~mod-= nshift
+
+    while coeff_idx < 16 {
+        // Load bytes. Threshold 28 ensures lb >= 28 at prob[1], enough for
+        // the worst case abs_val=1 path: prob[1](7)+prob[2](7)+sign(1)+EOB(7)
+        // = 22 bits, with lb >= 8 at every read point (28-7-7=14, 14-7=7+1=8).
+        // 4-byte bulk fast path: 1 branch replaces ~9 loop branches.
+        if lb < 28 {
+            if ((lri ~mod+ 4) <= lwi) and (lri < 0xFFD) {
+                lv = (lv ~mod<< 32) |
+                        ((this.p1_buffer[lri + 0] as base.u64) ~mod<< 24) |
+                        ((this.p1_buffer[lri + 1] as base.u64) ~mod<< 16) |
+                        ((this.p1_buffer[lri + 2] as base.u64) ~mod<< 8) |
+                        (this.p1_buffer[lri + 3] as base.u64)
+                lri += 4
+                lb ~mod+= 32
+            } else {
+                while (lb <= 48) and (lri < lwi),
+                        inv coeff_idx < 16,
+                {
+                    assert lri < 0x1000 via "a < b: a < c; c <= b"(c: lwi)
+                    bb = this.p1_buffer[lri] as base.u64
+                    lri += 1
+                    lv = (lv ~mod<< 8) | bb
+                    lb ~mod+= 8
+                }
+            }
+        }
+
+        // Inline: ZERO/non-zero check (prob[1]).
+        s = (lr ~mod* (this.coeff_probs[prob_idx + 1] as base.u32)) >> 8
+        pos = (lb ~mod- 8) & 63
+        bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+        if bval > s {
+            v = 1
+            lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+            lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+        } else {
+            v = 0
+            lr = s
+        }
+        nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+        lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+        lb ~mod-= nshift
+
+        if v == 0 {
+            coeff_idx += 1
+            if coeff_idx >= 16 {
+                break
+            }
+            prob_idx = bt_base + (COEFF_BAND_OFFSET[coeff_idx] as base.u32)
+            continue
+        }
+
+        // Inline: prob[2] — one vs more.
+        s = (lr ~mod* (this.coeff_probs[prob_idx + 2] as base.u32)) >> 8
+        pos = (lb ~mod- 8) & 63
+        bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+        if bval > s {
+            v = 1
+            lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+            lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+        } else {
+            v = 0
+            lr = s
+        }
+        nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+        lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+        lb ~mod-= nshift
+
+        if v == 0 {
+            abs_val = 1
+        } else {
+            // Reload bytes before prob[3-5] inline reads: after prob[1]+prob[2]
+            // consumed up to 14 bits, lb could be as low as 14. We need enough
+            // bits for prob[3]+prob[4]+prob[5]+sign+EOB (5 reads, max 35 bits).
+            // 3-byte bulk (not 4): lb < 40 means lb can be up to 39, and
+            // 39 + 32 = 71 > 64 would overflow, but 39 + 24 = 63 fits.
+            if lb < 40 {
+                if ((lri ~mod+ 3) <= lwi) and (lri < 0xFFD) {
+                    lv = (lv ~mod<< 24) |
+                            ((this.p1_buffer[lri + 0] as base.u64) ~mod<< 16) |
+                            ((this.p1_buffer[lri + 1] as base.u64) ~mod<< 8) |
+                            (this.p1_buffer[lri + 2] as base.u64)
+                    lri += 3
+                    lb ~mod+= 24
+                } else {
+                    while (lb <= 48) and (lri < lwi),
+                            inv coeff_idx < 16,
+                    {
+                        assert lri < 0x1000 via "a < b: a < c; c <= b"(c: lwi)
+                        bb = this.p1_buffer[lri] as base.u64
+                        lri += 1
+                        lv = (lv ~mod<< 8) | bb
+                        lb ~mod+= 8
+                    }
+                }
+            }
+
+            // Inline: prob[3] — values 2-4 vs categories 5+.
+            s = (lr ~mod* (this.coeff_probs[prob_idx + 3] as base.u32)) >> 8
+            pos = (lb ~mod- 8) & 63
+            bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+            if bval > s {
+                v = 1
+                lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+                lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+            } else {
+                v = 0
+                lr = s
+            }
+            nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+            lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+            lb ~mod-= nshift
+
+            if v == 0 {
+                // Inline: prob[4] — value 2 vs 3-4.
+                s = (lr ~mod* (this.coeff_probs[prob_idx + 4] as base.u32)) >> 8
+                pos = (lb ~mod- 8) & 63
+                bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+                if bval > s {
+                    v = 1
+                    lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+                    lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+                } else {
+                    v = 0
+                    lr = s
+                }
+                nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+                lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+                lb ~mod-= nshift
+
+                if v == 0 {
+                    abs_val = 2
+                } else {
+                    // Inline: prob[5] — value 3 vs 4.
+                    s = (lr ~mod* (this.coeff_probs[prob_idx + 5] as base.u32)) >> 8
+                    pos = (lb ~mod- 8) & 63
+                    bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+                    if bval > s {
+                        lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+                        lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+                        abs_val = 4
+                    } else {
+                        lr = s
+                        abs_val = 3
+                    }
+                    nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+                    lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+                    lb ~mod-= nshift
+                }
+            } else {
+                // Categories 5+: sync to struct, call helper, reload.
+                this.p1_range = lr & 0xFF
+                this.p1_value = lv
+                this.p1_bits = lb
+                this.p1_ri = lri
+                abs_val = this.decode_coeff_category!(prob_idx: prob_idx)
+                lr = this.p1_range
+                lv = this.p1_value
+                lb = this.p1_bits
+                lri = this.p1_ri
+            }
+        }
+
+        // Inline: sign bit (prob=128, branchless).
+        // The sign bit is 50/50, so the branch is maximally unpredictable.
+        // Branchless avoids ~50% mispredict penalty (matching libwebp's VP8GetSigned).
+        s = lr >> 1
+        pos = (lb ~mod- 8) & 63
+        bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+        // sign = 1 if bval > s, 0 otherwise (underflow sets bit 31).
+        sign = (s ~mod- bval) >> 31
+        // Conditional value update: subtract (s+1)<<pos when sign=1, 0 when sign=0.
+        lv ~mod-= (((s ~mod+ 1) as base.u64) ~mod<< pos) ~mod* (sign as base.u64)
+        // Conditional range update via XOR trick: selects lr_taken when sign=1, s when sign=0.
+        lr_taken = ((lr ~mod- s) ~mod- 1) & 0xFF
+        lr = s ^ ((s ^ lr_taken) ~mod* sign)
+        // Table-based renormalization (shift is 0 or 1 for prob=128).
+        nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+        lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+        lb ~mod-= nshift
+
+        has_nz = 1
+        if coeff_idx > 0 {
+            has_ac = 1
+        }
+        ctx = 1
+        if abs_val > 1 {
+            ctx = 2
+        }
+
+        // Dequantize and store.
+        zi = ZIGZAG[coeff_idx] as base.u32[..= 15]
+        if coeff_idx == 0 {
+            dq = dq_dc
+        } else {
+            dq = dq_ac
+        }
+        abs_val = abs_val ~mod* dq
+        ci = args.block_offset + (zi as base.u32)
+        // Branchless sign application: (x ^ mask) - mask negates when mask=0xFFFFFFFF.
+        neg_mask = 0 ~mod- sign
+        this.mb_coeffs[ci] = (abs_val ^ neg_mask) ~mod- neg_mask
+
+        coeff_idx += 1
+        if coeff_idx >= 16 {
+            break
+        }
+
+        // Inline: EOB check (prob[0]).
+        prob_idx = bt_base + (COEFF_BAND_OFFSET[coeff_idx] as base.u32) + (ctx * 11)
+        s = (lr ~mod* (this.coeff_probs[prob_idx] as base.u32)) >> 8
+        pos = (lb ~mod- 8) & 63
+        bval = ((lv >> pos) & 0xFFFF_FFFF) as base.u32
+        if bval > s {
+            v = 1
+            lv ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+            lr = ((lr ~mod- s) ~mod- 1) & 0xFF
+        } else {
+            v = 0
+            lr = s
+        }
+        nshift = RENORM_SHIFT_256[lr & 0xFF] as base.u32
+        lr = RENORM_RANGE_256[lr & 0xFF] as base.u32
+        lb ~mod-= nshift
+        if v == 0 {
+            break
+        }
+    }
+
+    // Store bool state back to struct.
+    this.p1_range = lr & 0xFF
+    this.p1_value = lv
+    this.p1_bits = lb
+    this.p1_ri = lri
+
+    this.block_ac_nz = has_ac
+    return has_nz
+}

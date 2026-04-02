@@ -677,10 +677,11 @@ const (
 
 	// TODO: range/rect methods like intersection and contains?
 
-	IDHighBits = ID(0x220)
-	IDLowBits  = ID(0x221)
-	IDMax      = ID(0x222)
-	IDMin      = ID(0x223)
+	IDCountLeadingZeroes = ID(0x224)
+	IDHighBits           = ID(0x220)
+	IDLowBits            = ID(0x221)
+	IDMax                = ID(0x222)
+	IDMin                = ID(0x223)
 
 	IDIsError      = ID(0x230)
 	IDIsOK         = ID(0x231)
@@ -1126,10 +1127,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDUnroll:         "unroll",
 	IDUpdate:         "update",
 
-	IDHighBits: "high_bits",
-	IDLowBits:  "low_bits",
-	IDMax:      "max",
-	IDMin:      "min",
+	IDCountLeadingZeroes: "count_leading_zeroes",
+	IDHighBits:           "high_bits",
+	IDLowBits:            "low_bits",
+	IDMax:                "max",
+	IDMin:                "min",
 
 	IDIsError:      "is_error",
 	IDIsOK:         "is_ok",

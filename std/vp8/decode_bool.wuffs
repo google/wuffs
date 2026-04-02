@@ -1,0 +1,341 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 boolean (arithmetic) decoder per RFC 6386 Section 7.
+//
+// Partition 0 (mode data) state — wide-accumulator approach:
+//   bool_range: [0, 254], range-1 convention (actual range = bool_range + 1)
+//   bool_value (u64): wide accumulator
+//   bool_bits (u32): position counter
+//
+// The boolean decoder reads from data previously buffered into
+// this.bool_buffer[this.bool_ri .. this.bool_wi].
+
+// bool_init! initializes the boolean decoder state from the first two bytes
+// in the buffer. Uses wide-accumulator approach matching partition 1.
+pri func decoder.bool_init!() {
+    var bb : base.u64
+
+    this.bool_range = 254  // range-1 convention: actual range 255
+    this.bool_value = 0
+    this.bool_bits = 0
+
+    // Pre-load bytes into the wide accumulator.
+    while (this.bool_bits <= 48) and (this.bool_ri < this.bool_wi) {
+        assert this.bool_ri < 0x1000 via "a < b: a < c; c <= b"(c: this.bool_wi)
+        bb = this.bool_buffer[this.bool_ri] as base.u64
+        this.bool_ri += 1
+        this.bool_value = (this.bool_value ~mod<< 8) | bb
+        this.bool_bits ~mod+= 8
+    }
+}
+
+// bool_read_bool! reads a single boolean with the given probability (0..255).
+// Returns 0 or 1.
+//
+// Uses range-1 convention and position-based value tracking (matching
+// partition 1). Table-based renormalization with fast-path for shift=1.
+pri func decoder.bool_read_bool!(prob: base.u8) base.u32[..= 1] {
+    var s      : base.u32
+    var retval : base.u32[..= 1]
+    var v      : base.u32
+    var shift  : base.u32[..= 7]
+    var bb     : base.u64
+    var pos    : base.u32
+
+    // Load bytes when bit position gets low.
+    if this.bool_bits < 16 {
+        while (this.bool_bits <= 48) and (this.bool_ri < this.bool_wi) {
+            assert this.bool_ri < 0x1000 via "a < b: a < c; c <= b"(c: this.bool_wi)
+            bb = this.bool_buffer[this.bool_ri] as base.u64
+            this.bool_ri += 1
+            this.bool_value = (this.bool_value ~mod<< 8) | bb
+            this.bool_bits ~mod+= 8
+        }
+    }
+
+    // s = floor(range_m1 * prob / 256). split = s + 1.
+    s = (this.bool_range * (args.prob as base.u32)) >> 8
+
+    // Extract active bits.
+    pos = (this.bool_bits ~mod- 8) & 63
+    v = ((this.bool_value >> pos) & 0xFFFF_FFFF) as base.u32
+
+    if v > s {
+        retval = 1
+        this.bool_value ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+        this.bool_range = ((this.bool_range ~mod- s) ~mod- 1) & 0xFF
+    } else {
+        retval = 0
+        this.bool_range = s
+    }
+
+    // Branchless renormalization via extended 256-entry tables.
+    shift = RENORM_SHIFT_256[this.bool_range & 0xFF] as base.u32
+    this.bool_range = RENORM_RANGE_256[this.bool_range & 0xFF] as base.u32
+    this.bool_bits ~mod-= shift
+
+    return retval
+}
+
+// bool_read_literal! reads n bits at probability 128 (uniform).
+pri func decoder.bool_read_literal!(n: base.u32[..= 24]) base.u32 {
+    var result : base.u32
+    var i      : base.u32
+    var bit    : base.u32[..= 1]
+
+    result = 0
+    i = 0
+    while i < args.n,
+            inv i <= 24,
+    {
+        assert i < 24 via "a < b: a < c; c <= b"(c: args.n)
+        bit = this.bool_read_bool!(prob: 128)
+        result = (result ~mod<< 1) | bit
+        i += 1
+    }
+    return result
+}
+
+// bool_read_signed! reads an optional signed value. First reads a flag bit;
+// if 1, reads n bits of magnitude + sign bit.
+pri func decoder.bool_read_signed!(n: base.u32[..= 24]) base.i32 {
+    var flag      : base.u32[..= 1]
+    var magnitude : base.u32
+    var sign      : base.u32[..= 1]
+
+    flag = this.bool_read_bool!(prob: 128)
+    if flag == 0 {
+        return 0
+    }
+
+    magnitude = this.bool_read_literal!(n: args.n)
+    magnitude &= 0x7FFF_FFFF
+    sign = this.bool_read_bool!(prob: 128)
+    if sign <> 0 {
+        return -(magnitude as base.i32)
+    }
+    return magnitude as base.i32
+}
+
+// ---- Partition 1 (coefficient data) boolean decoder ----
+//
+// Range-1 convention: p1_range stores (range - 1) to save one subtract
+// per split computation (matches libwebp's convention).
+//
+// Position-based value tracking (inspired by libwebp's VP8GetBit):
+//   p1_value (u64) is a wide accumulator. p1_bits (u32) is the position.
+//   Extraction: v = p1_value >> ((p1_bits - 8) & 63), giving the active
+//   ~8 bits for comparison against split.
+//   Renormalization only decrements p1_bits — no value shifting needed.
+//   Byte loading: triggered when p1_bits < 16; shifts value left by 8
+//   per byte and ORs in the new byte, incrementing p1_bits by 8.
+//
+// p1_bits uses an implicit +8 offset relative to libwebp's br->bits
+// to keep unsigned: p1_bits=0 corresponds to libwebp's bits=-8.
+
+// p1_init! initializes the partition 1 boolean decoder.
+pri func decoder.p1_init!() {
+    this.p1_range = 254
+    this.p1_value = 0
+    this.p1_bits = 0
+    // Bytes are loaded on the first p1_read_bool call.
+}
+
+// p1_read_bool! reads a boolean from partition 1.
+// Uses range-1 convention and position-based value tracking.
+// Table-based renormalization decrements p1_bits without shifting value.
+pri func decoder.p1_read_bool!(prob: base.u8) base.u32[..= 1] {
+    var s      : base.u32
+    var retval : base.u32[..= 1]
+    var v      : base.u32
+    var shift  : base.u32[..= 7]
+    var bb     : base.u64
+    var pos    : base.u32
+
+    // Load bytes when bit position gets low.
+    if this.p1_bits < 16 {
+        while (this.p1_bits <= 48) and (this.p1_ri < this.p1_wi) {
+            assert this.p1_ri < 0x1000 via "a < b: a < c; c <= b"(c: this.p1_wi)
+            bb = this.p1_buffer[this.p1_ri] as base.u64
+            this.p1_ri += 1
+            this.p1_value = (this.p1_value ~mod<< 8) | bb
+            this.p1_bits ~mod+= 8
+        }
+    }
+
+    // s = floor(range_m1 * prob / 256). split = s + 1.
+    s = (this.p1_range * (args.prob as base.u32)) >> 8
+
+    // Extract active bits: value >> actual_pos, where actual_pos = p1_bits - 8.
+    pos = (this.p1_bits ~mod- 8) & 63
+    v = ((this.p1_value >> pos) & 0xFFFF_FFFF) as base.u32
+
+    if v > s {
+        retval = 1
+        this.p1_value ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+        this.p1_range = ((this.p1_range ~mod- s) ~mod- 1) & 0xFF
+    } else {
+        retval = 0
+        this.p1_range = s
+    }
+
+    // Branchless renormalization via extended 256-entry tables.
+    shift = RENORM_SHIFT_256[this.p1_range & 0xFF] as base.u32
+    this.p1_range = RENORM_RANGE_256[this.p1_range & 0xFF] as base.u32
+    // Detect EOF: if shift > p1_bits, the unsigned subtraction would wrap,
+    // meaning all valid bits are consumed. Set accumulator to produce 0 for
+    // all subsequent reads, matching libwebp's EOF behavior.
+    if shift > this.p1_bits {
+        this.p1_value = 0
+        this.p1_bits = 56
+    } else {
+        this.p1_bits ~mod-= shift
+    }
+
+    return retval
+}
+
+// p1_read_sign! reads a sign bit (prob=128) from partition 1.
+// Specialized: prob=128 means s = range_m1 / 2, and the new range is in
+// [64, 128] so at most 1 bit of normalization is needed.
+pri func decoder.p1_read_sign!() base.u32[..= 1] {
+    var s      : base.u32
+    var retval : base.u32[..= 1]
+    var v      : base.u32
+    var shift  : base.u32[..= 7]
+    var bb     : base.u64
+    var pos    : base.u32
+
+    // Load bytes when bit position gets low.
+    if this.p1_bits < 16 {
+        if ((this.p1_ri ~mod+ 4) <= this.p1_wi) and (this.p1_ri < 0xFFD) {
+            this.p1_value = (this.p1_value ~mod<< 32) |
+                    ((this.p1_buffer[this.p1_ri + 0] as base.u64) ~mod<< 24) |
+                    ((this.p1_buffer[this.p1_ri + 1] as base.u64) ~mod<< 16) |
+                    ((this.p1_buffer[this.p1_ri + 2] as base.u64) ~mod<< 8) |
+                    (this.p1_buffer[this.p1_ri + 3] as base.u64)
+            this.p1_ri += 4
+            this.p1_bits ~mod+= 32
+        } else {
+            while (this.p1_bits <= 48) and (this.p1_ri < this.p1_wi) {
+                assert this.p1_ri < 0x1000 via "a < b: a < c; c <= b"(c: this.p1_wi)
+                bb = this.p1_buffer[this.p1_ri] as base.u64
+                this.p1_ri += 1
+                this.p1_value = (this.p1_value ~mod<< 8) | bb
+                this.p1_bits ~mod+= 8
+            }
+        }
+    }
+
+    s = this.p1_range >> 1
+
+    pos = (this.p1_bits ~mod- 8) & 63
+    v = ((this.p1_value >> pos) & 0xFFFF_FFFF) as base.u32
+
+    if v > s {
+        retval = 1
+        this.p1_value ~mod-= ((s ~mod+ 1) as base.u64) ~mod<< pos
+        this.p1_range = ((this.p1_range ~mod- s) ~mod- 1) & 0xFF
+    } else {
+        retval = 0
+        this.p1_range = s
+    }
+
+    // Branchless renormalization.
+    shift = RENORM_SHIFT_256[this.p1_range & 0xFF] as base.u32
+    this.p1_range = RENORM_RANGE_256[this.p1_range & 0xFF] as base.u32
+    if shift > this.p1_bits {
+        this.p1_value = 0
+        this.p1_bits = 56
+    } else {
+        this.p1_bits ~mod-= shift
+    }
+
+    return retval
+}
+
+// p1_fill_buffer! reads data from src into the partition 1 buffer.
+pri func decoder.p1_fill_buffer!(src: base.io_reader, n: base.u32) {
+    var remaining : base.u32
+    var c8        : base.u8
+
+    if (this.p1_ri > 0) and (this.p1_ri <= this.p1_wi) {
+        this.p1_buffer[.. 0x1000].copy_from_slice!(s: this.p1_buffer[this.p1_ri .. this.p1_wi])
+        this.p1_wi ~sat-= this.p1_ri
+        this.p1_ri = 0
+    }
+
+    remaining = args.n
+    while (remaining > 0) and (this.p1_wi < 0x1000) and (args.src.length() > 0) {
+        c8 = args.src.peek_u8()
+        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+        if this.p1_wi < 0x1000 {
+            this.p1_buffer[this.p1_wi] = c8
+            this.p1_wi += 1
+        }
+        remaining -= 1
+    }
+}
+
+// p1_fill_from_workbuf! refills the partition 1 buffer from the current
+// coefficient partition's data in workbuf (multi-partition mode).
+pri func decoder.p1_fill_from_workbuf!(workbuf: slice base.u8) {
+    var idx  : base.u64
+    var p    : base.u32[..= 7]
+    var poff : base.u64
+
+    // Compact the buffer first.
+    if (this.p1_ri > 0) and (this.p1_ri <= this.p1_wi) {
+        this.p1_buffer[.. 0x1000].copy_from_slice!(s: this.p1_buffer[this.p1_ri .. this.p1_wi])
+        this.p1_wi ~sat-= this.p1_ri
+        this.p1_ri = 0
+    }
+
+    // Fill from current partition's workbuf region.
+    p = this.current_partition
+    poff = this.part_wbuf_offset[p]
+    while (this.p1_wi < 0x1000) and (this.current_part_wbuf_ri < this.part_wbuf_size[p]) {
+        idx = poff ~mod+ (this.current_part_wbuf_ri as base.u64)
+        if idx >= args.workbuf.length() {
+            break
+        }
+        this.p1_buffer[this.p1_wi] = args.workbuf[idx]
+        this.p1_wi += 1
+        this.current_part_wbuf_ri ~mod+= 1
+    }
+
+}
+
+// ---- Partition 0 (mode data) boolean decoder ----
+
+// bool_fill_from_workbuf! refills the boolean decoder buffer from the
+// partition 0 data stored in workbuf (starting at workbuf_offset_v_end).
+pri func decoder.bool_fill_from_workbuf!(workbuf: slice base.u8) {
+    var idx : base.u64
+
+    // Compact the buffer first.
+    if (this.bool_ri > 0) and (this.bool_ri <= this.bool_wi) {
+        this.bool_buffer[.. 0x1000].copy_from_slice!(s: this.bool_buffer[this.bool_ri .. this.bool_wi])
+        this.bool_wi ~sat-= this.bool_ri
+        this.bool_ri = 0
+    }
+
+    // Fill from workbuf partition 0 data (limited to bytes actually copied).
+    while (this.bool_wi < 0x1000) and (this.p0_wbuf_ri < this.p0_wbuf_count) {
+        idx = this.workbuf_offset_v_end ~mod+ (this.p0_wbuf_ri as base.u64)
+        if idx >= args.workbuf.length() {
+            break
+        }
+        this.bool_buffer[this.bool_wi] = args.workbuf[idx]
+        this.bool_wi += 1
+        this.p0_wbuf_ri ~mod+= 1
+    }
+}

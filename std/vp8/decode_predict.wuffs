@@ -1,0 +1,705 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// VP8 intra prediction modes.
+//
+// 16x16 luma modes: DC (0), V (1), H (2), TM (3)
+// 4x4 sub-block modes: DC (0), TM (1), VE (2), HE (3), LD (4),
+//                       RD (5), VR (6), VL (7), HD (8), HU (9)
+// 8x8 chroma modes: DC (0), V (1), H (2), TM (3)
+//
+// All prediction functions write the predicted pixel values directly into
+// the workbuf at the correct plane position. The IDCT residuals are then
+// added on top.
+
+// predict_16x16! fills a 16x16 luma block in the workbuf with the predicted
+// values based on the mode. The block is at (mb_x*16, mb_y*16) in the Y plane.
+pri func decoder.predict_16x16!(workbuf: slice base.u8, mode: base.u8[..= 3]),
+        choosy,
+{
+    var y_off : base.u64
+    var r     : base.u32
+    var c     : base.u32
+    var idx   : base.u64
+    var sum   : base.u32
+    var count : base.u32
+    var dc    : base.u8
+    var tl    : base.u8
+    var p     : base.u32
+
+    y_off = (this.mb_y as base.u64) * 16 * (this.y_stride as base.u64)
+    y_off ~mod+= ((this.mb_x as base.u64) * 16)
+
+    if args.mode == 0 {
+        // DC prediction: average of above and left pixels.
+        sum = 0
+        count = 0
+        if (this.mb_y > 0) and (y_off >= (this.y_stride as base.u64)) {
+            c = 0
+            while c < 16 {
+                idx = (y_off ~mod- (this.y_stride as base.u64)) ~mod+ (c as base.u64)
+                if idx < args.workbuf.length() {
+                    sum ~mod+= args.workbuf[idx] as base.u32
+                }
+                c += 1
+                count ~mod+= 1
+            }
+        }
+        if this.mb_x > 0 {
+            r = 0
+            while r < 16 {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                if idx > 0 {
+                    idx -= 1
+                    if idx < args.workbuf.length() {
+                        sum ~mod+= args.workbuf[idx] as base.u32
+                    }
+                }
+                r += 1
+                count ~mod+= 1
+            }
+        }
+        if count > 0 {
+            dc = (((sum ~mod+ (count >> 1)) / count) & 0xFF) as base.u8
+        } else {
+            dc = 128
+        }
+
+        r = 0
+        while r < 16 {
+            c = 0
+            while c < 16,
+                    inv r < 16,
+            {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else if args.mode == 1 {
+        // V prediction: replicate the above row.
+        // At top edge (mb_y=0), above is filled with 127 per VP8 spec.
+        r = 0
+        while r < 16 {
+            c = 0
+            while c < 16,
+                    inv r < 16,
+            {
+                dc = 127
+                if (this.mb_y > 0) and (y_off >= (this.y_stride as base.u64)) {
+                    idx = (y_off ~mod- (this.y_stride as base.u64)) ~mod+ (c as base.u64)
+                    if idx < args.workbuf.length() {
+                        dc = args.workbuf[idx]
+                    }
+                }
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else if args.mode == 2 {
+        // H prediction: replicate the left column.
+        // At left edge (mb_x=0), left is filled with 129 per VP8 spec.
+        r = 0
+        while r < 16 {
+            dc = 129
+            if this.mb_x > 0 {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                if idx > 0 {
+                    idx -= 1
+                    if idx < args.workbuf.length() {
+                        dc = args.workbuf[idx]
+                    }
+                }
+            }
+            c = 0
+            while c < 16,
+                    inv r < 16,
+            {
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else {
+        // TM prediction: pred[r][c] = clamp(above[c] + left[r] - top_left)
+        tl = 127
+        if (this.mb_x > 0) and (this.mb_y > 0) and (y_off > (this.y_stride as base.u64)) {
+            idx = (y_off - (this.y_stride as base.u64)) - 1
+            if idx < args.workbuf.length() {
+                tl = args.workbuf[idx]
+            }
+        } else if (this.mb_x == 0) and (this.mb_y > 0) {
+            tl = 129
+        }
+
+        r = 0
+        while r < 16 {
+            c = 0
+            while c < 16,
+                    inv r < 16,
+            {
+                p = 127
+                if (this.mb_y > 0) and (y_off >= (this.y_stride as base.u64)) {
+                    idx = (y_off ~mod- (this.y_stride as base.u64)) ~mod+ (c as base.u64)
+                    if idx < args.workbuf.length() {
+                        p = args.workbuf[idx] as base.u32
+                    }
+                }
+                if this.mb_x > 0 {
+                    idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                    if idx > 0 {
+                        idx -= 1
+                        if idx < args.workbuf.length() {
+                            p = (p ~mod+ (args.workbuf[idx] as base.u32)) ~mod- (tl as base.u32)
+                        }
+                    }
+                }
+                // Clamp to [0, 255].
+                if p > 255 {
+                    if (p & 0x8000_0000) <> 0 {
+                        p = 0
+                    } else {
+                        p = 255
+                    }
+                }
+
+                idx = y_off ~mod+ ((r as base.u64) * (this.y_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = (p & 0xFF) as base.u8
+                }
+                c += 1
+            }
+            r += 1
+        }
+    }
+}
+
+// predict_8x8! fills an 8x8 chroma block (U or V) in the workbuf.
+// plane_offset is the start of the U or V plane in workbuf.
+pri func decoder.predict_8x8!(workbuf: slice base.u8, mode: base.u8[..= 3], plane_offset: base.u64),
+        choosy,
+{
+    var uv_off : base.u64
+    var r      : base.u32
+    var c      : base.u32
+    var idx    : base.u64
+    var sum    : base.u32
+    var count  : base.u32
+    var dc     : base.u8
+    var tl     : base.u8
+    var p      : base.u32
+
+    uv_off = args.plane_offset ~mod+ ((this.mb_y as base.u64) * 8 * (this.uv_stride as base.u64))
+    uv_off ~mod+= ((this.mb_x as base.u64) * 8)
+
+    if args.mode == 0 {
+        // DC prediction.
+        sum = 0
+        count = 0
+        if (this.mb_y > 0) and (uv_off >= (this.uv_stride as base.u64)) {
+            c = 0
+            while c < 8 {
+                idx = (uv_off ~mod- (this.uv_stride as base.u64)) ~mod+ (c as base.u64)
+                if idx < args.workbuf.length() {
+                    sum ~mod+= args.workbuf[idx] as base.u32
+                }
+                c += 1
+                count ~mod+= 1
+            }
+        }
+        if this.mb_x > 0 {
+            r = 0
+            while r < 8 {
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                if idx > 0 {
+                    idx -= 1
+                    if idx < args.workbuf.length() {
+                        sum ~mod+= args.workbuf[idx] as base.u32
+                    }
+                }
+                r += 1
+                count ~mod+= 1
+            }
+        }
+        if count > 0 {
+            dc = (((sum ~mod+ (count >> 1)) / count) & 0xFF) as base.u8
+        } else {
+            dc = 128
+        }
+
+        r = 0
+        while r < 8 {
+            c = 0
+            while c < 8,
+                    inv r < 8,
+            {
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else if args.mode == 1 {
+        // V prediction.
+        // At top edge (mb_y=0), above is filled with 127.
+        r = 0
+        while r < 8 {
+            c = 0
+            while c < 8,
+                    inv r < 8,
+            {
+                dc = 127
+                if (this.mb_y > 0) and (uv_off >= (this.uv_stride as base.u64)) {
+                    idx = (uv_off ~mod- (this.uv_stride as base.u64)) ~mod+ (c as base.u64)
+                    if idx < args.workbuf.length() {
+                        dc = args.workbuf[idx]
+                    }
+                }
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else if args.mode == 2 {
+        // H prediction.
+        // At left edge (mb_x=0), left is filled with 129.
+        r = 0
+        while r < 8 {
+            dc = 129
+            if this.mb_x > 0 {
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                if idx > 0 {
+                    idx -= 1
+                    if idx < args.workbuf.length() {
+                        dc = args.workbuf[idx]
+                    }
+                }
+            }
+            c = 0
+            while c < 8,
+                    inv r < 8,
+            {
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = dc
+                }
+                c += 1
+            }
+            r += 1
+        }
+
+    } else {
+        // TM prediction.
+        tl = 127
+        if (this.mb_x > 0) and (this.mb_y > 0) and (uv_off > (this.uv_stride as base.u64)) {
+            idx = (uv_off - (this.uv_stride as base.u64)) - 1
+            if idx < args.workbuf.length() {
+                tl = args.workbuf[idx]
+            }
+        } else if (this.mb_x == 0) and (this.mb_y > 0) {
+            tl = 129
+        }
+
+        r = 0
+        while r < 8 {
+            c = 0
+            while c < 8,
+                    inv r < 8,
+            {
+                p = 127
+                if (this.mb_y > 0) and (uv_off >= (this.uv_stride as base.u64)) {
+                    idx = (uv_off ~mod- (this.uv_stride as base.u64)) ~mod+ (c as base.u64)
+                    if idx < args.workbuf.length() {
+                        p = args.workbuf[idx] as base.u32
+                    }
+                }
+                if this.mb_x > 0 {
+                    idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                    if idx > 0 {
+                        idx -= 1
+                        if idx < args.workbuf.length() {
+                            p = (p ~mod+ (args.workbuf[idx] as base.u32)) ~mod- (tl as base.u32)
+                        }
+                    }
+                }
+                if p > 255 {
+                    if (p & 0x8000_0000) <> 0 {
+                        p = 0
+                    } else {
+                        p = 255
+                    }
+                }
+
+                idx = uv_off ~mod+ ((r as base.u64) * (this.uv_stride as base.u64))
+                idx ~mod+= (c as base.u64)
+                if idx < args.workbuf.length() {
+                    args.workbuf[idx] = (p & 0xFF) as base.u8
+                }
+                c += 1
+            }
+            r += 1
+        }
+    }
+}
+
+// predict_4x4! fills a single 4x4 sub-block for B_PRED mode.
+// block_idx is 0..15 identifying which sub-block within the macroblock.
+//
+// Reference pixel layout around the 4x4 block:
+//   tl  a0 a1 a2 a3 a4 a5 a6 a7
+//   l0  X  X  X  X
+//   l1  X  X  X  X
+//   l2  X  X  X  X
+//   l3  X  X  X  X
+//
+// Modes (VP8 spec ordering):
+//   0=DC, 1=TM, 2=VE, 3=HE, 4=LD, 5=RD, 6=VR, 7=VL, 8=HD, 9=HU
+pri func decoder.predict_4x4!(workbuf: slice base.u8, block_idx: base.u32[..= 15], mode: base.u8) {
+    var y_off    : base.u64
+    var bx       : base.u32
+    var by       : base.u32
+    var idx      : base.u64
+    var stride   : base.u64
+    var has_top  : base.bool
+    var has_left : base.bool
+    var tl       : base.u32
+    var a0       : base.u32
+    var a1       : base.u32
+    var a2       : base.u32
+    var a3       : base.u32
+    var a4       : base.u32
+    var a5       : base.u32
+    var a6       : base.u32
+    var a7       : base.u32
+    var l0       : base.u32
+    var l1       : base.u32
+    var l2       : base.u32
+    var l3       : base.u32
+    var dc       : base.u32
+    var s        : slice base.u8
+    var above4   : base.u32
+
+    bx = args.block_idx & 3
+    by = args.block_idx >> 2
+    y_off = (this.mb_y as base.u64) * 16 * (this.y_stride as base.u64)
+    y_off ~mod+= ((this.mb_x as base.u64) * 16)
+    y_off ~mod+= ((by as base.u64) * 4 * (this.y_stride as base.u64))
+    y_off ~mod+= ((bx as base.u64) * 4)
+    stride = this.y_stride as base.u64
+
+    // Determine if "above" and "left" reference pixels are available.
+    // Within the macroblock, sub-blocks above/left of us are already decoded.
+    has_top = (by > 0) or (this.mb_y > 0)
+    has_left = (bx > 0) or (this.mb_x > 0)
+
+    // Load the 4 "above" pixels (a0..a3) via peek_u32le (1 load, 2 checks).
+    if has_top and (y_off >= stride) {
+        idx = y_off ~mod- stride
+        if idx < args.workbuf.length() {
+            s = args.workbuf[idx ..]
+            if s.length() >= 4 {
+                above4 = s.peek_u32le()
+                a0 = above4 & 0xFF
+                a1 = (above4 >> 8) & 0xFF
+                a2 = (above4 >> 16) & 0xFF
+                a3 = above4 >> 24
+            }
+        }
+    } else {
+        a0 = 127
+        a1 = 127
+        a2 = 127
+        a3 = 127
+    }
+
+    // Load upper-right pixels (a4..a7) via peek_u32le.
+    if has_top and (y_off >= stride) and (bx < 3) {
+        idx = (y_off ~mod- stride) ~mod+ 4
+        if idx < args.workbuf.length() {
+            s = args.workbuf[idx ..]
+            if s.length() >= 4 {
+                above4 = s.peek_u32le()
+                a4 = above4 & 0xFF
+                a5 = (above4 >> 8) & 0xFF
+                a6 = (above4 >> 16) & 0xFF
+                a7 = above4 >> 24
+            }
+        }
+    } else if (bx >= 3) and has_top {
+        a4 = this.mb_upper_right[0] as base.u32
+        a5 = this.mb_upper_right[1] as base.u32
+        a6 = this.mb_upper_right[2] as base.u32
+        a7 = this.mb_upper_right[3] as base.u32
+    } else {
+        a4 = a3
+        a5 = a3
+        a6 = a3
+        a7 = a3
+    }
+
+    // Load the 4 "left" pixels (l0..l3).
+    if has_left and (y_off > 0) {
+        idx = y_off ~mod- 1
+        if idx < args.workbuf.length() {
+            l0 = args.workbuf[idx] as base.u32
+        }
+        idx = (y_off ~mod+ stride) ~mod- 1
+        if idx < args.workbuf.length() {
+            l1 = args.workbuf[idx] as base.u32
+        }
+        idx = (y_off ~mod+ (stride ~mod* 2)) ~mod- 1
+        if idx < args.workbuf.length() {
+            l2 = args.workbuf[idx] as base.u32
+        }
+        idx = (y_off ~mod+ (stride ~mod* 3)) ~mod- 1
+        if idx < args.workbuf.length() {
+            l3 = args.workbuf[idx] as base.u32
+        }
+    } else {
+        l0 = 129
+        l1 = 129
+        l2 = 129
+        l3 = 129
+    }
+
+    // Load top-left pixel.
+    if has_top and has_left and (y_off > stride) {
+        idx = (y_off ~mod- stride) ~mod- 1
+        if idx < args.workbuf.length() {
+            tl = args.workbuf[idx] as base.u32
+        }
+    } else if has_top and (not has_left) {
+        tl = 129
+    } else {
+        // When has_top is false (mby=0, by=0), tl is from the above border
+        // row, which is all 127 in VP8. This applies whether or not has_left
+        // is true. Go's prepareYBR sets row 0 to 0x7f after column 7 to 0x81,
+        // so the above border value (127) wins at the corner.
+        tl = 127
+    }
+
+    if args.mode == 0 {
+        // DC: average of 4 above + 4 left pixels.
+        dc = ((((((((a0 ~mod+ a1) ~mod+ a2) ~mod+ a3) ~mod+ l0) ~mod+ l1) ~mod+ l2) ~mod+ l3) ~mod+ 4)
+        dc = (dc >> 3) & 0xFF
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: dc, v01: dc, v02: dc, v03: dc,
+                v10: dc, v11: dc, v12: dc, v13: dc,
+                v20: dc, v21: dc, v22: dc, v23: dc,
+                v30: dc, v31: dc, v32: dc, v33: dc)
+    } else if args.mode == 1 {
+        // TM: pred[r][c] = clamp(above[c] + left[r] - tl)
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.clip8(v: (a0 ~mod+ l0) ~mod- tl),
+                v01: this.clip8(v: (a1 ~mod+ l0) ~mod- tl),
+                v02: this.clip8(v: (a2 ~mod+ l0) ~mod- tl),
+                v03: this.clip8(v: (a3 ~mod+ l0) ~mod- tl),
+                v10: this.clip8(v: (a0 ~mod+ l1) ~mod- tl),
+                v11: this.clip8(v: (a1 ~mod+ l1) ~mod- tl),
+                v12: this.clip8(v: (a2 ~mod+ l1) ~mod- tl),
+                v13: this.clip8(v: (a3 ~mod+ l1) ~mod- tl),
+                v20: this.clip8(v: (a0 ~mod+ l2) ~mod- tl),
+                v21: this.clip8(v: (a1 ~mod+ l2) ~mod- tl),
+                v22: this.clip8(v: (a2 ~mod+ l2) ~mod- tl),
+                v23: this.clip8(v: (a3 ~mod+ l2) ~mod- tl),
+                v30: this.clip8(v: (a0 ~mod+ l3) ~mod- tl),
+                v31: this.clip8(v: (a1 ~mod+ l3) ~mod- tl),
+                v32: this.clip8(v: (a2 ~mod+ l3) ~mod- tl),
+                v33: this.clip8(v: (a3 ~mod+ l3) ~mod- tl))
+    } else if args.mode == 2 {
+        // VE: smoothed vertical prediction.
+        // Each column uses a weighted 3-tap filter of the above pixels.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg3(a: tl, b: a0, c: a1), v01: this.avg3(a: a0, b: a1, c: a2),
+                v02: this.avg3(a: a1, b: a2, c: a3), v03: this.avg3(a: a2, b: a3, c: a4),
+                v10: this.avg3(a: tl, b: a0, c: a1), v11: this.avg3(a: a0, b: a1, c: a2),
+                v12: this.avg3(a: a1, b: a2, c: a3), v13: this.avg3(a: a2, b: a3, c: a4),
+                v20: this.avg3(a: tl, b: a0, c: a1), v21: this.avg3(a: a0, b: a1, c: a2),
+                v22: this.avg3(a: a1, b: a2, c: a3), v23: this.avg3(a: a2, b: a3, c: a4),
+                v30: this.avg3(a: tl, b: a0, c: a1), v31: this.avg3(a: a0, b: a1, c: a2),
+                v32: this.avg3(a: a1, b: a2, c: a3), v33: this.avg3(a: a2, b: a3, c: a4))
+    } else if args.mode == 3 {
+        // HE: smoothed horizontal prediction.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg3(a: tl, b: l0, c: l1), v01: this.avg3(a: tl, b: l0, c: l1),
+                v02: this.avg3(a: tl, b: l0, c: l1), v03: this.avg3(a: tl, b: l0, c: l1),
+                v10: this.avg3(a: l0, b: l1, c: l2), v11: this.avg3(a: l0, b: l1, c: l2),
+                v12: this.avg3(a: l0, b: l1, c: l2), v13: this.avg3(a: l0, b: l1, c: l2),
+                v20: this.avg3(a: l1, b: l2, c: l3), v21: this.avg3(a: l1, b: l2, c: l3),
+                v22: this.avg3(a: l1, b: l2, c: l3), v23: this.avg3(a: l1, b: l2, c: l3),
+                v30: this.avg3(a: l2, b: l3, c: l3), v31: this.avg3(a: l2, b: l3, c: l3),
+                v32: this.avg3(a: l2, b: l3, c: l3), v33: this.avg3(a: l2, b: l3, c: l3))
+    } else if args.mode == 4 {
+        // LD: Left-Down diagonal. Uses top + upper-right pixels.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg3(a: a0, b: a1, c: a2), v01: this.avg3(a: a1, b: a2, c: a3),
+                v02: this.avg3(a: a2, b: a3, c: a4), v03: this.avg3(a: a3, b: a4, c: a5),
+                v10: this.avg3(a: a1, b: a2, c: a3), v11: this.avg3(a: a2, b: a3, c: a4),
+                v12: this.avg3(a: a3, b: a4, c: a5), v13: this.avg3(a: a4, b: a5, c: a6),
+                v20: this.avg3(a: a2, b: a3, c: a4), v21: this.avg3(a: a3, b: a4, c: a5),
+                v22: this.avg3(a: a4, b: a5, c: a6), v23: this.avg3(a: a5, b: a6, c: a7),
+                v30: this.avg3(a: a3, b: a4, c: a5), v31: this.avg3(a: a4, b: a5, c: a6),
+                v32: this.avg3(a: a5, b: a6, c: a7), v33: this.avg3(a: a6, b: a7, c: a7))
+    } else if args.mode == 5 {
+        // RD: Right-Down diagonal.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg3(a: l0, b: tl, c: a0), v01: this.avg3(a: tl, b: a0, c: a1),
+                v02: this.avg3(a: a0, b: a1, c: a2), v03: this.avg3(a: a1, b: a2, c: a3),
+                v10: this.avg3(a: l1, b: l0, c: tl), v11: this.avg3(a: l0, b: tl, c: a0),
+                v12: this.avg3(a: tl, b: a0, c: a1), v13: this.avg3(a: a0, b: a1, c: a2),
+                v20: this.avg3(a: l2, b: l1, c: l0), v21: this.avg3(a: l1, b: l0, c: tl),
+                v22: this.avg3(a: l0, b: tl, c: a0), v23: this.avg3(a: tl, b: a0, c: a1),
+                v30: this.avg3(a: l3, b: l2, c: l1), v31: this.avg3(a: l2, b: l1, c: l0),
+                v32: this.avg3(a: l1, b: l0, c: tl), v33: this.avg3(a: l0, b: tl, c: a0))
+    } else if args.mode == 6 {
+        // VR: Vertical-Right diagonal.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg2(a: tl, b: a0), v01: this.avg2(a: a0, b: a1),
+                v02: this.avg2(a: a1, b: a2), v03: this.avg2(a: a2, b: a3),
+                v10: this.avg3(a: l0, b: tl, c: a0), v11: this.avg3(a: tl, b: a0, c: a1),
+                v12: this.avg3(a: a0, b: a1, c: a2), v13: this.avg3(a: a1, b: a2, c: a3),
+                v20: this.avg3(a: l1, b: l0, c: tl), v21: this.avg2(a: tl, b: a0),
+                v22: this.avg2(a: a0, b: a1), v23: this.avg2(a: a1, b: a2),
+                v30: this.avg3(a: l2, b: l1, c: l0), v31: this.avg3(a: l0, b: tl, c: a0),
+                v32: this.avg3(a: tl, b: a0, c: a1), v33: this.avg3(a: a0, b: a1, c: a2))
+    } else if args.mode == 7 {
+        // VL: Vertical-Left diagonal.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg2(a: a0, b: a1), v01: this.avg2(a: a1, b: a2),
+                v02: this.avg2(a: a2, b: a3), v03: this.avg2(a: a3, b: a4),
+                v10: this.avg3(a: a0, b: a1, c: a2), v11: this.avg3(a: a1, b: a2, c: a3),
+                v12: this.avg3(a: a2, b: a3, c: a4), v13: this.avg3(a: a3, b: a4, c: a5),
+                v20: this.avg2(a: a1, b: a2), v21: this.avg2(a: a2, b: a3),
+                v22: this.avg2(a: a3, b: a4), v23: this.avg3(a: a4, b: a5, c: a6),
+                v30: this.avg3(a: a1, b: a2, c: a3), v31: this.avg3(a: a2, b: a3, c: a4),
+                v32: this.avg3(a: a3, b: a4, c: a5), v33: this.avg3(a: a5, b: a6, c: a7))
+    } else if args.mode == 8 {
+        // HD: Horizontal-Down diagonal.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg2(a: l0, b: tl), v01: this.avg3(a: l0, b: tl, c: a0),
+                v02: this.avg3(a: tl, b: a0, c: a1), v03: this.avg3(a: a0, b: a1, c: a2),
+                v10: this.avg2(a: l1, b: l0), v11: this.avg3(a: l1, b: l0, c: tl),
+                v12: this.avg2(a: l0, b: tl), v13: this.avg3(a: l0, b: tl, c: a0),
+                v20: this.avg2(a: l2, b: l1), v21: this.avg3(a: l2, b: l1, c: l0),
+                v22: this.avg2(a: l1, b: l0), v23: this.avg3(a: l1, b: l0, c: tl),
+                v30: this.avg2(a: l3, b: l2), v31: this.avg3(a: l3, b: l2, c: l1),
+                v32: this.avg2(a: l2, b: l1), v33: this.avg3(a: l2, b: l1, c: l0))
+    } else {
+        // HU: Horizontal-Up diagonal. Uses left pixels only.
+        this.pred4x4_store!(workbuf: args.workbuf, off: y_off,
+                v00: this.avg2(a: l0, b: l1), v01: this.avg3(a: l0, b: l1, c: l2),
+                v02: this.avg2(a: l1, b: l2), v03: this.avg3(a: l1, b: l2, c: l3),
+                v10: this.avg2(a: l1, b: l2), v11: this.avg3(a: l1, b: l2, c: l3),
+                v12: this.avg2(a: l2, b: l3), v13: this.avg3(a: l2, b: l3, c: l3),
+                v20: this.avg2(a: l2, b: l3), v21: this.avg3(a: l2, b: l3, c: l3),
+                v22: (l3 & 0xFF), v23: (l3 & 0xFF),
+                v30: (l3 & 0xFF), v31: (l3 & 0xFF),
+                v32: (l3 & 0xFF), v33: (l3 & 0xFF))
+    }
+}
+
+// pred4x4_store! writes 16 pixel values to a 4x4 block at the given offset.
+// Uses packed u32 writes (4 bytes at a time) for efficiency.
+pri func decoder.pred4x4_store!(workbuf: slice base.u8, off: base.u64,
+        v00: base.u32, v01: base.u32, v02: base.u32, v03: base.u32,
+        v10: base.u32, v11: base.u32, v12: base.u32, v13: base.u32,
+        v20: base.u32, v21: base.u32, v22: base.u32, v23: base.u32,
+        v30: base.u32, v31: base.u32, v32: base.u32, v33: base.u32) {
+    var stride  : base.u64
+    var row_off : base.u64
+    var s       : slice base.u8
+
+    stride = this.y_stride as base.u64
+
+    // Row 0.
+    row_off = args.off
+    if row_off < args.workbuf.length() {
+        s = args.workbuf[row_off ..]
+        if s.length() >= 4 {
+            s.poke_u32le!(a: (args.v00 & 0xFF) | ((args.v01 & 0xFF) << 8) | ((args.v02 & 0xFF) << 16) | ((args.v03 & 0xFF) << 24))
+        }
+    }
+
+    // Row 1.
+    row_off = args.off ~mod+ stride
+    if row_off < args.workbuf.length() {
+        s = args.workbuf[row_off ..]
+        if s.length() >= 4 {
+            s.poke_u32le!(a: (args.v10 & 0xFF) | ((args.v11 & 0xFF) << 8) | ((args.v12 & 0xFF) << 16) | ((args.v13 & 0xFF) << 24))
+        }
+    }
+
+    // Row 2.
+    row_off = args.off ~mod+ (stride ~mod* 2)
+    if row_off < args.workbuf.length() {
+        s = args.workbuf[row_off ..]
+        if s.length() >= 4 {
+            s.poke_u32le!(a: (args.v20 & 0xFF) | ((args.v21 & 0xFF) << 8) | ((args.v22 & 0xFF) << 16) | ((args.v23 & 0xFF) << 24))
+        }
+    }
+
+    // Row 3.
+    row_off = args.off ~mod+ (stride ~mod* 3)
+    if row_off < args.workbuf.length() {
+        s = args.workbuf[row_off ..]
+        if s.length() >= 4 {
+            s.poke_u32le!(a: (args.v30 & 0xFF) | ((args.v31 & 0xFF) << 8) | ((args.v32 & 0xFF) << 16) | ((args.v33 & 0xFF) << 24))
+        }
+    }
+}
+
+// avg2! computes (a + b + 1) / 2 for pixel averaging.
+pri func decoder.avg2(a: base.u32, b: base.u32) base.u32 {
+    return (((args.a ~mod+ args.b) ~mod+ 1) >> 1) & 0xFF
+}
+
+// avg3! computes (a + 2*b + c + 2) / 4 for weighted pixel averaging.
+pri func decoder.avg3(a: base.u32, b: base.u32, c: base.u32) base.u32 {
+    return (((((args.a ~mod+ (args.b ~mod* 2)) ~mod+ args.c) ~mod+ 2)) >> 2) & 0xFF
+}
+
+// clip8 clamps a u32 value to [0, 255]. Values with bit 31 set (negative
+// in two's complement from ~mod- underflow) are clamped to 0.
+pri func decoder.clip8(v: base.u32) base.u32 {
+    if args.v <= 255 {
+        return args.v
+    }
+    if (args.v & 0x8000_0000) <> 0 {
+        return 0
+    }
+    return 255
+}
