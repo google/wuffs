@@ -24,6 +24,9 @@
 // #define WUFFS_MIMICLIB_USE_LODEPNG_INSTEAD_OF_LIBPNG 1
 // #define WUFFS_MIMICLIB_USE_STB_IMAGE_INSTEAD_OF_LIBPNG 1
 
+#include <limits.h>
+#include <stdint.h>
+
 // -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBPNG
 #if defined(WUFFS_MIMICLIB_USE_LIBSPNG_INSTEAD_OF_LIBPNG)
 

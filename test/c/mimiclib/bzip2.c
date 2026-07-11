@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits.h>
+#include <stdint.h>
+
 #include "bzlib.h"
 
 const char*  //

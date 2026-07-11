@@ -23,6 +23,9 @@
 // #define WUFFS_MIMICLIB_USE_LIBDEFLATE_INSTEAD_OF_ZLIB 1
 // #define WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB 1
 
+#include <limits.h>
+#include <stdint.h>
+
 // -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB
 #if defined(WUFFS_MIMICLIB_USE_LIBDEFLATE_INSTEAD_OF_ZLIB)
 #include "libdeflate.h"
