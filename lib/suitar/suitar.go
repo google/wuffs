@@ -113,6 +113,8 @@ func IsValidHeaderName(name string) bool {
 		(name[len(name)-1] != '/') &&
 		!strings.HasPrefix(name, "./") &&
 		!strings.HasPrefix(name, "../") &&
+		!strings.HasSuffix(name, "/.") &&
+		!strings.HasSuffix(name, "/..") &&
 		!strings.Contains(name, "//") &&
 		!strings.Contains(name, "/./") &&
 		!strings.Contains(name, "/../") &&
@@ -208,9 +210,9 @@ func (b *block) isValidHeader(which int) bool {
 	}
 
 	// Check the mode bits.
-	if (b[0x0068] == '6') && (b[0x0069] == '4') && (b[0x006A] == '4') {
+	if (b[0x068] == '6') && (b[0x069] == '4') && (b[0x06A] == '4') {
 		// No-op.
-	} else if (b[0x0068] == '7') && (b[0x0069] == '5') && (b[0x006A] == '5') && (which == 1) {
+	} else if (b[0x068] == '7') && (b[0x069] == '5') && (b[0x06A] == '5') && (which == 1) {
 		// No-op.
 	} else {
 		return false

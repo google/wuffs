@@ -86,7 +86,8 @@ These rules apply to both file names and directory names.
 - Names must not contain the `'\x7F'` ASCII DEL byte.
 - Names must be no longer than 4095 bytes, excluding a trailing NUL.
 - Names must not be `""`, `"."` or `".."`.
-- Names must not start or end with `"/"`, `"./"` or `"../"`.
+- Names must not start with `"/"`, `"./"` or `"../"`.
+- Names must not end with `"/"`, `"/."` or `"/.."`.
 - Names must not contain `"//"`, `"/./"` or `"/../"` as substrings.
 
 For example, when converting from ZIP (with Japanese file names) to SUITAR, it
