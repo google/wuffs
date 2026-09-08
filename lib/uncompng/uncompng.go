@@ -764,13 +764,12 @@ func (e *AnimationEncoder) EncodeFrame(
 		fType |= frameTypeBitLastFrame
 	}
 
-	ej := e.encodeFrameHeader(w, delayNumerator, delayDenominator)
+	ej := e.encodeFrameHeader(delayNumerator, delayDenominator)
 	return e.enc.encodeFramePayload(
 		w, fType, &e.seqNum, e.depth, e.colorType, int(e.width), int(e.height), pix, stride, ej)
 }
 
 func (e *AnimationEncoder) encodeFrameHeader(
-	w io.Writer,
 	delayNumerator uint16,
 	delayDenominator uint16) int {
 

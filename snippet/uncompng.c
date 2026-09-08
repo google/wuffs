@@ -62,8 +62,9 @@
 // also return its own negative error codes, which are passed on.
 #define UNCOMPNG__RESULT__OK 0
 #define UNCOMPNG__RESULT__INVALID_ARGUMENT 1
-#define UNCOMPNG__RESULT__UNSUPPORTED_IMAGE_SIZE 2
-#define UNCOMPNG__RESULT__CONCURRENT_CALL 3
+#define UNCOMPNG__RESULT__INVALID_CALL_SEQUENCE 2
+#define UNCOMPNG__RESULT__UNSUPPORTED_IMAGE_SIZE 3
+#define UNCOMPNG__RESULT__CONCURRENT_CALL 4
 
 // UNCOMPNG__DATA_LEN__INCL_MAX is the inclusive maximum value of write_func's
 // data_len argument. In hexadecimal, it equals 0x10000u.
@@ -100,6 +101,28 @@ uncompng__encode(int (*write_func)(void* context,
                  const uint8_t* pixel_ptr,
                  size_t pixel_len,
                  size_t stride);
+
+UNCOMPNG__MAYBE_STATIC int  //
+uncompng__encode_apng_header(int (*write_func)(void* context,
+                                               const uint8_t* data_ptr,
+                                               size_t data_len),
+                             void* context,
+                             uint32_t pixel_format,
+                             uint32_t width,
+                             uint32_t height,
+                             uint32_t num_frames,
+                             uint32_t num_plays);
+
+UNCOMPNG__MAYBE_STATIC int  //
+uncompng__encode_apng_frame(int (*write_func)(void* context,
+                                              const uint8_t* data_ptr,
+                                              size_t data_len),
+                            void* context,
+                            uint16_t delay_numerator,
+                            uint16_t delay_denominator,
+                            const uint8_t* pixel_ptr,
+                            size_t pixel_len,
+                            size_t stride);
 
 // --------
 
@@ -171,10 +194,109 @@ uncompng__private_impl_crc32_ieee(const uint8_t* ptr, size_t len) {
 
 static uint8_t uncompng__private_impl_buffer[65536];
 
-static void  //
-uncompng__private_impl_initialize_buffer(uint32_t width,
-                                         uint32_t height,
-                                         uint32_t pixel_format) {
+static struct uncompng__private_impl_apng_encoder_state_struct {
+  uint32_t pixel_format;
+  uint32_t width;
+  uint32_t height;
+  uint32_t seq_num;
+  uint32_t num_frames;
+  uint32_t cur_frame;
+} uncompng__private_impl_apng_encoder_state;
+
+static int  //
+uncompng__private_impl_encode_frame_header(uint32_t delay_numerator,
+                                           uint32_t delay_denominator) {
+  uncompng__private_impl_buffer[0x0000] = 0;
+  uncompng__private_impl_buffer[0x0001] = 0;
+  uncompng__private_impl_buffer[0x0002] = 0;
+  uncompng__private_impl_buffer[0x0003] = 0x1A;
+  uncompng__private_impl_buffer[0x0004] = 'f';
+  uncompng__private_impl_buffer[0x0005] = 'c';
+  uncompng__private_impl_buffer[0x0006] = 'T';
+  uncompng__private_impl_buffer[0x0007] = 'L';
+  uncompng__private_impl_buffer[0x0008] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.seq_num >> 24);
+  uncompng__private_impl_buffer[0x0009] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.seq_num >> 16);
+  uncompng__private_impl_buffer[0x000A] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.seq_num >> 8);
+  uncompng__private_impl_buffer[0x000B] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.seq_num >> 0);
+  uncompng__private_impl_buffer[0x000C] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.width >> 24);
+  uncompng__private_impl_buffer[0x000D] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.width >> 16);
+  uncompng__private_impl_buffer[0x000E] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.width >> 8);
+  uncompng__private_impl_buffer[0x000F] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.width >> 0);
+  uncompng__private_impl_buffer[0x0010] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.height >> 24);
+  uncompng__private_impl_buffer[0x0011] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.height >> 16);
+  uncompng__private_impl_buffer[0x0012] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.height >> 8);
+  uncompng__private_impl_buffer[0x0013] =
+      (uint8_t)(uncompng__private_impl_apng_encoder_state.height >> 0);
+  uncompng__private_impl_buffer[0x0014] = 0;
+  uncompng__private_impl_buffer[0x0015] = 0;
+  uncompng__private_impl_buffer[0x0016] = 0;
+  uncompng__private_impl_buffer[0x0017] = 0;
+  uncompng__private_impl_buffer[0x0018] = 0;
+  uncompng__private_impl_buffer[0x0019] = 0;
+  uncompng__private_impl_buffer[0x001A] = 0;
+  uncompng__private_impl_buffer[0x001B] = 0;
+  uncompng__private_impl_buffer[0x001C] = (uint8_t)(delay_numerator >> 8);
+  uncompng__private_impl_buffer[0x001D] = (uint8_t)(delay_numerator >> 0);
+  uncompng__private_impl_buffer[0x001E] = (uint8_t)(delay_denominator >> 8);
+  uncompng__private_impl_buffer[0x001F] = (uint8_t)(delay_denominator >> 0);
+  uncompng__private_impl_buffer[0x0020] = 0;
+  uncompng__private_impl_buffer[0x0021] = 0;
+  uint32_t fctl_crc32 = uncompng__private_impl_crc32_ieee(
+      uncompng__private_impl_buffer + 0x0004, 0x0022 - 0x0004);
+  uncompng__private_impl_buffer[0x0022] = (uint8_t)(fctl_crc32 >> 24);
+  uncompng__private_impl_buffer[0x0023] = (uint8_t)(fctl_crc32 >> 16);
+  uncompng__private_impl_buffer[0x0024] = (uint8_t)(fctl_crc32 >> 8);
+  uncompng__private_impl_buffer[0x0025] = (uint8_t)(fctl_crc32 >> 0);
+
+  int use_idat = uncompng__private_impl_apng_encoder_state.seq_num ? 0 : 1;
+  uncompng__private_impl_apng_encoder_state.seq_num++;
+
+  uncompng__private_impl_buffer[0x0026] = 0;
+  uncompng__private_impl_buffer[0x0027] = 0;
+  uncompng__private_impl_buffer[0x0028] = 0;
+  uncompng__private_impl_buffer[0x0029] = 0;
+  uncompng__private_impl_buffer[0x002A] = "fI"[use_idat];
+  uncompng__private_impl_buffer[0x002B] = "dD"[use_idat];
+  uncompng__private_impl_buffer[0x002C] = 'A';
+  uncompng__private_impl_buffer[0x002D] = 'T';
+  int ej = 0x002E;
+
+  if (!use_idat) {
+    uint32_t seq_num = uncompng__private_impl_apng_encoder_state.seq_num++;
+    uncompng__private_impl_buffer[0x002E] = (uint8_t)(seq_num >> 24);
+    uncompng__private_impl_buffer[0x002F] = (uint8_t)(seq_num >> 16);
+    uncompng__private_impl_buffer[0x0030] = (uint8_t)(seq_num >> 8);
+    uncompng__private_impl_buffer[0x0031] = (uint8_t)(seq_num >> 0);
+    ej = 0x0032;
+  }
+
+  uncompng__private_impl_buffer[ej + 0x00] = 0x78;
+  uncompng__private_impl_buffer[ej + 0x01] = 0x01;
+  uncompng__private_impl_buffer[ej + 0x02] = 0;
+  uncompng__private_impl_buffer[ej + 0x03] = 0;
+  uncompng__private_impl_buffer[ej + 0x04] = 0;
+  uncompng__private_impl_buffer[ej + 0x05] = 0;
+  uncompng__private_impl_buffer[ej + 0x06] = 0;
+  return ej + 0x07;
+}
+
+static int  //
+uncompng__private_impl_encode_image_header(uint32_t pixel_format,
+                                           uint32_t width,
+                                           uint32_t height,
+                                           uint32_t num_frames,
+                                           uint32_t num_plays) {
   uncompng__private_impl_buffer[0x0000] = 0x89;
   uncompng__private_impl_buffer[0x0001] = 'P';
   uncompng__private_impl_buffer[0x0002] = 'N';
@@ -230,7 +352,7 @@ uncompng__private_impl_initialize_buffer(uint32_t width,
       color_type = 2;
       break;
     default:
-      return;
+      return 0;
   }
   uncompng__private_impl_buffer[0x0018] = depth;
   uncompng__private_impl_buffer[0x0019] = color_type;
@@ -244,6 +366,32 @@ uncompng__private_impl_initialize_buffer(uint32_t width,
   uncompng__private_impl_buffer[0x001E] = (uint8_t)(ihdr_crc32 >> 16);
   uncompng__private_impl_buffer[0x001F] = (uint8_t)(ihdr_crc32 >> 8);
   uncompng__private_impl_buffer[0x0020] = (uint8_t)(ihdr_crc32 >> 0);
+
+  if (num_frames > 0) {
+    uncompng__private_impl_buffer[0x0021] = 0;
+    uncompng__private_impl_buffer[0x0022] = 0;
+    uncompng__private_impl_buffer[0x0023] = 0;
+    uncompng__private_impl_buffer[0x0024] = 0x08;
+    uncompng__private_impl_buffer[0x0025] = 'a';
+    uncompng__private_impl_buffer[0x0026] = 'c';
+    uncompng__private_impl_buffer[0x0027] = 'T';
+    uncompng__private_impl_buffer[0x0028] = 'L';
+    uncompng__private_impl_buffer[0x0029] = (uint8_t)(num_frames >> 24);
+    uncompng__private_impl_buffer[0x002A] = (uint8_t)(num_frames >> 16);
+    uncompng__private_impl_buffer[0x002B] = (uint8_t)(num_frames >> 8);
+    uncompng__private_impl_buffer[0x002C] = (uint8_t)(num_frames >> 0);
+    uncompng__private_impl_buffer[0x002D] = (uint8_t)(num_plays >> 24);
+    uncompng__private_impl_buffer[0x002E] = (uint8_t)(num_plays >> 16);
+    uncompng__private_impl_buffer[0x002F] = (uint8_t)(num_plays >> 8);
+    uncompng__private_impl_buffer[0x0030] = (uint8_t)(num_plays >> 0);
+    uint32_t actl_crc32 = uncompng__private_impl_crc32_ieee(
+        uncompng__private_impl_buffer + 0x0025, 0x0031 - 0x0025);
+    uncompng__private_impl_buffer[0x0031] = (uint8_t)(actl_crc32 >> 24);
+    uncompng__private_impl_buffer[0x0032] = (uint8_t)(actl_crc32 >> 16);
+    uncompng__private_impl_buffer[0x0033] = (uint8_t)(actl_crc32 >> 8);
+    uncompng__private_impl_buffer[0x0034] = (uint8_t)(actl_crc32 >> 0);
+    return 0x0035;
+  }
 
   uncompng__private_impl_buffer[0x0021] = 0;
   uncompng__private_impl_buffer[0x0022] = 0;
@@ -260,10 +408,7 @@ uncompng__private_impl_initialize_buffer(uint32_t width,
   uncompng__private_impl_buffer[0x002D] = 0;
   uncompng__private_impl_buffer[0x002E] = 0;
   uncompng__private_impl_buffer[0x002F] = 0;
-  uncompng__private_impl_buffer[0xFFFC] = 0;
-  uncompng__private_impl_buffer[0xFFFD] = 0;
-  uncompng__private_impl_buffer[0xFFFE] = 0;
-  uncompng__private_impl_buffer[0xFFFF] = 1;
+  return 0x0030;
 }
 
 static void  //
@@ -295,39 +440,41 @@ uncompng__private_impl_flush(int (*write_func)(void* context,
                                                const uint8_t* data_ptr,
                                                size_t data_len),
                              void* context,
-                             int ej,
-                             bool final) {
-  static const int ei_first = 0x0030;
-  static const int ei_later = 0x000D;
-
-  int crc32_start = 0;
-  int ei = 0;
-  if (uncompng__private_impl_buffer[0x0004] == 0x0D) {
-    uint32_t idat_chunk_len = ej - 0x0029;
-    if (final) {
-      idat_chunk_len += 4;
-    }
-    uncompng__private_impl_buffer[0x0021] = (uint8_t)(idat_chunk_len >> 24);
-    uncompng__private_impl_buffer[0x0022] = (uint8_t)(idat_chunk_len >> 16);
-    uncompng__private_impl_buffer[0x0023] = (uint8_t)(idat_chunk_len >> 8);
-    uncompng__private_impl_buffer[0x0024] = (uint8_t)(idat_chunk_len >> 0);
-    crc32_start = 0x0025;
-    ei = ei_first;
-  } else {
-    uint32_t idat_chunk_len = ej - 0x0008;
-    if (final) {
-      idat_chunk_len += 4;
-    }
-    uncompng__private_impl_buffer[0x0000] = (uint8_t)(idat_chunk_len >> 24);
-    uncompng__private_impl_buffer[0x0001] = (uint8_t)(idat_chunk_len >> 16);
-    uncompng__private_impl_buffer[0x0002] = (uint8_t)(idat_chunk_len >> 8);
-    uncompng__private_impl_buffer[0x0003] = (uint8_t)(idat_chunk_len >> 0);
-    crc32_start = 0x0004;
-    ei = ei_later;
+                             uint32_t f_type,
+                             int* ptr_to_ej,
+                             bool final_idat_of_frame) {
+  int idat_chunk_start = 0;
+  if (uncompng__private_impl_buffer[0x0007] == 0x0A) {
+    idat_chunk_start = 0x0021;
+  } else if (uncompng__private_impl_buffer[0x0007] == 0x4C) {
+    idat_chunk_start = 0x0026;
   }
 
+  int ei = idat_chunk_start + 13;
+  if (uncompng__private_impl_buffer[0x0007] != 0x54) {
+    ei += 2;
+  }
+  if ((f_type & 1) == 0) {
+    ei += 4;
+  }
+
+  int ej = *ptr_to_ej;
+  int idat_chunk_len = ej - (idat_chunk_start + 8);
+  if (final_idat_of_frame) {
+    idat_chunk_len += 4;
+  }
+  uncompng__private_impl_buffer[idat_chunk_start + 0] =
+      (uint8_t)(idat_chunk_len >> 24);
+  uncompng__private_impl_buffer[idat_chunk_start + 1] =
+      (uint8_t)(idat_chunk_len >> 16);
+  uncompng__private_impl_buffer[idat_chunk_start + 2] =
+      (uint8_t)(idat_chunk_len >> 8);
+  uncompng__private_impl_buffer[idat_chunk_start + 3] =
+      (uint8_t)(idat_chunk_len >> 0);
+
   uint32_t deflate_block_len = (uint32_t)(ej - ei);
-  uncompng__private_impl_buffer[ei - 5] = final ? 1 : 0;
+
+  uncompng__private_impl_buffer[ei - 5] = final_idat_of_frame ? 1 : 0;
   uncompng__private_impl_buffer[ei - 4] =
       0x00u ^ (uint8_t)(deflate_block_len >> 0);
   uncompng__private_impl_buffer[ei - 3] =
@@ -338,7 +485,7 @@ uncompng__private_impl_flush(int (*write_func)(void* context,
       0xFFu ^ (uint8_t)(deflate_block_len >> 8);
 
   uncompng__private_impl_update_adler32(ei, ej);
-  if (final) {
+  if (final_idat_of_frame) {
     uncompng__private_impl_buffer[ej + 0] =
         uncompng__private_impl_buffer[0xFFFC];
     uncompng__private_impl_buffer[ej + 1] =
@@ -350,6 +497,7 @@ uncompng__private_impl_flush(int (*write_func)(void* context,
     ej += 4;
   }
 
+  int crc32_start = idat_chunk_start + 4;
   uint32_t idat_crc32 = uncompng__private_impl_crc32_ieee(
       uncompng__private_impl_buffer + crc32_start, ej - crc32_start);
   uncompng__private_impl_buffer[ej + 0] = (uint8_t)(idat_crc32 >> 24);
@@ -358,17 +506,33 @@ uncompng__private_impl_flush(int (*write_func)(void* context,
   uncompng__private_impl_buffer[ej + 3] = (uint8_t)(idat_crc32 >> 0);
   ej += 4;
 
-  if (!final) {
+  if (!final_idat_of_frame) {
     int err0 =
         (*write_func)(context, uncompng__private_impl_buffer, (size_t)ej);
     if (err0 != 0) {
       return err0;
     }
-    uncompng__private_impl_buffer[0x0004] = 'I';
-    uncompng__private_impl_buffer[0x0005] = 'D';
+    int t = f_type & 1;
+    uncompng__private_impl_buffer[0x0004] = "fI"[t];
+    uncompng__private_impl_buffer[0x0005] = "dD"[t];
     uncompng__private_impl_buffer[0x0006] = 'A';
     uncompng__private_impl_buffer[0x0007] = 'T';
+    if (t) {
+      *ptr_to_ej = 0x000D + 0;
+      return 0;
+    }
+
+    uint32_t seq_num = uncompng__private_impl_apng_encoder_state.seq_num++;
+    uncompng__private_impl_buffer[0x0008] = (uint8_t)(seq_num >> 24);
+    uncompng__private_impl_buffer[0x0009] = (uint8_t)(seq_num >> 16);
+    uncompng__private_impl_buffer[0x000A] = (uint8_t)(seq_num >> 8);
+    uncompng__private_impl_buffer[0x000B] = (uint8_t)(seq_num >> 0);
+    *ptr_to_ej = 0x000D + 4;
     return 0;
+  }
+
+  if ((f_type & 2) == 0) {
+    return (*write_func)(context, uncompng__private_impl_buffer, (size_t)ej);
   }
 
   static const uint8_t iend_chunk[] = {
@@ -398,31 +562,31 @@ uncompng__private_impl_flush(int (*write_func)(void* context,
 }
 
 static int  //
-uncompng__private_impl_do_encode(int (*write_func)(void* context,
-                                                   const uint8_t* data_ptr,
-                                                   size_t data_len),
-                                 void* context,
-                                 const uint8_t* pixel_ptr,
-                                 size_t pixel_len,
-                                 uint32_t width,
-                                 uint32_t height,
-                                 size_t stride,
-                                 uint32_t pixel_format) {
-  static const int ei_first = 0x0030;
-  static const int ei_later = 0x000D;
+uncompng__private_impl_encode_frame_payload(
+    int (*write_func)(void* context, const uint8_t* data_ptr, size_t data_len),
+    void* context,
+    uint32_t f_type,
+    uint32_t pixel_format,
+    uint32_t width,
+    uint32_t height,
+    const uint8_t* pixel_ptr,
+    size_t pixel_len,
+    size_t stride,
+    int ej) {
+  uncompng__private_impl_buffer[0xFFFC] = 0;
+  uncompng__private_impl_buffer[0xFFFD] = 0;
+  uncompng__private_impl_buffer[0xFFFE] = 0;
+  uncompng__private_impl_buffer[0xFFFF] = 1;
+
   static const int ej_max = 0xFFF8;
-
-  uncompng__private_impl_initialize_buffer(width, height, pixel_format);
-
-  int ej = ei_first;
 
   for (uint32_t y = 0; y < height; y++) {
     if ((ej + 1) > ej_max) {
-      int err = uncompng__private_impl_flush(write_func, context, ej, false);
+      int err =
+          uncompng__private_impl_flush(write_func, context, f_type, &ej, false);
       if (err != 0) {
         return err;
       }
-      ej = ei_later;
     }
     uncompng__private_impl_buffer[ej++] = 0;
 
@@ -432,12 +596,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__Y:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 1) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[0];
           row += 1;
@@ -447,12 +610,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__Y_16LE:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 2) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[1];
           uncompng__private_impl_buffer[ej++] = row[0];
@@ -463,12 +625,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__YXXX:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 1) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[0];
           row += 4;
@@ -478,12 +639,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__YXXX_4X16LE:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 2) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[1];
           uncompng__private_impl_buffer[ej++] = row[0];
@@ -494,12 +654,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 4) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[2];
           uncompng__private_impl_buffer[ej++] = row[1];
@@ -512,12 +671,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 8) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[5];
           uncompng__private_impl_buffer[ej++] = row[4];
@@ -534,12 +692,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__BGRX:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 3) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[2];
           uncompng__private_impl_buffer[ej++] = row[1];
@@ -551,12 +708,11 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
       case UNCOMPNG__PIXEL_FORMAT__BGRX_4X16LE:
         for (uint32_t x = 0; x < width; x++) {
           if ((ej + 6) > ej_max) {
-            int err =
-                uncompng__private_impl_flush(write_func, context, ej, false);
+            int err = uncompng__private_impl_flush(write_func, context, f_type,
+                                                   &ej, false);
             if (err != 0) {
               return err;
             }
-            ej = ei_later;
           }
           uncompng__private_impl_buffer[ej++] = row[5];
           uncompng__private_impl_buffer[ej++] = row[4];
@@ -573,21 +729,20 @@ uncompng__private_impl_do_encode(int (*write_func)(void* context,
     }
   }
 
-  return uncompng__private_impl_flush(write_func, context, ej, true);
+  return uncompng__private_impl_flush(write_func, context, f_type, &ej, true);
 }
 
-UNCOMPNG__MAYBE_STATIC int  //
-uncompng__encode(int (*write_func)(void* context,
-                                   const uint8_t* data_ptr,
-                                   size_t data_len),
-                 void* context,
-                 uint32_t pixel_format,
-                 uint32_t width,
-                 uint32_t height,
-                 const uint8_t* pixel_ptr,
-                 size_t pixel_len,
-                 size_t stride) {
-  if (!write_func) {
+static int  //
+uncompng__private_impl_check_arguments(
+    int (*write_func)(void* context, const uint8_t* data_ptr, size_t data_len),
+    uint32_t pixel_format,
+    uint32_t width,
+    uint32_t height,
+    uint32_t num_frames,
+    bool extras,
+    size_t pixel_len,
+    size_t stride) {
+  if (!write_func || !width || !height || !num_frames) {
     return UNCOMPNG__RESULT__INVALID_ARGUMENT;
   }
   uint64_t bytes_per_pixel;
@@ -615,7 +770,7 @@ uncompng__encode(int (*write_func)(void* context,
     return UNCOMPNG__RESULT__UNSUPPORTED_IMAGE_SIZE;
   }
 
-  if (height > 0u) {
+  if (extras && (height > 0u)) {
     // This calculation is similar to the one used in
     // wuffs_base__table__flattened_length.
     uint64_t n = ((uint64_t)stride * (uint64_t)(height - 1u)) +
@@ -623,6 +778,26 @@ uncompng__encode(int (*write_func)(void* context,
     if (pixel_len < n) {
       return UNCOMPNG__RESULT__INVALID_ARGUMENT;
     }
+  }
+
+  return 0;
+}
+
+UNCOMPNG__MAYBE_STATIC int  //
+uncompng__encode(int (*write_func)(void* context,
+                                   const uint8_t* data_ptr,
+                                   size_t data_len),
+                 void* context,
+                 uint32_t pixel_format,
+                 uint32_t width,
+                 uint32_t height,
+                 const uint8_t* pixel_ptr,
+                 size_t pixel_len,
+                 size_t stride) {
+  int check = uncompng__private_impl_check_arguments(
+      write_func, pixel_format, width, height, 1, true, pixel_len, stride);
+  if (check != 0) {
+    return check;
   }
 
   // uncompng__private_impl_buffer is a global variable in this C code, unlike
@@ -633,11 +808,121 @@ uncompng__encode(int (*write_func)(void* context,
     return UNCOMPNG__RESULT__CONCURRENT_CALL;
   }
   concurrent = true;
-  int ret = uncompng__private_impl_do_encode(write_func, context, pixel_ptr,
-                                             pixel_len, width, height, stride,
-                                             pixel_format);
+
+  int ej = uncompng__private_impl_encode_image_header(pixel_format, width,
+                                                      height, 0, 0);
+
+  int ret = uncompng__private_impl_encode_frame_payload(  //
+      write_func, context, 3,                             //
+      pixel_format, width, height,                        //
+      pixel_ptr, pixel_len, stride, ej);
+
   concurrent = false;
   return ret;
+}
+
+UNCOMPNG__MAYBE_STATIC int  //
+uncompng__encode_apng_header(int (*write_func)(void* context,
+                                               const uint8_t* data_ptr,
+                                               size_t data_len),
+                             void* context,
+                             uint32_t pixel_format,
+                             uint32_t width,
+                             uint32_t height,
+                             uint32_t num_frames,
+                             uint32_t num_plays) {
+  int check = uncompng__private_impl_check_arguments(
+      write_func, pixel_format, width, height, num_frames, false, 0, 0);
+  if (check != 0) {
+    return check;
+  }
+
+  static volatile bool concurrent = false;
+  if (concurrent) {
+    return UNCOMPNG__RESULT__CONCURRENT_CALL;
+  }
+  concurrent = true;
+
+  uncompng__private_impl_apng_encoder_state.pixel_format = pixel_format;
+  uncompng__private_impl_apng_encoder_state.width = width;
+  uncompng__private_impl_apng_encoder_state.height = height;
+  uncompng__private_impl_apng_encoder_state.seq_num = 0;
+  uncompng__private_impl_apng_encoder_state.num_frames = num_frames;
+  uncompng__private_impl_apng_encoder_state.cur_frame = 0;
+
+  int ej = uncompng__private_impl_encode_image_header(
+      pixel_format, width, height, num_frames, num_plays);
+
+  int ret = (*write_func)(context, uncompng__private_impl_buffer, (size_t)ej);
+
+  concurrent = false;
+  return 0;
+}
+
+UNCOMPNG__MAYBE_STATIC int  //
+uncompng__encode_apng_frame(int (*write_func)(void* context,
+                                              const uint8_t* data_ptr,
+                                              size_t data_len),
+                            void* context,
+                            uint16_t delay_numerator,
+                            uint16_t delay_denominator,
+                            const uint8_t* pixel_ptr,
+                            size_t pixel_len,
+                            size_t stride) {
+  if (uncompng__private_impl_apng_encoder_state.num_frames == 0) {
+    return UNCOMPNG__RESULT__INVALID_CALL_SEQUENCE;
+  } else if (uncompng__private_impl_apng_encoder_state.seq_num >= 0x80000000u) {
+    return UNCOMPNG__RESULT__UNSUPPORTED_IMAGE_SIZE;
+  }
+  int check = uncompng__private_impl_check_arguments(          //
+      write_func,                                              //
+      uncompng__private_impl_apng_encoder_state.pixel_format,  //
+      uncompng__private_impl_apng_encoder_state.width,         //
+      uncompng__private_impl_apng_encoder_state.height,        //
+      uncompng__private_impl_apng_encoder_state.num_frames,    //
+      true, pixel_len, stride);
+  if (check != 0) {
+    return check;
+  }
+
+  static volatile bool concurrent = false;
+  if (concurrent) {
+    return UNCOMPNG__RESULT__CONCURRENT_CALL;
+  }
+  concurrent = true;
+
+  uint32_t f_type = 4;
+  if (uncompng__private_impl_apng_encoder_state.cur_frame == 0) {
+    f_type |= 1;
+  }
+  uncompng__private_impl_apng_encoder_state.cur_frame++;
+  if (uncompng__private_impl_apng_encoder_state.cur_frame ==
+      uncompng__private_impl_apng_encoder_state.num_frames) {
+    f_type |= 2;
+  }
+
+  int ej = uncompng__private_impl_encode_frame_header(delay_numerator,
+                                                      delay_denominator);
+
+  int ret = uncompng__private_impl_encode_frame_payload(       //
+      write_func, context, f_type,                             //
+      uncompng__private_impl_apng_encoder_state.pixel_format,  //
+      uncompng__private_impl_apng_encoder_state.width,         //
+      uncompng__private_impl_apng_encoder_state.height,        //
+      pixel_ptr, pixel_len, stride, ej);
+
+  if (ret || (uncompng__private_impl_apng_encoder_state.num_frames ==
+              uncompng__private_impl_apng_encoder_state.cur_frame)) {
+    uncompng__private_impl_apng_encoder_state.pixel_format = 0;
+    uncompng__private_impl_apng_encoder_state.width = 0;
+    uncompng__private_impl_apng_encoder_state.height = 0;
+    uncompng__private_impl_apng_encoder_state.seq_num = 0;
+    uncompng__private_impl_apng_encoder_state.num_frames = 0;
+    uncompng__private_impl_apng_encoder_state.cur_frame = 0;
+  }
+
+  concurrent = false;
+  return 0;
 }
 
 #endif  // UNCOMPNG_IMPLEMENTATION

@@ -255,6 +255,17 @@ struct {
   bool output_nia_or_crc32_digest;  // Implicitly set.
   bool output_nie;
   bool output_uncompressed_png;
+
+  // There is no "bool output_uncompressed_apng" option. At the file format
+  // level, writing an Animated PNG requires knowing the total number of frames
+  // very early in the output (to write in the acTL chunk). In contrast,
+  // convert-to-nia can convert from image formats (such as GIF) that do not
+  // have an explicit "number of frames" record, only an implicit one (like
+  // NIA), calculated by parsing every frame. But convert-to-nia also does not
+  // assume that its input or output is rewindable. It is designed to operate
+  // under a SECCOMP_MODE_STRICT sandbox in O(1) memory, where it only reads
+  // its input or write its output forward, as non-seekable streams.
+
 } g_flags = {0};
 
 const char*  //
