@@ -22,7 +22,7 @@ typedef struct wuffs_base__io_buffer_meta__struct {
 } wuffs_base__io_buffer_meta;
 
 // wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length) plus
-// additional metadata.
+// additional metadata. It is a linear buffer, not a circular buffer.
 //
 // A value with all fields zero is a valid, empty buffer.
 typedef struct wuffs_base__io_buffer__struct {
