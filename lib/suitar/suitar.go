@@ -457,6 +457,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 			w.err = err
 			break
 		}
+		w.bIndex = 0
 	}
 
 	if tooMuch && (w.err == nil) {
