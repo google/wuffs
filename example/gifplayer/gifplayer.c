@@ -293,7 +293,7 @@ print_color_art(wuffs_base__pixel_buffer* pb) {
 // ----
 
 const char*  //
-try_allocate(wuffs_gif__decoder* dec) {
+try_allocate(wuffs_base__range_ii_u64 workbuf_len) {
   uint32_t width = wuffs_base__pixel_config__width(&g_ic.pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&g_ic.pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
@@ -312,13 +312,10 @@ try_allocate(wuffs_gif__decoder* dec) {
     return "could not allocate prev-dst buffer";
   }
 
-  wuffs_base__range_ii_u64 r = wuffs_gif__decoder__workbuf_len(dec);
-  if (wuffs_base__range_ii_u64__is_empty(&r)) {
+  if (wuffs_base__range_ii_u64__is_empty(&workbuf_len)) {
     return "indeterminate work buffer length";
-  }
-  uint64_t workbuf_len_max_incl = r.max_incl;
-  if (workbuf_len_max_incl > 0) {
-    g_workbuf = wuffs_base__malloc_slice_u8(malloc, workbuf_len_max_incl);
+  } else if (workbuf_len.max_incl > 0) {
+    g_workbuf = wuffs_base__malloc_slice_u8(malloc, workbuf_len.max_incl);
     if (!g_workbuf.ptr) {
       return "could not allocate work buffer";
     }
@@ -340,8 +337,8 @@ try_allocate(wuffs_gif__decoder* dec) {
 }
 
 const char*  //
-allocate(wuffs_gif__decoder* dec) {
-  const char* status_msg = try_allocate(dec);
+allocate(wuffs_base__range_ii_u64 workbuf_len) {
+  const char* status_msg = try_allocate(workbuf_len);
   if (status_msg) {
     free(g_printbuf.ptr);
     g_printbuf = wuffs_base__empty_slice_u8();
@@ -354,6 +351,131 @@ allocate(wuffs_gif__decoder* dec) {
     g_dst_len = 0;
   }
   return status_msg;
+}
+
+const char*  //
+set_up_before_first_play(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
+  wuffs_base__status dic_status =
+      wuffs_gif__decoder__decode_image_config(dec, &g_ic, src);
+  if (!wuffs_base__status__is_ok(&dic_status)) {
+    return wuffs_base__status__message(&dic_status);
+  } else if (!wuffs_base__image_config__is_valid(&g_ic)) {
+    return "invalid image configuration";
+  }
+  uint32_t width = wuffs_base__pixel_config__width(&g_ic.pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&g_ic.pixcfg);
+  if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
+    return "image dimensions are too large";
+  }
+
+  // Override the source's indexed pixel format to be non-indexed.
+  wuffs_base__pixel_config__set(
+      &g_ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
+
+  TRY(allocate(wuffs_gif__decoder__workbuf_len(dec)));
+  wuffs_base__status sfs0_status = wuffs_base__pixel_buffer__set_from_slice(
+      &g_pb, &g_ic.pixcfg,
+      wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
+  if (!wuffs_base__status__is_ok(&sfs0_status)) {
+    return wuffs_base__status__message(&sfs0_status);
+  }
+
+  return NULL;
+}
+
+const char*  //
+play_one_frame(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
+  wuffs_base__frame_config fc = {0};
+  wuffs_base__status dfc_status =
+      wuffs_gif__decoder__decode_frame_config(dec, &fc, src);
+  if (!wuffs_base__status__is_ok(&dfc_status)) {
+    if (dfc_status.repr == wuffs_base__note__end_of_data) {
+      return wuffs_base__note__end_of_data;
+    }
+    return wuffs_base__status__message(&dfc_status);
+  }
+
+  if (wuffs_base__frame_config__index(&fc) == 0) {
+    wuffs_base__color_u32_argb_premul background_color =
+        wuffs_base__frame_config__background_color(&fc);
+    size_t n = g_dst_len / sizeof(wuffs_base__color_u32_argb_premul);
+    uint8_t* p = g_curr_dst_buffer;
+    for (size_t i = 0; i < n; i++) {
+      wuffs_base__poke_u32le__no_bounds_check(p, background_color);
+      p += sizeof(wuffs_base__color_u32_argb_premul);
+    }
+  }
+
+  switch (wuffs_base__frame_config__disposal(&fc)) {
+    case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
+      memcpy(g_prev_dst_buffer, g_curr_dst_buffer, g_dst_len);
+      break;
+    }
+  }
+
+  wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
+      dec, &g_pb, src,
+      wuffs_base__frame_config__overwrite_instead_of_blend(&fc)
+          ? WUFFS_BASE__PIXEL_BLEND__SRC
+          : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
+      g_workbuf, NULL);
+  if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
+    return wuffs_base__note__end_of_data;
+  }
+
+  size_t n = g_flags.color ? print_color_art(&g_pb) : print_ascii_art(&g_pb);
+
+  switch (wuffs_base__frame_config__disposal(&fc)) {
+    case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
+      restore_background(&g_pb, wuffs_base__frame_config__bounds(&fc),
+                         wuffs_base__frame_config__background_color(&fc));
+      break;
+    }
+    case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
+      uint8_t* swap = g_curr_dst_buffer;
+      g_curr_dst_buffer = g_prev_dst_buffer;
+      g_prev_dst_buffer = swap;
+
+      wuffs_base__status sfs1_status = wuffs_base__pixel_buffer__set_from_slice(
+          &g_pb, &g_ic.pixcfg,
+          wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
+      if (!wuffs_base__status__is_ok(&sfs1_status)) {
+        return wuffs_base__status__message(&sfs1_status);
+      }
+      break;
+    }
+  }
+
+#if defined(WUFFS_EXAMPLE_USE_TIMERS)
+  if (g_started) {
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now)) {
+      return strerror(errno);
+    }
+    int64_t elapsed_micros = micros_since_start(&now);
+    if (g_cumulative_delay_micros > elapsed_micros) {
+      usleep(g_cumulative_delay_micros - elapsed_micros);
+    }
+
+  } else {
+    if (clock_gettime(CLOCK_MONOTONIC, &g_start_time)) {
+      return strerror(errno);
+    }
+    g_started = true;
+  }
+#endif
+
+  fwrite(g_printbuf.ptr, sizeof(uint8_t), n, stdout);
+  fflush(stdout);
+
+  g_cumulative_delay_micros +=
+      (1000 * wuffs_base__frame_config__duration(&fc)) /
+      WUFFS_BASE__FLICKS_PER_MILLISECOND;
+
+  // TODO: should a zero duration mean to show this frame forever?
+
+  return wuffs_base__status__message(&decode_frame_status);
 }
 
 const char*  //
@@ -379,130 +501,15 @@ play() {
   src.meta.closed = true;
 
   if (g_first_play) {
-    wuffs_base__status dic_status =
-        wuffs_gif__decoder__decode_image_config(&dec, &g_ic, &src);
-    if (!wuffs_base__status__is_ok(&dic_status)) {
-      return wuffs_base__status__message(&dic_status);
-    }
-    if (!wuffs_base__image_config__is_valid(&g_ic)) {
-      return "invalid image configuration";
-    }
-    uint32_t width = wuffs_base__pixel_config__width(&g_ic.pixcfg);
-    uint32_t height = wuffs_base__pixel_config__height(&g_ic.pixcfg);
-    if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
-      return "image dimensions are too large";
-    }
-
-    // Override the source's indexed pixel format to be non-indexed.
-    wuffs_base__pixel_config__set(
-        &g_ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
-        WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
-
-    const char* msg = allocate(&dec);
-    if (msg) {
-      return msg;
-    }
-    wuffs_base__status sfs0_status = wuffs_base__pixel_buffer__set_from_slice(
-        &g_pb, &g_ic.pixcfg,
-        wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
-    if (!wuffs_base__status__is_ok(&sfs0_status)) {
-      return wuffs_base__status__message(&sfs0_status);
-    }
+    TRY(set_up_before_first_play(&dec, &src));
   }
 
   while (1) {
-    wuffs_base__frame_config fc = {0};
-    wuffs_base__status dfc_status =
-        wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
-    if (!wuffs_base__status__is_ok(&dfc_status)) {
-      if (dfc_status.repr == wuffs_base__note__end_of_data) {
-        break;
-      }
-      return wuffs_base__status__message(&dfc_status);
-    }
-
-    if (wuffs_base__frame_config__index(&fc) == 0) {
-      wuffs_base__color_u32_argb_premul background_color =
-          wuffs_base__frame_config__background_color(&fc);
-      size_t n = g_dst_len / sizeof(wuffs_base__color_u32_argb_premul);
-      uint8_t* p = g_curr_dst_buffer;
-      for (size_t i = 0; i < n; i++) {
-        wuffs_base__poke_u32le__no_bounds_check(p, background_color);
-        p += sizeof(wuffs_base__color_u32_argb_premul);
-      }
-    }
-
-    switch (wuffs_base__frame_config__disposal(&fc)) {
-      case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        memcpy(g_prev_dst_buffer, g_curr_dst_buffer, g_dst_len);
-        break;
-      }
-    }
-
-    wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
-        &dec, &g_pb, &src,
-        wuffs_base__frame_config__overwrite_instead_of_blend(&fc)
-            ? WUFFS_BASE__PIXEL_BLEND__SRC
-            : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
-        g_workbuf, NULL);
-    if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
+    const char* msg = play_one_frame(&dec, &src);
+    if (msg == wuffs_base__note__end_of_data) {
       break;
-    }
-
-    size_t n = g_flags.color ? print_color_art(&g_pb) : print_ascii_art(&g_pb);
-
-    switch (wuffs_base__frame_config__disposal(&fc)) {
-      case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
-        restore_background(&g_pb, wuffs_base__frame_config__bounds(&fc),
-                           wuffs_base__frame_config__background_color(&fc));
-        break;
-      }
-      case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        uint8_t* swap = g_curr_dst_buffer;
-        g_curr_dst_buffer = g_prev_dst_buffer;
-        g_prev_dst_buffer = swap;
-
-        wuffs_base__status sfs1_status =
-            wuffs_base__pixel_buffer__set_from_slice(
-                &g_pb, &g_ic.pixcfg,
-                wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
-        if (!wuffs_base__status__is_ok(&sfs1_status)) {
-          return wuffs_base__status__message(&sfs1_status);
-        }
-        break;
-      }
-    }
-
-#if defined(WUFFS_EXAMPLE_USE_TIMERS)
-    if (g_started) {
-      struct timespec now;
-      if (clock_gettime(CLOCK_MONOTONIC, &now)) {
-        return strerror(errno);
-      }
-      int64_t elapsed_micros = micros_since_start(&now);
-      if (g_cumulative_delay_micros > elapsed_micros) {
-        usleep(g_cumulative_delay_micros - elapsed_micros);
-      }
-
-    } else {
-      if (clock_gettime(CLOCK_MONOTONIC, &g_start_time)) {
-        return strerror(errno);
-      }
-      g_started = true;
-    }
-#endif
-
-    fwrite(g_printbuf.ptr, sizeof(uint8_t), n, stdout);
-    fflush(stdout);
-
-    g_cumulative_delay_micros +=
-        (1000 * wuffs_base__frame_config__duration(&fc)) /
-        WUFFS_BASE__FLICKS_PER_MILLISECOND;
-
-    // TODO: should a zero duration mean to show this frame forever?
-
-    if (!wuffs_base__status__is_ok(&decode_frame_status)) {
-      return wuffs_base__status__message(&decode_frame_status);
+    } else if (msg) {
+      return msg;
     }
   }
 
