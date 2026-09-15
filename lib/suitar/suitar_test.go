@@ -18,6 +18,7 @@ import (
 	"hash/crc32"
 	"io"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -188,8 +189,8 @@ func TestReaderSparseCheck(tt *testing.T)  { testReader(tt, true, false) }
 func TestReaderSparseIgnore(tt *testing.T) { testReader(tt, true, true) }
 
 // cappedWriter returns an error once the total number of bytes written would
-// exceed limit, so that a Writer which runs away fails this test instead of
-// hanging it.
+// exceed limit, so that a buggy Writer (which would otherwise loop forever)
+// instead fails the surrounding test.
 type cappedWriter struct {
 	buf   bytes.Buffer
 	limit int
@@ -204,10 +205,10 @@ func (w *cappedWriter) Write(b []byte) (int, error) {
 
 var errCappedWriter = errors.New("suitar_test: capped writer")
 
-// writeOneFile returns a SUITAR archive holding a single file whose contents
-// are size bytes long, written in chunks of chunk bytes (or all at once if
-// chunk is non-positive).
-func writeOneFile(tt *testing.T, size int, chunk int) []byte {
+// writeOneFileChunked returns a SUITAR archive holding a single file whose
+// contents are size bytes long, written in chunks of chunk bytes (or all at
+// once if chunk is non-positive).
+func writeOneFileChunked(tt *testing.T, size int, chunk int) []byte {
 	tt.Helper()
 
 	cw := &cappedWriter{limit: 0x10000}
@@ -217,25 +218,25 @@ func writeOneFile(tt *testing.T, size int, chunk int) []byte {
 		Name:     "file.bin",
 		Size:     int64(size),
 		Mode:     Mode644,
-		ModTime:  time.Unix(0x5E3A5C50, 0),
+		ModTime:  time.Unix(12345678, 0),
 	})
 	if err != nil {
 		tt.Fatalf("size=%d chunk=%d: WriteHeader: %v", size, chunk, err)
 	}
 
-	pix := make([]byte, size)
-	for i := range pix {
-		pix[i] = byte(i)
+	contents := make([]byte, size)
+	for i := range contents {
+		contents[i] = byte(i)
 	}
 
 	if chunk <= 0 {
-		if _, err := w.Write(pix); err != nil {
+		if _, err := w.Write(contents); err != nil {
 			tt.Fatalf("size=%d chunk=%d: Write: %v", size, chunk, err)
 		}
 	} else {
 		for i := 0; i < size; i += chunk {
 			j := min(i+chunk, size)
-			if _, err := w.Write(pix[i:j]); err != nil {
+			if _, err := w.Write(contents[i:j]); err != nil {
 				tt.Fatalf("size=%d chunk=%d: Write[%d:%d]: %v", size, chunk, i, j, err)
 			}
 		}
@@ -248,15 +249,13 @@ func writeOneFile(tt *testing.T, size int, chunk int) []byte {
 }
 
 // TestWriterChunked checks that how the file contents are split up over Write
-// calls doesn't matter, as long as the total is Header.Size bytes long. A
-// chunk size that isn't a multiple of 512 used to loop forever, writing
-// 512-byte blocks non-stop, and also to duplicate one 512-byte block.
+// calls doesn't matter, as long as the total is Header.Size bytes long.
 func TestWriterChunked(tt *testing.T) {
 	for _, size := range []int{0, 1, 300, 511, 512, 513, 700, 1000, 1024, 5000} {
-		want := writeOneFile(tt, size, 0)
+		want := writeOneFileChunked(tt, size, 0)
 
 		for _, chunk := range []int{1, 100, 300, 511, 512, 700, 1024} {
-			if got := writeOneFile(tt, size, chunk); !bytes.Equal(got, want) {
+			if got := writeOneFileChunked(tt, size, chunk); !bytes.Equal(got, want) {
 				tt.Fatalf("size=%d chunk=%d: chunk size changed the archive bytes", size, chunk)
 			}
 		}
@@ -290,28 +289,32 @@ func TestWriterChunked(tt *testing.T) {
 // TestWriterDir checks that a directory entry, which has no contents, can be
 // written and read back.
 func TestWriterDir(tt *testing.T) {
+	headers := []Header{{
+		Typeflag: TypeDir,
+		Name:     "a/b",
+		Mode:     Mode755,
+		ModTime:  time.Unix(12345601, 0),
+	}, {
+		Typeflag: TypeReg,
+		Name:     "a/b/c.txt",
+		Size:     5,
+		Mode:     Mode644,
+		ModTime:  time.Unix(12345602, 0),
+	}}
+
+	contents := map[string]string{
+		"a/b/c.txt": "hello",
+	}
+
 	buf := bytes.Buffer{}
 	w := NewWriter(&buf)
-	for _, h := range []*Header{
-		{
-			Typeflag: TypeDir,
-			Name:     "a/b",
-			Mode:     Mode755,
-			ModTime:  time.Unix(0x5E3A5C50, 0),
-		},
-		{
-			Typeflag: TypeReg,
-			Name:     "a/b/c.txt",
-			Size:     5,
-			Mode:     Mode644,
-			ModTime:  time.Unix(0x5E3A5C50, 0),
-		},
-	} {
-		if err := w.WriteHeader(h); err != nil {
+	for _, h := range headers {
+		if err := w.WriteHeader(&h); err != nil {
 			tt.Fatalf("WriteHeader(%q): %v", h.Name, err)
 		}
-		if h.Typeflag == TypeReg {
-			if _, err := w.Write([]byte("hello")); err != nil {
+
+		if content, ok := contents[h.Name]; ok {
+			if _, err := w.Write([]byte(content)); err != nil {
 				tt.Fatalf("Write: %v", err)
 			}
 		}
@@ -320,26 +323,19 @@ func TestWriterDir(tt *testing.T) {
 		tt.Fatalf("Close: %v", err)
 	}
 
-	r := NewReader(bytes.NewReader(buf.Bytes()))
-	for _, want := range []struct {
-		typeflag byte
-		name     string
-		contents string
-	}{
-		{TypeDir, "a/b", ""},
-		{TypeReg, "a/b/c.txt", "hello"},
-	} {
-		h, err := r.Next()
+	r := NewReader(&buf)
+	for _, hWant := range headers {
+		hGot, err := r.Next()
 		if err != nil {
 			tt.Fatalf("Next: %v", err)
-		} else if (h.Typeflag != want.typeflag) || (h.Name != want.name) {
-			tt.Fatalf("got T:'%c' N:%s, want T:'%c' N:%s",
-				h.Typeflag, h.Name, want.typeflag, want.name)
+		} else if !reflect.DeepEqual(hGot, hWant) {
+			tt.Fatalf("got vs want\n%#v\n%#v", hGot, hWant)
 		}
-		if got, err := io.ReadAll(r); err != nil {
+
+		if readAll, err := io.ReadAll(r); err != nil {
 			tt.Fatalf("ReadAll: %v", err)
-		} else if string(got) != want.contents {
-			tt.Fatalf("N:%s: got %q, want %q", want.name, got, want.contents)
+		} else if rGot, rWant := string(readAll), contents[hGot.Name]; rGot != rWant {
+			tt.Fatalf("N:%s: got %q, want %q", hGot.Name, rGot, rWant)
 		}
 	}
 	if _, err := r.Next(); err != io.EOF {
