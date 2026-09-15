@@ -31,7 +31,15 @@ wrapping TAR, but is out of scope of this document.
 
 Like TAR, SUITAR files are a sequence of independent entries (files or
 directories). Independent means that, like JSON map keys, duplicate names are
-valid, although some decoders may choose to reject them.
+valid, although some SUITAR decoders (or some destination File Systems or
+Operating Systems, if unpacking from a source SUITAR archive to a particular
+destination FS / OS) may choose to reject them.
+
+For example, answering "are these two file names duplicates (and does the
+destination FS / OS accept or reject duplicates)?" may depend on the
+_destination_ FS / OS's case-sensitivity and Unicode Normalization
+configuration (and whether case folding and normalization elides DICPs, Unicode
+Default-Ignorable Code Points), not the _source_ SUITAR archive per se.
 
 A file's entry does not need to be preceded by explicit entries for that file's
 parent directories.
@@ -93,6 +101,13 @@ These rules apply to both file names and directory names.
 For example, when converting from ZIP (with Japanese file names) to SUITAR, it
 is the SUITAR producer's responsibility, not the SUITAR consumer's, to detect
 and transform Shift-JIS encoded names to equivalent and valid UTF-8.
+
+Names like `"abc/.\u200B./xyz"`, containing a DICP (U+200B ZERO WIDTH SPACE),
+are valid SUITAR file names per se. However, when unpacking from a source
+SUITAR archive to a particular destination FS / OS, SUITAR decoders may wish to
+impose further restrictions on file names, to avoid path traversal attacks
+specific to that FS / OS. For example, eliding DICPs before applying the File
+Name Validity rules would prohibit the `"/.\u200B./"` substring.
 
 
 ## File Structure
