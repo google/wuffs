@@ -11,8 +11,8 @@
 // ----------------
 
 /*
-gifplayer prints an ASCII representation of the GIF image read from stdin. To
-play Eadweard Muybridge's iconic galloping horse animation, run:
+gifplayer prints an ASCII representation of the GIF or NIE image read from
+stdin. To play Eadweard Muybridge's iconic galloping horse animation, run:
 
 $CC gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
 
@@ -87,6 +87,7 @@ micros_since_start(struct timespec* now) {
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__NIE
 
 // Defining the WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST (and the
 // associated ETC__ALLOW_FOO) macros are optional, but can lead to smaller
@@ -114,6 +115,14 @@ micros_since_start(struct timespec* now) {
     if (z) {                   \
       return z;                \
     }                          \
+  } while (false)
+
+#define TRY_STATUS(expr)                      \
+  do {                                        \
+    wuffs_base__status z = expr;              \
+    if (!wuffs_base__status__is_ok(&z)) {     \
+      return wuffs_base__status__message(&z); \
+    }                                         \
   } while (false)
 
 // Limit the input GIF image to (64 MiB - 1 byte) compressed and 4096 × 4096
@@ -354,9 +363,10 @@ allocate(wuffs_base__range_ii_u64 workbuf_len) {
 }
 
 const char*  //
-set_up_before_first_play(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
+set_up_before_first_play(wuffs_base__image_decoder* dec,
+                         wuffs_base__io_buffer* src) {
   wuffs_base__status dic_status =
-      wuffs_gif__decoder__decode_image_config(dec, &g_ic, src);
+      wuffs_base__image_decoder__decode_image_config(dec, &g_ic, src);
   if (!wuffs_base__status__is_ok(&dic_status)) {
     return wuffs_base__status__message(&dic_status);
   } else if (!wuffs_base__image_config__is_valid(&g_ic)) {
@@ -373,7 +383,7 @@ set_up_before_first_play(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
       &g_ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
 
-  TRY(allocate(wuffs_gif__decoder__workbuf_len(dec)));
+  TRY(allocate(wuffs_base__image_decoder__workbuf_len(dec)));
   wuffs_base__status sfs0_status = wuffs_base__pixel_buffer__set_from_slice(
       &g_pb, &g_ic.pixcfg,
       wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
@@ -385,10 +395,10 @@ set_up_before_first_play(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
 }
 
 const char*  //
-play_one_frame(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
+play_one_frame(wuffs_base__image_decoder* dec, wuffs_base__io_buffer* src) {
   wuffs_base__frame_config fc = {0};
   wuffs_base__status dfc_status =
-      wuffs_gif__decoder__decode_frame_config(dec, &fc, src);
+      wuffs_base__image_decoder__decode_frame_config(dec, &fc, src);
   if (!wuffs_base__status__is_ok(&dfc_status)) {
     if (dfc_status.repr == wuffs_base__note__end_of_data) {
       return wuffs_base__note__end_of_data;
@@ -414,12 +424,13 @@ play_one_frame(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
     }
   }
 
-  wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
-      dec, &g_pb, src,
-      wuffs_base__frame_config__overwrite_instead_of_blend(&fc)
-          ? WUFFS_BASE__PIXEL_BLEND__SRC
-          : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
-      g_workbuf, NULL);
+  wuffs_base__status decode_frame_status =
+      wuffs_base__image_decoder__decode_frame(
+          dec, &g_pb, src,
+          wuffs_base__frame_config__overwrite_instead_of_blend(&fc)
+              ? WUFFS_BASE__PIXEL_BLEND__SRC
+              : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
+          g_workbuf, NULL);
   if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
     return wuffs_base__note__end_of_data;
   }
@@ -480,16 +491,31 @@ play_one_frame(wuffs_gif__decoder* dec, wuffs_base__io_buffer* src) {
 
 const char*  //
 play() {
-  wuffs_gif__decoder dec;
-  wuffs_base__status i_status =
-      wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (!wuffs_base__status__is_ok(&i_status)) {
-    return wuffs_base__status__message(&i_status);
+  static union {
+    wuffs_gif__decoder gif;
+    wuffs_nie__decoder nie;
+  } decoders;
+  wuffs_base__image_decoder* dec = NULL;
+
+  if (g_src_len <= 0) {
+    return "main: input is too short";
+  } else if (g_src_buffer_array[0] == 'G') {
+    TRY_STATUS(wuffs_gif__decoder__initialize(
+        &decoders.gif, sizeof decoders.gif, WUFFS_VERSION, 0));
+    dec =
+        wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(&decoders.gif);
+  } else if (g_src_buffer_array[0] == 'n') {
+    TRY_STATUS(wuffs_nie__decoder__initialize(
+        &decoders.nie, sizeof decoders.nie, WUFFS_VERSION, 0));
+    dec =
+        wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(&decoders.nie);
+  } else {
+    return "main: input is not GIF or NIE";
   }
 
   if (g_flags.quirk_honor_background_color) {
-    wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR,
-                                  1);
+    wuffs_base__image_decoder__set_quirk(
+        dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, 1);
   }
 
   wuffs_base__io_buffer src;
@@ -501,11 +527,11 @@ play() {
   src.meta.closed = true;
 
   if (g_first_play) {
-    TRY(set_up_before_first_play(&dec, &src));
+    TRY(set_up_before_first_play(dec, &src));
   }
 
   while (1) {
-    const char* msg = play_one_frame(&dec, &src);
+    const char* msg = play_one_frame(dec, &src);
     if (msg == wuffs_base__note__end_of_data) {
       break;
     } else if (msg) {
@@ -515,8 +541,9 @@ play() {
 
   if (g_first_play) {
     g_first_play = false;
-    g_still_image = wuffs_gif__decoder__num_decoded_frame_configs(&dec) <= 1;
-    g_num_loops_remaining = wuffs_gif__decoder__num_animation_loops(&dec);
+    g_still_image =
+        wuffs_base__image_decoder__num_decoded_frame_configs(dec) <= 1;
+    g_num_loops_remaining = wuffs_base__image_decoder__num_animation_loops(dec);
   }
 
   return NULL;
