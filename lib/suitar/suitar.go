@@ -38,6 +38,7 @@ var (
 	errClosed         = errors.New("suitar: closed")
 	errHeaderSize     = errors.New("suitar: inconsistent Header.Size and Write length")
 	errHeaderTypeflag = errors.New("suitar: inconsistent Header.Typeflag for Write")
+	errWriteANonNul   = errors.New("suitar: Write a non-NUL byte to a sparse entry")
 )
 
 // lenMagic makes headerBlockTemplate[:lenMagic] SUITAR's magic signature.
@@ -300,7 +301,7 @@ type Writer struct {
 func (w *Writer) flush() error {
 	if w.err != nil {
 		return w.err
-	} else if w.remaining != 0 {
+	} else if (w.remaining != 0) && (w.header.Typeflag != TypeGNUSparse) {
 		w.err = errHeaderSize
 		return w.err
 	} else if w.bIndex != 0 {
@@ -356,10 +357,6 @@ func (w *Writer) WriteHeader(h *Header) error {
 	}
 
 	w.remaining = w.header.Size
-	if w.header.Typeflag == TypeGNUSparse {
-		w.remaining = 0
-	}
-
 	return nil
 }
 
@@ -412,16 +409,34 @@ func setI64(b *block, offset int, value int64) {
 func (w *Writer) Write(b []byte) (int, error) {
 	if w.err != nil {
 		return 0, w.err
-	} else if (w.header.Typeflag != TypeReg) && (w.header.Typeflag != TypeGNUSparse) {
-		w.err = errHeaderTypeflag
-		return 0, w.err
-	} else if len(b) == 0 {
-		return 0, nil
 	}
 
 	tooMuch := int64(len(b)) > w.remaining
 	if tooMuch {
 		b = b[:w.remaining]
+	}
+
+	ret := 0
+	if w.header.Typeflag == TypeReg {
+		ret, w.err = w.writeReg(b)
+	} else if w.header.Typeflag == TypeGNUSparse {
+		ret, w.err = w.writeSparse(b)
+	} else {
+		w.err = errHeaderTypeflag
+		return 0, w.err
+	}
+	w.remaining -= int64(ret)
+
+	if tooMuch && (w.err == nil) {
+		w.err = errHeaderSize
+	}
+
+	return ret, w.err
+}
+
+func (w *Writer) writeReg(b []byte) (int, error) {
+	if len(b) == 0 {
+		return 0, nil
 	}
 
 	ret := 0
@@ -432,17 +447,14 @@ func (w *Writer) Write(b []byte) (int, error) {
 
 			if len(prefix) > 0 {
 				n, err := w.w.Write(prefix)
-				w.remaining -= int64(n)
 				ret += n
 				if err != nil {
-					w.err = err
-					break
+					return ret, err
 				}
 			}
 
 			if len(suffix) > 0 {
 				w.bIndex = int32(copy(w.block[:], suffix))
-				w.remaining -= int64(w.bIndex)
 				ret += int(w.bIndex)
 			}
 
@@ -452,24 +464,27 @@ func (w *Writer) Write(b []byte) (int, error) {
 
 		n := copy(w.block[w.bIndex:], b)
 		w.bIndex += int32(n)
-		w.remaining -= int64(n)
 		ret += n
 		b = b[n:]
 
 		if int(w.bIndex) < len(w.block) {
 			continue
 		} else if _, err := w.w.Write(w.block[:]); err != nil {
-			w.err = err
-			break
+			return ret, err
 		}
 		w.bIndex = 0
 	}
 
-	if tooMuch && (w.err == nil) {
-		w.err = errHeaderSize
-	}
+	return ret, nil
+}
 
-	return ret, w.err
+func (w *Writer) writeSparse(b []byte) (int, error) {
+	for _, c := range b {
+		if c != 0 {
+			return 0, errWriteANonNul
+		}
+	}
+	return 0, nil
 }
 
 // Close satisfies io.Closer. It closes the entire archive, not just one entry.

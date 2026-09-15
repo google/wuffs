@@ -286,9 +286,10 @@ func TestWriterChunked(tt *testing.T) {
 	}
 }
 
-// TestWriterDir checks that a directory entry, which has no contents, can be
-// written and read back.
-func TestWriterDir(tt *testing.T) {
+// TestWriteNonRegular checks that entries (including TypeDir entries which
+// have no contents and TypeGNUSparse entries which have all-NUL contents) can
+// be written and read back.
+func TestWriteNonRegular(tt *testing.T) {
 	headers := []Header{{
 		Typeflag: TypeDir,
 		Name:     "a/b",
@@ -300,10 +301,31 @@ func TestWriterDir(tt *testing.T) {
 		Size:     5,
 		Mode:     Mode644,
 		ModTime:  time.Unix(12345602, 0),
+	}, {
+		Typeflag: TypeGNUSparse,
+		Name:     "sparse0.bin",
+		Size:     3,
+		Mode:     Mode644,
+		ModTime:  time.Unix(123000, 0),
+	}, {
+		Typeflag: TypeGNUSparse,
+		Name:     "sparse1.bin",
+		Size:     3,
+		Mode:     Mode644,
+		ModTime:  time.Unix(123001, 0),
+	}, {
+		Typeflag: TypeGNUSparse,
+		Name:     "sparse3.bin",
+		Size:     3,
+		Mode:     Mode644,
+		ModTime:  time.Unix(123002, 0),
 	}}
 
 	contents := map[string]string{
-		"a/b/c.txt": "hello",
+		"a/b/c.txt":   "hello",
+		"sparse0.bin": "\x00\x00\x00",
+		"sparse1.bin": "\x00\x00\x00",
+		"sparse3.bin": "\x00\x00\x00",
 	}
 
 	buf := bytes.Buffer{}
@@ -313,10 +335,22 @@ func TestWriterDir(tt *testing.T) {
 			tt.Fatalf("WriteHeader(%q): %v", h.Name, err)
 		}
 
-		if content, ok := contents[h.Name]; ok {
-			if _, err := w.Write([]byte(content)); err != nil {
-				tt.Fatalf("Write: %v", err)
-			}
+		content, ok := contents[h.Name]
+		if !ok {
+			continue
+		} else if h.Name == "sparse0.bin" {
+			// It's OK, for TypeGNUSparse, to Write no bytes.
+			continue
+		} else if h.Name == "sparse1.bin" {
+			// It's OK, for TypeGNUSparse, to Write some but not all of the
+			// Size bytes, provided that what you're writing are NUL bytes.
+			content = content[:1]
+		} else if h.Name == "sparse3.bin" {
+			// No-op, going on to Write all 3 explicit NUL bytes.
+		}
+
+		if _, err := w.Write([]byte(content)); err != nil {
+			tt.Fatalf("Write(%q): %v", h.Name, err)
 		}
 	}
 	if err := w.Close(); err != nil {
@@ -342,3 +376,51 @@ func TestWriterDir(tt *testing.T) {
 		tt.Fatalf("Next after the last entry: %v", err)
 	}
 }
+
+func TestWriteANonNUL(tt *testing.T) {
+	buf := bytes.Buffer{}
+	w := NewWriter(&buf)
+
+	if err := w.WriteHeader(&Header{
+		Typeflag: TypeGNUSparse,
+		Name:     "example.dat",
+		Size:     5,
+		Mode:     Mode644,
+		ModTime:  time.Unix(0, 0),
+	}); err != nil {
+		tt.Fatalf("WriteHeader: %v", err)
+	}
+
+	if _, err := w.Write([]byte("Lorem")); err != errWriteANonNul {
+		tt.Fatalf("Write: got %v, want %v", err, errWriteANonNul)
+	}
+}
+
+func testWriteTooMuch(tt *testing.T, typeflag byte) {
+	for i := 8; i <= 12; i++ {
+		buf := bytes.Buffer{}
+		w := NewWriter(&buf)
+
+		if err := w.WriteHeader(&Header{
+			Typeflag: typeflag,
+			Name:     "example.dat",
+			Size:     10,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		}
+
+		errWant := error(nil)
+		if i > 10 {
+			errWant = errHeaderSize
+		}
+
+		if _, errGot := w.Write(make([]byte, i)); errGot != errWant {
+			tt.Fatalf("i=%d: Write: got %v, want %v", i, errGot, errWant)
+		}
+	}
+}
+
+func TestWriteTooMuchRegular(tt *testing.T) { testWriteTooMuch(tt, TypeReg) }
+func TestWriteTooMuchSparse(tt *testing.T)  { testWriteTooMuch(tt, TypeGNUSparse) }
