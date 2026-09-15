@@ -322,10 +322,8 @@ func (w *Writer) WriteHeader(h *Header) error {
 		w.err = errBadHeader
 		return w.err
 	}
-	w.header = *h
-
-	n := len(w.header.Name)
-	copy(w.nameBuf[:], w.header.Name)
+	n := len(h.Name)
+	copy(w.nameBuf[:], h.Name)
 	w.nameBuf[n] = 0
 
 	initBlock(&w.block, typeGNULongName, int64(n+1), Mode644, 0)
@@ -334,6 +332,10 @@ func (w *Writer) WriteHeader(h *Header) error {
 		return w.err
 	}
 
+	// The w.Write call below writes this entry's name, not its contents, so
+	// w.header must not (yet) say TypeDir or Write would reject it. Set
+	// w.header after that call.
+	w.header = Header{Typeflag: TypeReg}
 	w.remaining = int64(n + 1)
 
 	if _, err := w.Write(w.nameBuf[:n+1]); err != nil {
@@ -344,6 +346,7 @@ func (w *Writer) WriteHeader(h *Header) error {
 		return w.err
 	}
 
+	w.header = *h
 	initBlock(&w.block, w.header.Typeflag, w.header.Size, w.header.Mode, w.header.ModTime.Unix())
 	if _, err := w.w.Write(w.block[:]); err != nil {
 		w.err = err
@@ -457,6 +460,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 			w.err = err
 			break
 		}
+		w.bIndex = 0
 	}
 
 	if tooMuch && (w.err == nil) {
