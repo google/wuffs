@@ -552,10 +552,12 @@ func (r *Reader) Next() (Header, error) {
 	}
 
 	if _, err := readFullNoEOF(r.r, r.block[:0x200]); err != nil {
+		r.err = err
 		return Header{}, err
 	}
 	typeflag, size, mode, modTime, err := parseBlock1(&r.block)
 	if err != nil {
+		r.err = err
 		return Header{}, err
 	}
 
