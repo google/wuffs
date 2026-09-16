@@ -33,6 +33,11 @@
 #ifndef BASIC_HANDSUM_DECODE_INCLUDE_GUARD
 #define BASIC_HANDSUM_DECODE_INCLUDE_GUARD
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #if defined(BASIC_HANDSUM_DECODE_CONFIG__STATIC_FUNCTIONS)
 #define BASIC_HANDSUM_DECODE__MAYBE_STATIC static
 #else
@@ -483,4 +488,9 @@ basic_handsum_decode__decode(basic_handsum_decode__pixel_buffer* dst,
 }
 
 #endif  // BASIC_HANDSUM_DECODE_IMPLEMENTATION
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #endif  // BASIC_HANDSUM_DECODE_INCLUDE_GUARD

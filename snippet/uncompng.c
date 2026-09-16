@@ -29,6 +29,11 @@
 #ifndef UNCOMPNG_INCLUDE_GUARD
 #define UNCOMPNG_INCLUDE_GUARD
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #if defined(UNCOMPNG_CONFIG__STATIC_FUNCTIONS)
 #define UNCOMPNG__MAYBE_STATIC static
 #else
@@ -926,4 +931,9 @@ uncompng__encode_apng_frame(int (*write_func)(void* context,
 }
 
 #endif  // UNCOMPNG_IMPLEMENTATION
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #endif  // UNCOMPNG_INCLUDE_GUARD

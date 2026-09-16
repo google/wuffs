@@ -27,6 +27,11 @@
 #ifndef PARSE_COLOR_INCLUDE_GUARD
 #define PARSE_COLOR_INCLUDE_GUARD
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #if defined(PARSE_COLOR_CONFIG__STATIC_FUNCTIONS)
 #define PARSE_COLOR__MAYBE_STATIC static
 #else
@@ -200,4 +205,9 @@ parse_color(const char* s_ptr, size_t s_len) {
 }
 
 #endif  // PARSE_COLOR_IMPLEMENTATION
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #endif  // PARSE_COLOR_INCLUDE_GUARD
