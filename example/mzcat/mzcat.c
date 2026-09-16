@@ -397,8 +397,12 @@ print_crc32_digest(bool bad) {
 int  //
 main(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
-  prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
-  g_sandboxed = true;
+  g_sandboxed = prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT) >= 0;
+  if (!g_sandboxed) {
+    const int stderr_fd = 2;
+    const char* msg = "SECCOMP_MODE_STRICT sandbox failed.\n";
+    ignore_return_value(write(stderr_fd, msg, strlen(msg)));
+  }
 #endif
 
   int exit_code = compute_exit_code(main1(argc, argv));
