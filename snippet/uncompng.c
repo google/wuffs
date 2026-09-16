@@ -856,7 +856,7 @@ uncompng__encode_apng_header(int (*write_func)(void* context,
   int ret = (*write_func)(context, uncompng__private_impl_buffer, (size_t)ej);
 
   concurrent = false;
-  return 0;
+  return ret;
 }
 
 UNCOMPNG__MAYBE_STATIC int  //
@@ -922,7 +922,7 @@ uncompng__encode_apng_frame(int (*write_func)(void* context,
   }
 
   concurrent = false;
-  return 0;
+  return ret;
 }
 
 #endif  // UNCOMPNG_IMPLEMENTATION
