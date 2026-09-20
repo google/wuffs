@@ -48,6 +48,7 @@
 # holds a base38-and-fourcc.md file that elaborates on base38 encoding.
 
 0x09CC62_6933B000	2757997834252288	appl/epub/..	application/epub+zip
+0x09CC62_784EA000	2757998087675904	appl/gzip/..	application/gzip
 0x09CC62_880DB9BE	2757998351858110	appl/java/ar	application/java-archive
 0x09CC62_880DBC67	2757998351858791	appl/java/so	application/java-serialized-object
 0x09CC62_880DBCD7	2757998351858903	appl/java/vm	application/java-vm
@@ -114,6 +115,7 @@
 0x09CC62_DADFCC6C	2757999741357164	appl/vopo/st	application/vnd.openxmlformats-officedocument.spreadsheetml.template
 0x09CC62_DADFCCF4	2757999741357300	appl/vopo/wd	application/vnd.openxmlformats-officedocument.wordprocessingml.document
 0x09CC62_DADFCD04	2757999741357316	appl/vopo/wt	application/vnd.openxmlformats-officedocument.wordprocessingml.template
+0x09CC62_DB557000	2757999749066752	appl/vrar/..	application/vnd.rar
 0x09CC62_DF1E4800	2757999812560896	appl/wasm/..	application/wasm
 0x09CC62_E5514000	2757999916564480	appl/x7z./..	application/x-7z-compressed
 0x09CC62_E5BCB800	2757999923607552	appl/xabi/..	application/x-abiword
@@ -133,7 +135,6 @@
 0x09CC62_E7EDD1BC	2757999960379836	appl/xms./ap	application/x-ms-application
 0x09CC62_E7EDD460	2757999960380512	appl/xms./sh	application/x-ms-shortcut
 0x09CC62_E7EE4000	2757999960408064	appl/xmsd/..	application/x-msdownload
-0x09CC62_E8BAF000	2757999973822464	appl/xrar/..	application/x-rar-compressed
 0x09CC62_E8EF8000	2757999977267200	appl/xsh./..	application/x-sh
 0x09CC62_E8F04800	2757999977318400	appl/xsho/..	application/x-shockwave-flash
 0x09CC62_E8FAE000	2757999978012672	appl/xsql/..	application/x-sql
