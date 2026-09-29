@@ -14,8 +14,9 @@ archive containing 1 file) as [Farbfeld](https://tools.suckless.org/farbfeld/)
 or [NIE](./nie-spec.md) is to image files: an uncompressed, "designed for Unix
 pipes" format that is trivial to read or write in a few hundred lines of code,
 ideally in a memory-safe programming language. It's a format for what the
-Chromium web browser's "Rule of 2" security advice calls
-[https://chromium.googlesource.com/chromium/src/+/master/docs/security/rule-of-2.md#normalization](Normalization).
+Chromium web browser's
+[https://chromium.googlesource.com/chromium/src/+/master/docs/security/rule-of-2.md](Rule of 2)
+security advice calls Normalization.
 
 
 ## Subset of TAR
@@ -37,7 +38,7 @@ destination FS / OS) may choose to reject them.
 
 For example, answering "are these two file names duplicates (and does the
 destination FS / OS accept or reject duplicates)?" may depend on the
-_destination_ FS / OS's case-sensitivity and Unicode Normalization
+_destination_ FS / OS's case-sensitivity and Unicode normalization
 configuration (and whether case folding and normalization elides DICPs, Unicode
 Default-Ignorable Code Points), not the _source_ SUITAR archive per se.
 
@@ -51,9 +52,9 @@ Compared to plain TAR (and refer to [the GNU TAR
 manual](https://ftp.gnu.org/old-gnu/Manuals/tar-1.12/html_node/tar_123.html)),
 SUITAR has further restrictions:
 
-- Entries are either regular files (`REGTYPE`), sparse files (`GNUTYPE_SPARSE`)
-  or directories (`DIRTYPE`). There is no support for hard links, symlinks,
-  device files or other non-standard files.
+- Entries are either regular files (`REGTYPE` or `AREGTYPE`), sparse files
+  (`GNUTYPE_SPARSE`) or directories (`DIRTYPE`). There is no support for hard
+  links, symlinks, device files or other non-standard files.
 - Sparse files must be completely sparse. Their content must be one contiguous
   span of NUL (zero) bytes that covers the entire file.
 - File and directory names must obey the "File Name Validity" rules, below.
@@ -72,16 +73,6 @@ SUITAR has further restrictions:
 There is no support for various TAR variants, such as "the PAX extensions to
 TAR" or "the USTAR extensions to TAR", other than what's implied by the subset
 of the GNU extensions that SUITAR explicitly uses.
-
-Encoders have no meaningful choices, bar one exception. There is only one valid
-SUITAR encoding (unlike full TAR's backwards-compatible choice between base-8
-or base-256 encoding of various sufficiently small numbers) for any given file
-or directory entry (its combination of type, name, size, mode, modTime and
-contents).
-
-The one exception is that, if a file's contents are all NUL bytes (including
-zero-sized files), an encoder can choose between a `REGTYPE` regular file (with
-explicit NULs) or a `GNUTYPE_SPARSE` sparse file (with implicit NULs).
 
 
 ### File Name Validity
@@ -118,12 +109,70 @@ number of 512-byte blocks:
 
 - 1 `GNUTYPE_LONGNAME` header block.
 - 1 or more payload blocks containing the file or directory name.
-- 1 `REGTYPE`, `GNUTYPE_SPARSE` or `DIRTYPE` header block.
+- 1 `REGTYPE`, `AREGTYPE`, `GNUTYPE_SPARSE` or `DIRTYPE` header block.
 - If `REGTYPE`, 0 or more payload blocks containing the file contents.
-- If not `REGTYPE`, no further blocks.
+- If `AREGTYPE`, see "Implicitly-Sized Files" below.
+- If neither `REGTYPE` or `AREGTYPE`, no further blocks.
 
 
-### Header Blocks
+## Implicitly-Sized Files
+
+For TAR itself, each entry's contents is preceded by the entry's header that
+states the entire contents' size in bytes. SUITAR keeps that formal structure
+but also uses additional convention to represent entries whose size is only
+known at the end, not the start, of the entry.
+
+For example, when decompressing `foobar.dat.gz` from a GZIP stream to SUITAR
+(an archive with one entry: `foobar.dat`), the uncompressed `foobar.dat` size
+is not known until the end of the GZIP-formatted input stream is reached.
+
+For historical reasons, TAR itself has two typeflag codes for regular files
+(`REGTYPE` and `AREGTYPE`) and both codes are largely equivalent. SUITAR, by
+convention, treats them differently: `REGTYPE` is for the common case, where
+the contents' size is known up-front, and `AREGTYPE` means the contents that
+follow are partial and to be continued.
+
+An implicitly-sized file is partitioned into 2 or more chunks. The final chunk
+is `REGTYPE` and all other chunks are `AREGTYPE`. Each chunk's size is explicit
+(and zero is a valid size) but the number of chunks isn't known until the final
+`REGTYPE` chunk is delivered. The entry's structure is:
+
+- 1 `GNUTYPE_LONGNAME` header block.
+- 1 or more payload blocks containing the file or directory name.
+- 1 or more non-final chunks, each being:
+    - 1 `AREGTYPE` header block, stating the chunk contents' size.
+    - 0 or more payload blocks containing the chunk contents.
+- 1 final chunk, being:
+    - 1 `REGTYPE` header block, stating the chunk contents' size.
+    - 0 or more payload blocks containing the chunk contents.
+
+"0 non-final chunks" is actually valid in some sense, equivalent to an
+explicitly-sized `REGTYPE` entry (of exactly one chunk).
+
+The file name still comes from the `GNUTYPE_LONGNAME` payload. There is only
+one `GNUTYPE_LONGNAME` header block, not one per chunk.
+
+Other metadata (mode and modTime, but not file size) comes from the initial
+chunk's header block. For non-initial chunks, the mode must be `"644"` and the
+modTime must be zero.
+
+
+### Implicitly-Sized Fallback Behavior
+
+Other TAR-reading tools and libraries, which do not understand SUITAR's
+"implicitly-sized files" convention, will fall back to treating all non-initial
+chunks as separate regular files. These will all have the same file name
+(`"\x13sUItAR"`, due to the SUITAR magic signature), which does not satisfy the
+File Name Validity rules, but this fallback name will not be presented by
+decoders that understand the convention.
+
+SUITAR encoders are discouraged from using this implicitly-sized files
+convention unless the surrounding context ensures that the decoders also speak
+SUITAR, not just TAR per se. This can be more likely if writing SUITAR over a
+Unix pipe (with a known program on the other end), compared to writing to disk.
+
+
+## Header Blocks
 
 Like all blocks, each header block is 512 bytes long. Each header block also
 starts with a 12-byte magic signature (that is not valid UTF-8), identifying
@@ -165,6 +214,7 @@ These `?` bytes are the 3-byte mode (`"644"` or `"755"`), physical size or
 modTime as an 8-byte big-endian `uint64`, 6-byte checksum (see below) or 1-byte
 type, which must be one of:
 
+- `'\x00'` for `AREGTYPE`.
 - `'0'` for `REGTYPE`.
 - `'5'` for `DIRTYPE`, in which case mode must be `"755"` and physical size
   must be all zeroes.
@@ -190,17 +240,20 @@ template (and `?` again indicates an 8-byte big-endian `uint64`):
 
 ### Header Checksum
 
-A 512-byte header block's checksum value is simply the sum of each byte (after
-converting from `uint8` to `uint32`, to avoid overflow) in the block, at
-offsets in the two half-open ranges `0 .. 148` and `156 .. 512`, which excludes
-the 8 bytes for the 6-byte checksum itself plus another two hard-coded bytes
-`"\x00\x20"`.
+A 512-byte header block's checksum value is simply 256 plus the sum of each
+byte (after converting from `uint8` to `uint32`, to avoid overflow) in the
+block, at offsets in the two half-open ranges `0 .. 148` and `156 .. 512`,
+which excludes the 8 bytes for the 6-byte checksum itself plus another two
+hard-coded bytes `"\x00\x20"`.
+
+That "256 plus" is equivalent to summing over the entire `0 .. 512` range if
+valuing the 8 checksum bytes in the range `148 .. 156` as being `'\x20'`.
 
 That checksum value is written as a 6-byte ASCII octal number in the header.
 For example, `4853` (decimal) would be encoded as `"011365"` (octal).
 
 
-### Payload Blocks
+## Payload Blocks
 
 Each entry has one or more payload blocks, between its two header blocks,
 containing the file or directory name. The name length (including a trailing
@@ -210,10 +263,13 @@ must range within `1 .. 4095`. Rounding up that including-a-trailing-NUL length
 to a multiple of 512 gives the number of 512-byte payload blocks that contain
 the name. All padding bytes in the name's final payload block must be NUL.
 
-For `REGTYPE` entries, the second header block's physical size value gives the
-reconstructed file's size and rounding that up to a multiple of 512 gives the
-number of 512-byte payload blocks that contain the file contents. Again, all
-padding bytes in the contents' final payload block must be NUL.
+For `REGTYPE` or `AREGTYPE` entries, the name payload is followed by one or
+more chunks. Concatenating the chunks' contents reconstructs the file. Only the
+final chunk is `REGTYPE` and all others are `AREGTYPE`. Each chunk has one
+header block and zero or more payload blocks. The header block's physical size
+value gives the chunk's size and rounding that up to a multiple of 512 gives
+the number of 512-byte payload blocks that contain the chunk contents. Again,
+all padding bytes in the contents' final payload block must be NUL.
 
 For other entries (`DIRTYPE` or `GNUTYPE_SPARSE`), there are no further payload
 blocks after the second header block.
@@ -222,7 +278,7 @@ For `GNUTYPE_SPARSE` entries, the second header block's logical size value
 gives the reconstructed file's size and its contents are all NUL bytes.
 
 
-# Reference Implementation
+## Reference Implementation
 
 The [google/wuffs](https://github.com/google/wuffs) repository, which holds
 this specification document, also holds a

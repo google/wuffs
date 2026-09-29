@@ -38,6 +38,7 @@ var (
 	errClosed         = errors.New("suitar: closed")
 	errHeaderSize     = errors.New("suitar: inconsistent Header.Size and Write length")
 	errHeaderTypeflag = errors.New("suitar: inconsistent Header.Typeflag for Write")
+	errImplicitSize   = errors.New("suitar: implicit size is too large")
 	errWriteANonNul   = errors.New("suitar: Write a non-NUL byte to a sparse entry")
 )
 
@@ -96,6 +97,7 @@ const (
 	TypeGNUSparse = 'S' // Sparse file (its contents are all NUL bytes).
 
 	typeGNULongName = 'L'
+	typeRegA        = '\x00'
 )
 
 // Valid values for Header.Mode. The zero value is invalid.
@@ -103,6 +105,15 @@ const (
 	Mode644 = int64(0o644) // "rw-r--r--" mode bits, also known as permission bits.
 	Mode755 = int64(0o755) // "rwxr-xr-x" mode bits, also known as permission bits.
 )
+
+// SizeIsImplicit can be passed in the Writer.WriteHeader's argument's
+// Header.Size field to mean that the contents' size-in-bytes is not yet known,
+// but is implied by the total length of the []byte passed to Writer.Write, up
+// until the next call to Writer.WriteHeader or Writer.Close.
+//
+// When reading, the actual size is returned by Reader.NumBytesRead. Call this
+// after Reader.Read has returned io.EOF and before the next Reader.Next call.
+const SizeIsImplicit = int64(-1)
 
 // IsValidHeaderName returns whether name is a valid Header.Name field value.
 func IsValidHeaderName(name string) bool {
@@ -248,7 +259,8 @@ type Header struct {
 //   - Typeflag must be one of three values (TypeReg, TypeDir, TypeGNUSparse).
 //     In particular, it cannot be zero.
 //   - Name must satisfy IsValidHeaderName.
-//   - Size must be non-negative. It must be 0 if Typeflag is TypeDir.
+//   - Size must be non-negative or, if Typeflag is TypeReg, it can also be -1,
+//     the value of SizeIsImplicit. It must be 0 if Typeflag is TypeDir.
 //   - Mode must be one of two values (Mode644, Mode755). It must be Mode755 if
 //     Typeflag is TypeDir.
 //   - ModTime.Unix() must be a non-negative int64. In particular, ModTime must
@@ -275,9 +287,14 @@ func (h *Header) Valid() bool {
 		}
 	}
 
+	size := h.Size
+	if (size == -1) && (h.Typeflag == TypeReg) {
+		size = 0
+	}
+
 	const maxExcl = 1 << 53
 	m := h.ModTime.Unix()
-	return (0 <= h.Size) && (h.Size < maxExcl) &&
+	return (0 <= size) && (size < maxExcl) &&
 		(0 <= m) && (m < maxExcl) &&
 		IsValidHeaderName(h.Name)
 }
@@ -292,7 +309,7 @@ type Writer struct {
 	err       error
 	w         io.Writer
 	header    Header
-	remaining int64
+	remaining int64 // If negative, ^remaining is the accumulated implicit size.
 	bIndex    int32
 	block     block
 	nameBuf   [4096]byte
@@ -301,9 +318,29 @@ type Writer struct {
 func (w *Writer) flush() error {
 	if w.err != nil {
 		return w.err
+
+	} else if w.remaining < 0 {
+		initBlock(&w.block, TypeReg, int64(w.bIndex), Mode644, 0)
+		if _, err := w.w.Write(w.block[:]); err != nil {
+			w.err = err
+			return w.err
+		}
+
+		if w.bIndex != 0 {
+			end := (w.bIndex + 511) &^ 511
+			clear(w.nameBuf[w.bIndex:end])
+			if _, err := w.w.Write(w.nameBuf[:end]); err != nil {
+				w.err = err
+				return w.err
+			}
+			w.bIndex = 0
+		}
+		return nil
+
 	} else if (w.remaining != 0) && (w.header.Typeflag != TypeGNUSparse) {
 		w.err = errHeaderSize
 		return w.err
+
 	} else if w.bIndex != 0 {
 		clear(w.block[w.bIndex:])
 		if _, err := w.w.Write(w.block[:]); err != nil {
@@ -378,6 +415,9 @@ func initBlock(b *block, typeflag byte, size int64, mode int64, modTime int64) {
 	physicalSize := size
 	if typeflag == TypeGNUSparse {
 		physicalSize = 0
+	} else if size < 0 {
+		physicalSize = 0
+		typeflag = typeRegA
 	}
 	setI64(b, 0x07C, physicalSize)
 
@@ -411,13 +451,15 @@ func (w *Writer) Write(b []byte) (int, error) {
 		return 0, w.err
 	}
 
-	tooMuch := int64(len(b)) > w.remaining
+	tooMuch := (int64(len(b)) > w.remaining) && (w.remaining >= 0)
 	if tooMuch {
 		b = b[:w.remaining]
 	}
 
 	ret := 0
-	if w.header.Typeflag == TypeReg {
+	if w.remaining < 0 {
+		ret, w.err = w.writeImplicitlySized(b)
+	} else if w.header.Typeflag == TypeReg {
 		ret, w.err = w.writeReg(b)
 	} else if w.header.Typeflag == TypeGNUSparse {
 		ret, w.err = w.writeSparse(b)
@@ -432,6 +474,62 @@ func (w *Writer) Write(b []byte) (int, error) {
 	}
 
 	return ret, w.err
+}
+
+func (w *Writer) writeImplicitlySized(b []byte) (int, error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
+
+	const maxExcl = 1 << 53
+	if n := int64(len(b)); (n >= maxExcl) || ((n + ^w.remaining) >= maxExcl) {
+		return 0, errImplicitSize
+	}
+
+	if (w.bIndex > 0) || (len(b) < (len(w.nameBuf) - int(w.bIndex))) {
+		n := copy(w.nameBuf[w.bIndex:], b)
+		w.bIndex += int32(n)
+		b = b[n:]
+		if len(b) == 0 {
+			return n, nil
+		}
+	}
+
+	ret := 0
+
+	split := len(b) &^ 511
+	prefix, suffix := b[:split], b[split:]
+
+	if size := int64(w.bIndex) + int64(len(prefix)); size > 0 {
+		initBlock(&w.block, typeRegA, size, Mode644, 0)
+		if _, err := w.w.Write(w.block[:]); err != nil {
+			return ret, err
+		}
+	}
+
+	if w.bIndex > 0 {
+		n, err := w.w.Write(w.nameBuf[:w.bIndex])
+		ret += n
+		if err != nil {
+			return ret, err
+		}
+		w.bIndex = 0
+	}
+
+	if len(prefix) > 0 {
+		n, err := w.w.Write(prefix)
+		ret += n
+		if err != nil {
+			return ret, err
+		}
+	}
+
+	if len(suffix) > 0 {
+		w.bIndex = int32(copy(w.nameBuf[:], suffix))
+		ret += len(suffix)
+	}
+
+	return ret, nil
 }
 
 func (w *Writer) writeReg(b []byte) (int, error) {
@@ -508,18 +606,21 @@ func NewReader(r io.Reader) *Reader {
 
 // Reader provides sequential reading of a SUITAR archive.
 type Reader struct {
-	err        error
-	r          io.Reader
-	remaining  int64
-	numPadding int32
-	sparse     bool
-	block      block
-	nameBuf    [4096]byte
+	err            error
+	r              io.Reader
+	remaining      int64
+	numBytesRead   int64
+	numPadding     int32
+	sparse         bool
+	sizeIsImplicit bool
+	block          block
+	nameBuf        [4096]byte
 }
 
 // Next advances to the next entry in the SUITAR archive, preparing to read the
 // file's contents (as r is also an io.Reader).
 func (r *Reader) Next() (Header, error) {
+	r.numBytesRead = 0
 	if r.err != nil {
 		return Header{}, r.err
 	} else if r.remaining > 0 {
@@ -532,7 +633,7 @@ func (r *Reader) Next() (Header, error) {
 	if _, err := readFullNoEOF(r.r, r.block[:]); err != nil {
 		r.err = err
 		return Header{}, r.err
-	} else if r.block[0x09C] == 0 {
+	} else if r.block[0] == 0 {
 		// SUITAR ends with 2 blocks (1024 bytes) of zeroes.
 		if !isAllZeroes(r.block[:]) {
 			r.err = errBadHeader
@@ -579,6 +680,11 @@ func (r *Reader) Next() (Header, error) {
 	r.remaining = size
 	r.numPadding = int32(roundUp512(uint64(size)) - uint64(size))
 	r.sparse = typeflag == TypeGNUSparse
+	r.sizeIsImplicit = typeflag == typeRegA
+	if r.sizeIsImplicit {
+		typeflag = TypeReg
+		size = SizeIsImplicit
+	}
 
 	return Header{
 		Typeflag: typeflag,
@@ -611,7 +717,7 @@ func parseBlock1(b *block) (byte, int64, int64, int64, error) {
 	}
 
 	typeflag := b[0x09C]
-	if (typeflag != TypeReg) && (typeflag != TypeDir) && (typeflag != TypeGNUSparse) {
+	if (typeflag != TypeReg) && (typeflag != TypeDir) && (typeflag != TypeGNUSparse) && (typeflag != typeRegA) {
 		return 0, 0, 0, 0, errBadHeader
 	}
 
@@ -649,15 +755,45 @@ func parseBlock1(b *block) (byte, int64, int64, int64, error) {
 
 // Read satisfies io.Reader.
 func (r *Reader) Read(b []byte) (int, error) {
+	n, err := r.read(b)
+	r.numBytesRead += int64(n)
+	return n, err
+}
+
+func (r *Reader) read(b []byte) (int, error) {
 	if r.err != nil {
 		return 0, r.err
-	} else if r.remaining == 0 {
-		return 0, io.EOF
-	} else if len(b) == 0 {
-		return 0, nil
+	}
+
+	for r.remaining == 0 {
+		if !r.sizeIsImplicit {
+			return 0, io.EOF
+		}
+		if _, err := readFullNoEOF(r.r, r.block[:0x200]); err != nil {
+			r.err = err
+			return 0, err
+		}
+		typeflag, size, mode, modTime, err := parseBlock1(&r.block)
+		if err != nil {
+			r.err = err
+			return 0, err
+		} else if ((typeflag != TypeReg) && (typeflag != typeRegA)) || (mode != Mode644) || (modTime != 0) {
+			r.err = errBadHeader
+			return 0, err
+		} else if (r.numBytesRead + size) >= (1 << 53) {
+			r.err = errImplicitSize
+			return 0, err
+		}
+		r.remaining = size
+		r.numPadding = int32(roundUp512(uint64(size)) - uint64(size))
+		r.sizeIsImplicit = typeflag == typeRegA
 	}
 
 	b = b[:int(min(r.remaining, int64(len(b))))]
+	if len(b) == 0 {
+		return 0, nil
+	}
+
 	if r.sparse {
 		n := len(b)
 		clear(b)
@@ -688,7 +824,11 @@ func (r *Reader) Read(b []byte) (int, error) {
 			r.numPadding = 0
 		}
 		if (err == nil) || (err == io.EOF) {
-			return n, io.EOF
+			if r.sizeIsImplicit {
+				return n, nil
+			} else {
+				return n, io.EOF
+			}
 		}
 
 	} else if err == io.EOF {
@@ -697,4 +837,10 @@ func (r *Reader) Read(b []byte) (int, error) {
 
 	r.err = err
 	return n, r.err
+}
+
+// NumBytesRead returns the number of bytes read by all previous Reader.Read
+// calls. The counter resets to zero on each Reader.Next call.
+func (r *Reader) NumBytesRead() int64 {
+	return r.numBytesRead
 }

@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -32,8 +33,12 @@ func (c *crcWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func testWriter(tt *testing.T, sparse bool) {
-	f, err := os.Open("../../test/data/archive.tar")
+func testWriter(tt *testing.T, sparse bool, implicit bool) {
+	srcFilename := "../../test/data/archive.tar"
+	if implicit {
+		srcFilename = "../../test/data/various-peacocks.dense.suitar"
+	}
+	f, err := os.Open(srcFilename)
 	if err != nil {
 		tt.Fatalf("os.Open: %v", err)
 	}
@@ -51,10 +56,15 @@ func testWriter(tt *testing.T, sparse bool) {
 			tt.Fatalf("Next: %v", err)
 		}
 
+		size := tHeader.Size
+		if implicit {
+			size = SizeIsImplicit
+		}
+
 		sHeader := &Header{
 			Typeflag: tHeader.Typeflag,
 			Name:     tHeader.Name,
-			Size:     tHeader.Size,
+			Size:     size,
 			Mode:     tHeader.Mode,
 			ModTime:  tHeader.ModTime,
 		}
@@ -79,11 +89,11 @@ func testWriter(tt *testing.T, sparse bool) {
 	}
 
 	got := buf.Bytes()
-	wantFilename := "../../test/data/archive"
+	wantFilename := "../../test/data/archive.dense.suitar"
 	if sparse {
-		wantFilename += ".sparse.suitar"
-	} else {
-		wantFilename += ".dense.suitar"
+		wantFilename = "../../test/data/archive.sparse.suitar"
+	} else if implicit {
+		wantFilename = "../../test/data/various-peacocks.implicit.suitar"
 	}
 	want, err := os.ReadFile(wantFilename)
 	if err != nil {
@@ -181,8 +191,9 @@ func testReader(tt *testing.T, sparse bool, ignore bool) {
 	}
 }
 
-func TestWriterDense(tt *testing.T)        { testWriter(tt, false) }
-func TestWriterSparse(tt *testing.T)       { testWriter(tt, true) }
+func TestWriterDense(tt *testing.T)        { testWriter(tt, false, false) }
+func TestWriterSparse(tt *testing.T)       { testWriter(tt, true, false) }
+func TestWriterImplicit(tt *testing.T)     { testWriter(tt, false, true) }
 func TestReaderDenseCheck(tt *testing.T)   { testReader(tt, false, false) }
 func TestReaderDenseIgnore(tt *testing.T)  { testReader(tt, false, true) }
 func TestReaderSparseCheck(tt *testing.T)  { testReader(tt, true, false) }
@@ -424,3 +435,82 @@ func testWriteTooMuch(tt *testing.T, typeflag byte) {
 
 func TestWriteTooMuchRegular(tt *testing.T) { testWriteTooMuch(tt, TypeReg) }
 func TestWriteTooMuchSparse(tt *testing.T)  { testWriteTooMuch(tt, TypeGNUSparse) }
+
+func TestSizeIsImplicit(tt *testing.T) {
+	pi, err := os.ReadFile("../../test/data/pi.txt")
+	if err != nil {
+		tt.Fatalf("ReadFile: %v", err)
+	}
+
+	writeSizes := []int{
+		1, 2, 3, 4,
+		10, 20, 50, 100,
+		250, 251, 252, 253,
+		254, 255, 256, 257,
+		401, 402, 403, 404,
+		510, 511, 512, 513,
+		1024, 1234, 4094, 4095,
+		4096, 4097, 4098, -1,
+	}
+
+	totalSizes := []int(nil)
+
+	buf := bytes.Buffer{}
+	sWriter := NewWriter(&buf)
+
+	rng := rand.New(rand.NewSource(0))
+	for i := range 100 {
+		if err := sWriter.WriteHeader(&Header{
+			Typeflag: TypeReg,
+			Name:     fmt.Sprintf("%03d.dat", i),
+			Size:     SizeIsImplicit,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		}
+		totalSize := 0
+
+		for range 20 {
+			writeSize := min(writeSizes[rng.Intn(len(writeSizes))], len(pi)-totalSize)
+			if writeSize <= 0 {
+				break
+			}
+			if _, err := sWriter.Write(pi[totalSize : totalSize+writeSize]); err != nil {
+				tt.Fatalf("Write: %v", err)
+			}
+			totalSize += writeSize
+		}
+
+		totalSizes = append(totalSizes, totalSize)
+	}
+
+	if err := sWriter.Close(); err != nil {
+		tt.Fatalf("Close: %v", err)
+	}
+
+	sReader := NewReader(&buf)
+	for i, totalSize := range totalSizes {
+		sHeader, err := sReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			tt.Fatalf("Next: %v", err)
+		} else if sHeader.Size != SizeIsImplicit {
+			tt.Fatalf("sHeader.Size: got %d, want %d", sHeader.Size, SizeIsImplicit)
+		} else if want := fmt.Sprintf("%03d.dat", i); sHeader.Name != want {
+			tt.Fatalf("sHeader.Name: got %q, want %q", sHeader.Name, want)
+		}
+
+		got, err := io.ReadAll(sReader)
+		if err != nil {
+			tt.Fatalf("ReadAll: %v", err)
+		} else if len(got) != totalSize {
+			tt.Fatalf("bytes read: got %d, want %d", len(got), totalSize)
+		} else if !bytes.Equal(got, pi[:totalSize]) {
+			tt.Fatalf("bytes read: contents differ")
+		} else if n := sReader.NumBytesRead(); n != int64(totalSize) {
+			tt.Fatalf("NumBytesRead: got %d, want %d", n, totalSize)
+		}
+	}
+}
