@@ -964,6 +964,17 @@ typedef struct wuffs_base__transform__output__struct {
 
 // --------
 
+// Various MIME types in 4/4/2 base-38 encoding, per
+// doc/note/enumerated-media-types.txt
+
+// base38("appl/defl/..") = 0x9CC62_607F1000
+#define WUFFS_BASE__MIME_TYPE__APPLICATION_DEFLATE 2757997688197120
+
+// base38("appl/octe/..") = 0x9CC62_A9E37800
+#define WUFFS_BASE__MIME_TYPE__APPLICATION_OCTET_STREAM 2757998919514112
+
+// --------
+
 // Quirks.
 
 #define WUFFS_BASE__QUIRK_IGNORE_CHECKSUM 1

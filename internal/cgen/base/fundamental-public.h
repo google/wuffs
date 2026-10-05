@@ -682,6 +682,13 @@ typedef struct wuffs_base__transform__output__struct {
 
 // --------
 
+// Various MIME types in 4/4/2 base-38 encoding, per
+// doc/note/enumerated-media-types.txt
+
+// ¡ INSERT MimeTypes.
+
+// --------
+
 // Quirks.
 
 // ¡ INSERT Quirks.

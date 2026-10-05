@@ -94,6 +94,15 @@ var FourCCs = [...][2]string{
 	{"ZSTD", "Zstandard"},
 }
 
+var MimeTypes = [...]struct {
+	Base38Number uint64
+	Base38String string
+	Name         string
+}{
+	{0x09CC62_607F1000, "appl/defl/..", "application/deflate"},
+	{0x09CC62_A9E37800, "appl/octe/..", "application/octet-stream"},
+}
+
 var Consts = [...]struct {
 	Type  t.ID
 	Value string

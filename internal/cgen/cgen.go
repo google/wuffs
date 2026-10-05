@@ -316,6 +316,32 @@ func insertBaseAllPublicH(buf *buffer) error {
 			}
 			return nil
 		},
+		"// ¡ INSERT MimeTypes.\n": func(b *buffer) error {
+			for i, z := range builtin.MimeTypes {
+				if i != 0 {
+					b.writeb('\n')
+				}
+				strBuf := make([]byte, len(z.Name))
+				for i := range strBuf {
+					c := z.Name[i]
+					if ('a' <= c) && (c <= 'z') {
+						strBuf[i] = c &^ 0x20
+					} else if (('A' <= c) && (c <= 'Z')) || (('0' <= c) && (c <= '9')) {
+						strBuf[i] = c
+					} else {
+						strBuf[i] = '_'
+					}
+				}
+				b.printf("// base38(%q) = 0x%X_%08X\n#define WUFFS_BASE__MIME_TYPE__%s %d\n",
+					z.Base38String,
+					z.Base38Number>>32,
+					z.Base38Number&0xFFFFFFFF,
+					string(strBuf),
+					z.Base38Number,
+				)
+			}
+			return nil
+		},
 		"// ¡ INSERT Quirks.\n": func(b *buffer) error {
 			first := true
 			for _, z := range builtin.Consts {

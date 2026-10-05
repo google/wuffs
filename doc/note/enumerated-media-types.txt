@@ -47,6 +47,8 @@
 # directory of the github.com/google/wuffs repository. That same directory also
 # holds a base38-and-fourcc.md file that elaborates on base38 encoding.
 
+0x09CC62_556F2000	2757997502603264	appl/brot/..	application/brotli
+0x09CC62_607F1000	2757997688197120	appl/defl/..	application/deflate
 0x09CC62_6933B000	2757997834252288	appl/epub/..	application/epub+zip
 0x09CC62_784EA000	2757998087675904	appl/gzip/..	application/gzip
 0x09CC62_880DB9BE	2757998351858110	appl/java/ar	application/java-archive
@@ -130,6 +132,7 @@
 0x09CC62_E70E1800	2757999945717760	appl/xhtm/..	application/xhtml+xml
 0x09CC62_E73A1800	2757999948601344	appl/xiso/..	application/x-iso9660-image
 0x09CC62_E7AC4000	2757999956082688	appl/xlat/..	application/x-latex
+0x09CC62_E7C9B800	2757999958013952	appl/xlzm/..	application/x-lzma
 0x09CC62_E7E58000	2757999959834624	appl/xml./..	application/xml
 0x09CC62_E7E5F000	2757999959863296	appl/xmld/..	application/xml-dtd
 0x09CC62_E7EDD1BC	2757999960379836	appl/xms./ap	application/x-ms-application
@@ -144,6 +147,8 @@
 0x09CC62_E91A22EA	2757999980061418	appl/xtex/in	application/x-texinfo
 0x09CC62_E9E68000	2757999993454592	appl/xxz./..	application/x-xz
 0x09CC62_F49B4000	2758000173072384	appl/zip./..	application/zip
+0x09CC62_F51AB000	2758000181424128	appl/zlib/..	application/zlib
+0x09CC62_F663B000	2758000202985472	appl/zstd/..	application/zstd
 0x09CC62_FAA35800	2758000274266112	appl/~exa/..	application/pua.example
 0x09CC62_FE887DA3	2758000339615139	appl/~~~~/~~	application/*
 
