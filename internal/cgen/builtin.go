@@ -514,26 +514,37 @@ func (g *gen) writeBuiltinCPUArchARMCRC32(b *buffer, recv *a.Expr, method t.ID, 
 func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	methodStr := method.Str(g.tm)
 	if strings.HasPrefix(methodStr, "make_") {
-		before, after, ptr := "", ")", false
+		before, middle, after, ptr := "", "", ")", false
 		if strings.HasSuffix(methodStr, "_multiple") {
-			after = "})"
 			switch methodStr {
 			case "make_u8x8_multiple":
-				before = "((uint8x8_t){"
+				before = "vreinterpret_u8_u64(vcreate_u64(wuffs_base__pack_u8x8le_as_u64("
+				after = ")))"
 			case "make_u16x4_multiple":
-				before = "((uint16x4_t){"
+				before = "vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64("
+				after = ")))"
 			case "make_u32x2_multiple":
-				before = "((uint32x2_t){"
+				before = "vreinterpret_u32_u64(vcreate_u64(wuffs_base__pack_u32x2le_as_u64("
+				after = ")))"
 			case "make_u64x1_multiple":
-				before = "((uint64x1_t){"
+				before = "vcreate_u64("
+				after = ")"
 			case "make_u8x16_multiple":
-				before = "((uint8x16_t){"
+				before = "vcombine_u8(vreinterpret_u8_u64(vcreate_u64(wuffs_base__pack_u8x8le_as_u64("
+				middle = "))), vreinterpret_u8_u64(vcreate_u64(wuffs_base__pack_u8x8le_as_u64("
+				after = "))))"
 			case "make_u16x8_multiple":
-				before = "((uint16x8_t){"
+				before = "vcombine_u16(vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64("
+				middle = "))), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64("
+				after = "))))"
 			case "make_u32x4_multiple":
-				before = "((uint32x4_t){"
+				before = "vcombine_u32(vreinterpret_u32_u64(vcreate_u64(wuffs_base__pack_u32x2le_as_u64("
+				middle = "))), vreinterpret_u32_u64(vcreate_u64(wuffs_base__pack_u32x2le_as_u64("
+				after = "))))"
 			case "make_u64x2_multiple":
-				before = "((uint64x2_t){"
+				before = "vcombine_u64(vcreate_u64("
+				middle = "), vcreate_u64("
+				after = "))"
 			}
 		} else {
 			switch methodStr {
@@ -563,7 +574,9 @@ func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, a
 		}
 		b.writes(before)
 		for i, o := range args {
-			if i > 0 {
+			if (i == (len(args) / 2)) && (middle != "") {
+				b.writes(middle)
+			} else if i > 0 {
 				b.writes(", ")
 			}
 			if ptr {

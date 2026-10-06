@@ -1691,6 +1691,44 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
 #endif
 }
 
+// --------
+
+static inline uint64_t  //
+wuffs_base__pack_u8x8le_as_u64(uint8_t a0,
+                               uint8_t a1,
+                               uint8_t a2,
+                               uint8_t a3,
+                               uint8_t a4,
+                               uint8_t a5,
+                               uint8_t a6,
+                               uint8_t a7) {
+  return (((uint64_t)a0) << 0) |   //
+         (((uint64_t)a1) << 8) |   //
+         (((uint64_t)a2) << 16) |  //
+         (((uint64_t)a3) << 24) |  //
+         (((uint64_t)a4) << 32) |  //
+         (((uint64_t)a5) << 40) |  //
+         (((uint64_t)a6) << 48) |  //
+         (((uint64_t)a7) << 56);
+}
+
+static inline uint64_t  //
+wuffs_base__pack_u16x4le_as_u64(uint16_t a0,
+                                uint16_t a1,
+                                uint16_t a2,
+                                uint16_t a3) {
+  return (((uint64_t)a0) << 0) |   //
+         (((uint64_t)a1) << 16) |  //
+         (((uint64_t)a2) << 32) |  //
+         (((uint64_t)a3) << 48);
+}
+
+static inline uint64_t  //
+wuffs_base__pack_u32x2le_as_u64(uint32_t a0, uint32_t a1) {
+  return (((uint64_t)a0) << 0) |  //
+         (((uint64_t)a1) << 32);
+}
+
 // ---------------- Slices and Tables
 
 // WUFFS_BASE__SLICE is a 1-dimensional buffer.
@@ -35960,14 +35998,14 @@ wuffs_adler32__hasher__up_arm_neon(
       v_p.len = 0;
     }
     v_v2 = vshlq_n_u32(v_v2, 5u);
-    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col0), ((uint16x4_t){32u, 31u, 30u, 29u}));
-    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col0), ((uint16x4_t){28u, 27u, 26u, 25u}));
-    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col1), ((uint16x4_t){24u, 23u, 22u, 21u}));
-    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col1), ((uint16x4_t){20u, 19u, 18u, 17u}));
-    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col2), ((uint16x4_t){16u, 15u, 14u, 13u}));
-    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col2), ((uint16x4_t){12u, 11u, 10u, 9u}));
-    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col3), ((uint16x4_t){8u, 7u, 6u, 5u}));
-    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col3), ((uint16x4_t){4u, 3u, 2u, 1u}));
+    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col0), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(32u, 31u, 30u, 29u))));
+    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col0), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(28u, 27u, 26u, 25u))));
+    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col1), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(24u, 23u, 22u, 21u))));
+    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col1), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(20u, 19u, 18u, 17u))));
+    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col2), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(16u, 15u, 14u, 13u))));
+    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col2), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(12u, 11u, 10u, 9u))));
+    v_v2 = vmlal_u16(v_v2, vget_low_u16(v_col3), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(8u, 7u, 6u, 5u))));
+    v_v2 = vmlal_u16(v_v2, vget_high_u16(v_col3), vreinterpret_u16_u64(vcreate_u64(wuffs_base__pack_u16x4le_as_u64(4u, 3u, 2u, 1u))));
     v_sum1 = vpadd_u32(vget_low_u32(v_v1), vget_high_u32(v_v1));
     v_sum2 = vpadd_u32(vget_low_u32(v_v2), vget_high_u32(v_v2));
     v_sum12 = vpadd_u32(v_sum1, v_sum2);

@@ -1401,6 +1401,44 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
 #endif
 }
 
+// --------
+
+static inline uint64_t  //
+wuffs_base__pack_u8x8le_as_u64(uint8_t a0,
+                               uint8_t a1,
+                               uint8_t a2,
+                               uint8_t a3,
+                               uint8_t a4,
+                               uint8_t a5,
+                               uint8_t a6,
+                               uint8_t a7) {
+  return (((uint64_t)a0) << 0) |   //
+         (((uint64_t)a1) << 8) |   //
+         (((uint64_t)a2) << 16) |  //
+         (((uint64_t)a3) << 24) |  //
+         (((uint64_t)a4) << 32) |  //
+         (((uint64_t)a5) << 40) |  //
+         (((uint64_t)a6) << 48) |  //
+         (((uint64_t)a7) << 56);
+}
+
+static inline uint64_t  //
+wuffs_base__pack_u16x4le_as_u64(uint16_t a0,
+                                uint16_t a1,
+                                uint16_t a2,
+                                uint16_t a3) {
+  return (((uint64_t)a0) << 0) |   //
+         (((uint64_t)a1) << 16) |  //
+         (((uint64_t)a2) << 32) |  //
+         (((uint64_t)a3) << 48);
+}
+
+static inline uint64_t  //
+wuffs_base__pack_u32x2le_as_u64(uint32_t a0, uint32_t a1) {
+  return (((uint64_t)a0) << 0) |  //
+         (((uint64_t)a1) << 32);
+}
+
 // ---------------- Slices and Tables
 
 // WUFFS_BASE__SLICE is a 1-dimensional buffer.
