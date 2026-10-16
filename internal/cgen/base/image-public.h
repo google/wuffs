@@ -94,11 +94,11 @@ wuffs_base__color_u32_argb_premul__as__color_u16_alpha_gray_nonpremul(
   uint32_t a16 = a * 0x101;
 
   uint32_t cr = 0xFF & (c >> 16);
-  cr = (cr * (0x101 * 0xFFFF)) / a16;
+  cr = ((cr * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
   uint32_t cg = 0xFF & (c >> 8);
-  cg = (cg * (0x101 * 0xFFFF)) / a16;
+  cg = ((cg * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
   uint32_t cb = 0xFF & (c >> 0);
-  cb = (cb * (0x101 * 0xFFFF)) / a16;
+  cb = ((cb * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
 
   uint32_t weighted_average = (19595 * cr) + (38470 * cg) + (7471 * cb) + 32768;
   return (uint16_t)((a16 & 0xFF00) | (weighted_average >> 24));
@@ -125,24 +125,17 @@ wuffs_base__color_u32_argb_premul__as__color_u16_gray(
 static inline wuffs_base__color_u32_argb_premul  //
 wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
     uint32_t argb_nonpremul) {
-  // Multiplying by 0x101 (twice, once for alpha and once for color) converts
-  // from 8-bit to 16-bit color. Shifting right by 8 undoes that.
-  //
-  // Working in the higher bit depth can produce slightly different (and
-  // arguably slightly more accurate) results. For example, given 8-bit blue
-  // and alpha of 0x80 and 0x81:
-  //
-  //  - ((0x80   * 0x81  ) / 0xFF  )      = 0x40        = 0x40
-  //  - ((0x8080 * 0x8181) / 0xFFFF) >> 8 = 0x4101 >> 8 = 0x41
+  // Each color channel c becomes round(c * a / 255), rounding to nearest. With
+  // x = (c * a) + 128, ((x + (x >> 8)) >> 8) equals that exactly for all 8-bit
+  // c and a, with no division. Alpha 0xFF keeps c.
   uint32_t a = 0xFF & (argb_nonpremul >> 24);
-  uint32_t a16 = a * (0x101 * 0x101);
 
-  uint32_t r = 0xFF & (argb_nonpremul >> 16);
-  r = ((r * a16) / 0xFFFF) >> 8;
-  uint32_t g = 0xFF & (argb_nonpremul >> 8);
-  g = ((g * a16) / 0xFFFF) >> 8;
-  uint32_t b = 0xFF & (argb_nonpremul >> 0);
-  b = ((b * a16) / 0xFFFF) >> 8;
+  uint32_t r = ((0xFF & (argb_nonpremul >> 16)) * a) + 128;
+  r = (r + (r >> 8)) >> 8;
+  uint32_t g = ((0xFF & (argb_nonpremul >> 8)) * a) + 128;
+  g = (g + (g >> 8)) >> 8;
+  uint32_t b = ((0xFF & (argb_nonpremul >> 0)) * a) + 128;
+  b = (b + (b >> 8)) >> 8;
 
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
@@ -158,14 +151,14 @@ wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
   } else if (a == 0) {
     return 0;
   }
-  uint32_t a16 = a * 0x101;
 
+  // Each color channel c becomes round(c * 255 / a), rounding to nearest.
   uint32_t r = 0xFF & (c >> 16);
-  r = ((r * (0x101 * 0xFFFF)) / a16) >> 8;
+  r = ((r * 0xFF) + (a >> 1)) / a;
   uint32_t g = 0xFF & (c >> 8);
-  g = ((g * (0x101 * 0xFFFF)) / a16) >> 8;
+  g = ((g * 0xFF) + (a >> 1)) / a;
   uint32_t b = 0xFF & (c >> 0);
-  b = ((b * (0x101 * 0xFFFF)) / a16) >> 8;
+  b = ((b * 0xFF) + (a >> 1)) / a;
 
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
@@ -175,17 +168,22 @@ wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
 static inline wuffs_base__color_u32_argb_premul  //
 wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
     uint64_t argb_nonpremul) {
-  uint32_t a16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 48)));
+  // Alpha becomes round(a16 / 0x101) and each color channel c16 becomes
+  // round(c16 * a16 / (0xFFFF * 0x101)), rounding to nearest in one step (not
+  // rounding to 16-bit premul and then again to 8-bit). For 8-bit values
+  // widened by 0x101, this matches
+  // wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul.
+  uint64_t a16 = 0xFFFF & (argb_nonpremul >> 48);
 
-  uint32_t r16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 32)));
-  r16 = (r16 * a16) / 0xFFFF;
-  uint32_t g16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 16)));
-  g16 = (g16 * a16) / 0xFFFF;
-  uint32_t b16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 0)));
-  b16 = (b16 * a16) / 0xFFFF;
+  uint64_t r16 = 0xFFFF & (argb_nonpremul >> 32);
+  uint32_t r = (uint32_t)(((r16 * a16) + (0x100FEFF / 2)) / 0x100FEFF);
+  uint64_t g16 = 0xFFFF & (argb_nonpremul >> 16);
+  uint32_t g = (uint32_t)(((g16 * a16) + (0x100FEFF / 2)) / 0x100FEFF);
+  uint64_t b16 = 0xFFFF & (argb_nonpremul >> 0);
+  uint32_t b = (uint32_t)(((b16 * a16) + (0x100FEFF / 2)) / 0x100FEFF);
+  uint32_t a = (uint32_t)((a16 + 128) / 257);
 
-  return ((a16 >> 8) << 24) | ((r16 >> 8) << 16) | ((g16 >> 8) << 8) |
-         ((b16 >> 8) << 0);
+  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
 // wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul converts
@@ -205,11 +203,11 @@ wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
   uint64_t a16 = a * 0x101;
 
   uint64_t r = 0xFF & (c >> 16);
-  uint64_t r16 = (r * (0x101 * 0xFFFF)) / a16;
+  uint64_t r16 = ((r * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
   uint64_t g = 0xFF & (c >> 8);
-  uint64_t g16 = (g * (0x101 * 0xFFFF)) / a16;
+  uint64_t g16 = ((g * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
   uint64_t b = 0xFF & (c >> 0);
-  uint64_t b16 = (b * (0x101 * 0xFFFF)) / a16;
+  uint64_t b16 = ((b * (0x101 * 0xFFFF)) + (a16 >> 1)) / a16;
 
   return (a16 << 48) | (r16 << 32) | (g16 << 16) | (b16 << 0);
 }
@@ -242,11 +240,11 @@ wuffs_base__color_u64_argb_premul__as__color_u64_argb_nonpremul(
   }
 
   uint64_t r = 0xFFFF & (argb_premul >> 32);
-  r = (r * 0xFFFF) / a;
+  r = ((r * 0xFFFF) + (a >> 1)) / a;
   uint64_t g = 0xFFFF & (argb_premul >> 16);
-  g = (g * 0xFFFF) / a;
+  g = ((g * 0xFFFF) + (a >> 1)) / a;
   uint64_t b = 0xFFFF & (argb_premul >> 0);
-  b = (b * 0xFFFF) / a;
+  b = ((b * 0xFFFF) + (a >> 1)) / a;
 
   return (a << 48) | (r << 32) | (g << 16) | (b << 0);
 }
@@ -257,11 +255,11 @@ wuffs_base__color_u64_argb_nonpremul__as__color_u8_gray(
   uint32_t a16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 48)));
 
   uint32_t r16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 32)));
-  r16 = (r16 * a16) / 0xFFFF;
+  r16 = ((r16 * a16) + 0x7FFF) / 0xFFFF;
   uint32_t g16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 16)));
-  g16 = (g16 * a16) / 0xFFFF;
+  g16 = ((g16 * a16) + 0x7FFF) / 0xFFFF;
   uint32_t b16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 0)));
-  b16 = (b16 * a16) / 0xFFFF;
+  b16 = ((b16 * a16) + 0x7FFF) / 0xFFFF;
 
   // These coefficients (the fractions 0.299, 0.587 and 0.114) are the same
   // as those given by the JFIF specification.

@@ -619,9 +619,9 @@ wuffs_base__pixel_palette__closest_element(
 
         // Convert to premultiplied alpha.
         if (nonpremul && (pa != 0xFFFF)) {
-          pb = (pb * pa) / 0xFFFF;
-          pg = (pg * pa) / 0xFFFF;
-          pr = (pr * pa) / 0xFFFF;
+          pb = ((pb * pa) + 0x7FFF) / 0xFFFF;
+          pg = ((pg * pa) + 0x7FFF) / 0xFFFF;
+          pr = ((pr * pa) + 0x7FFF) / 0xFFFF;
         }
 
         // These deltas are conceptually int32_t (signed) but after squaring,
@@ -670,31 +670,31 @@ wuffs_private_impl__composite_nonpremul_nonpremul_u32_axxx(
   uint32_t sb = 0x101 * (0xFF & (src_nonpremul >> 0));
 
   // Convert dst from nonpremul to premul.
-  dr = (dr * da) / 0xFFFF;
-  dg = (dg * da) / 0xFFFF;
-  db = (db * da) / 0xFFFF;
+  dr = ((dr * da) + 0x7FFF) / 0xFFFF;
+  dg = ((dg * da) + 0x7FFF) / 0xFFFF;
+  db = ((db * da) + 0x7FFF) / 0xFFFF;
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint32_t ia = 0xFFFF - sa;
 
   // Composite src (nonpremul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-  dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-  db = ((sb * sa) + (db * ia)) / 0xFFFF;
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+  dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+  db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
   // Convert dst from premul to nonpremul.
   if (da != 0) {
-    dr = (dr * 0xFFFF) / da;
-    dg = (dg * 0xFFFF) / da;
-    db = (db * 0xFFFF) / da;
+    dr = ((dr * 0xFFFF) + (da >> 1)) / da;
+    dg = ((dg * 0xFFFF) + (da >> 1)) / da;
+    db = ((db * 0xFFFF) + (da >> 1)) / da;
   }
 
   // Convert from 16-bit color to 8-bit color.
-  da >>= 8;
-  dr >>= 8;
-  dg >>= 8;
-  db >>= 8;
+  da = (da + 128) / 257;
+  dr = (dr + 128) / 257;
+  dg = (dg + 128) / 257;
+  db = (db + 128) / 257;
 
   // Combine components.
   return (db << 0) | (dg << 8) | (dr << 16) | (da << 24);
@@ -724,24 +724,24 @@ wuffs_private_impl__composite_nonpremul_nonpremul_u64_axxx(
   uint64_t sb = 0xFFFF & (src_nonpremul >> 0);
 
   // Convert dst from nonpremul to premul.
-  dr = (dr * da) / 0xFFFF;
-  dg = (dg * da) / 0xFFFF;
-  db = (db * da) / 0xFFFF;
+  dr = ((dr * da) + 0x7FFF) / 0xFFFF;
+  dg = ((dg * da) + 0x7FFF) / 0xFFFF;
+  db = ((db * da) + 0x7FFF) / 0xFFFF;
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint64_t ia = 0xFFFF - sa;
 
   // Composite src (nonpremul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-  dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-  db = ((sb * sa) + (db * ia)) / 0xFFFF;
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+  dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+  db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
   // Convert dst from premul to nonpremul.
   if (da != 0) {
-    dr = (dr * 0xFFFF) / da;
-    dg = (dg * 0xFFFF) / da;
-    db = (db * 0xFFFF) / da;
+    dr = ((dr * 0xFFFF) + (da >> 1)) / da;
+    dg = ((dg * 0xFFFF) + (da >> 1)) / da;
+    db = ((db * 0xFFFF) + (da >> 1)) / da;
   }
 
   // Combine components.
@@ -762,31 +762,31 @@ wuffs_private_impl__composite_nonpremul_premul_u32_axxx(uint32_t dst_nonpremul,
   uint32_t sb = 0x101 * (0xFF & (src_premul >> 0));
 
   // Convert dst from nonpremul to premul.
-  dr = (dr * da) / 0xFFFF;
-  dg = (dg * da) / 0xFFFF;
-  db = (db * da) / 0xFFFF;
+  dr = ((dr * da) + 0x7FFF) / 0xFFFF;
+  dg = ((dg * da) + 0x7FFF) / 0xFFFF;
+  db = ((db * da) + 0x7FFF) / 0xFFFF;
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint32_t ia = 0xFFFF - sa;
 
   // Composite src (premul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = sr + ((dr * ia) / 0xFFFF);
-  dg = sg + ((dg * ia) / 0xFFFF);
-  db = sb + ((db * ia) / 0xFFFF);
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+  dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+  db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
   // Convert dst from premul to nonpremul.
   if (da != 0) {
-    dr = (dr * 0xFFFF) / da;
-    dg = (dg * 0xFFFF) / da;
-    db = (db * 0xFFFF) / da;
+    dr = ((dr * 0xFFFF) + (da >> 1)) / da;
+    dg = ((dg * 0xFFFF) + (da >> 1)) / da;
+    db = ((db * 0xFFFF) + (da >> 1)) / da;
   }
 
   // Convert from 16-bit color to 8-bit color.
-  da >>= 8;
-  dr >>= 8;
-  dg >>= 8;
-  db >>= 8;
+  da = (da + 128) / 257;
+  dr = (dr + 128) / 257;
+  dg = (dg + 128) / 257;
+  db = (db + 128) / 257;
 
   // Combine components.
   return (db << 0) | (dg << 8) | (dr << 16) | (da << 24);
@@ -806,24 +806,24 @@ wuffs_private_impl__composite_nonpremul_premul_u64_axxx(uint64_t dst_nonpremul,
   uint64_t sb = 0xFFFF & (src_premul >> 0);
 
   // Convert dst from nonpremul to premul.
-  dr = (dr * da) / 0xFFFF;
-  dg = (dg * da) / 0xFFFF;
-  db = (db * da) / 0xFFFF;
+  dr = ((dr * da) + 0x7FFF) / 0xFFFF;
+  dg = ((dg * da) + 0x7FFF) / 0xFFFF;
+  db = ((db * da) + 0x7FFF) / 0xFFFF;
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint64_t ia = 0xFFFF - sa;
 
   // Composite src (premul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = sr + ((dr * ia) / 0xFFFF);
-  dg = sg + ((dg * ia) / 0xFFFF);
-  db = sb + ((db * ia) / 0xFFFF);
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+  dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+  db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
   // Convert dst from premul to nonpremul.
   if (da != 0) {
-    dr = (dr * 0xFFFF) / da;
-    dg = (dg * 0xFFFF) / da;
-    db = (db * 0xFFFF) / da;
+    dr = ((dr * 0xFFFF) + (da >> 1)) / da;
+    dg = ((dg * 0xFFFF) + (da >> 1)) / da;
+    db = ((db * 0xFFFF) + (da >> 1)) / da;
   }
 
   // Combine components.
@@ -848,16 +848,16 @@ wuffs_private_impl__composite_premul_nonpremul_u32_axxx(
   uint32_t ia = 0xFFFF - sa;
 
   // Composite src (nonpremul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-  dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-  db = ((sb * sa) + (db * ia)) / 0xFFFF;
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+  dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+  db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
   // Convert from 16-bit color to 8-bit color.
-  da >>= 8;
-  dr >>= 8;
-  dg >>= 8;
-  db >>= 8;
+  da = (da + 128) / 257;
+  dr = (dr + 128) / 257;
+  dg = (dg + 128) / 257;
+  db = (db + 128) / 257;
 
   // Combine components.
   return (db << 0) | (dg << 8) | (dr << 16) | (da << 24);
@@ -881,10 +881,10 @@ wuffs_private_impl__composite_premul_nonpremul_u64_axxx(
   uint64_t ia = 0xFFFF - sa;
 
   // Composite src (nonpremul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-  dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-  db = ((sb * sa) + (db * ia)) / 0xFFFF;
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+  dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+  db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
   // Combine components.
   return (db << 0) | (dg << 16) | (dr << 32) | (da << 48);
@@ -907,16 +907,16 @@ wuffs_private_impl__composite_premul_premul_u32_axxx(uint32_t dst_premul,
   uint32_t ia = 0xFFFF - sa;
 
   // Composite src (premul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = sr + ((dr * ia) / 0xFFFF);
-  dg = sg + ((dg * ia) / 0xFFFF);
-  db = sb + ((db * ia) / 0xFFFF);
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+  dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+  db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
   // Convert from 16-bit color to 8-bit color.
-  da >>= 8;
-  dr >>= 8;
-  dg >>= 8;
-  db >>= 8;
+  da = (da + 128) / 257;
+  dr = (dr + 128) / 257;
+  dg = (dg + 128) / 257;
+  db = (db + 128) / 257;
 
   // Combine components.
   return (db << 0) | (dg << 8) | (dr << 16) | (da << 24);
@@ -939,10 +939,10 @@ wuffs_private_impl__composite_premul_premul_u64_axxx(uint64_t dst_premul,
   uint64_t ia = 0xFFFF - sa;
 
   // Composite src (premul) over dst (premul).
-  da = sa + ((da * ia) / 0xFFFF);
-  dr = sr + ((dr * ia) / 0xFFFF);
-  dg = sg + ((dg * ia) / 0xFFFF);
-  db = sb + ((db * ia) / 0xFFFF);
+  da = sa + (((da * ia) + 0x7FFF) / 0xFFFF);
+  dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+  dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+  db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
   // Combine components.
   return (db << 0) | (dg << 16) | (dr << 32) | (da << 48);
@@ -1389,9 +1389,9 @@ wuffs_private_impl__swizzle_bgr_565__bgra_nonpremul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -1445,9 +1445,9 @@ wuffs_private_impl__swizzle_bgr_565__bgra_nonpremul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -1562,9 +1562,9 @@ wuffs_private_impl__swizzle_bgr_565__bgra_premul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -1618,9 +1618,9 @@ wuffs_private_impl__swizzle_bgr_565__bgra_premul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -1738,9 +1738,9 @@ wuffs_private_impl__swizzle_bgr_565__rgba_nonpremul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -1825,9 +1825,9 @@ wuffs_private_impl__swizzle_bgr_565__rgba_premul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -2001,9 +2001,9 @@ wuffs_private_impl__swizzle_bgr_565__ya_nonpremul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sy * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sy * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sy * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sy * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sy * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sy * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 565 color and combine the components.
     uint32_t new_r5 = 0x1F & (dr >> 11);
@@ -2267,14 +2267,14 @@ wuffs_private_impl__swizzle_bgr__bgra_nonpremul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2315,14 +2315,14 @@ wuffs_private_impl__swizzle_bgr__bgra_nonpremul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 8;
     d += 1 * 3;
@@ -2420,14 +2420,14 @@ wuffs_private_impl__swizzle_bgr__bgra_premul__src_over(uint8_t* dst_ptr,
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2468,14 +2468,14 @@ wuffs_private_impl__swizzle_bgr__bgra_premul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 8;
     d += 1 * 3;
@@ -2577,14 +2577,14 @@ wuffs_private_impl__swizzle_bgr__rgba_nonpremul__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2625,14 +2625,14 @@ wuffs_private_impl__swizzle_bgr__rgba_nonpremul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 8;
     d += 1 * 3;
@@ -2731,14 +2731,14 @@ wuffs_private_impl__swizzle_bgr__rgba_premul__src_over(uint8_t* dst_ptr,
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2779,14 +2779,14 @@ wuffs_private_impl__swizzle_bgr__rgba_premul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert from 16-bit color to 8-bit color.
-    d[0] = (uint8_t)(db >> 8);
-    d[1] = (uint8_t)(dg >> 8);
-    d[2] = (uint8_t)(dr >> 8);
+    d[0] = (uint8_t)((db + 128) / 257);
+    d[1] = (uint8_t)((dg + 128) / 257);
+    d[2] = (uint8_t)((dr + 128) / 257);
 
     s += 1 * 8;
     d += 1 * 3;
@@ -5742,9 +5742,9 @@ wuffs_private_impl__swizzle_y__bgra_nonpremul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (nonpremul) over dst (premul).
-    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
-    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
-    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+    dr = ((sr * sa) + (dr * ia) + 0x7FFF) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia) + 0x7FFF) / 0xFFFF;
+    db = ((sb * sa) + (db * ia) + 0x7FFF) / 0xFFFF;
 
     // Convert to 16-bit color to 8-bit gray.
     uint32_t weighted_average =
@@ -5815,9 +5815,9 @@ wuffs_private_impl__swizzle_y__bgra_premul__src_over(uint8_t* dst_ptr,
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert to 16-bit color to 8-bit gray.
     uint32_t weighted_average =
@@ -5889,9 +5889,9 @@ wuffs_private_impl__swizzle_y__bgra_premul_4x16le__src_over(
     uint32_t ia = 0xFFFF - sa;
 
     // Composite src (premul) over dst (premul).
-    dr = sr + ((dr * ia) / 0xFFFF);
-    dg = sg + ((dg * ia) / 0xFFFF);
-    db = sb + ((db * ia) / 0xFFFF);
+    dr = sr + (((dr * ia) + 0x7FFF) / 0xFFFF);
+    dg = sg + (((dg * ia) + 0x7FFF) / 0xFFFF);
+    db = sb + (((db * ia) + 0x7FFF) / 0xFFFF);
 
     // Convert to 16-bit color to 8-bit gray.
     uint32_t weighted_average =

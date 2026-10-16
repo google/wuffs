@@ -240,6 +240,7 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   bool is_rgb_or_cmyk = 1 & (hash >> 37);
   bool triangle_filter_for_2to1 = 1 & (hash >> 38);
   bool use_4th_component = 1 & (hash >> 39);
+  bool src_is_bt601 = 1 & (hash >> 44);
 
   if (triangle_filter_for_2to1) {
     x_min_incl = 0;
@@ -413,6 +414,7 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
       v0, v1, v2, v3,                       //
       is_rgb_or_cmyk,                       //
       triangle_filter_for_2to1,             //
+      src_is_bt601,                         //
       wuffs_base__make_slice_u8(scratch_buffer, sizeof(scratch_buffer)));
   if (status.repr) {
     return wuffs_base__status__message(&status);

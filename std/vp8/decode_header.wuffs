@@ -291,17 +291,21 @@ pri func decoder.precompute_filter_strengths!() {
 
             if this.lf_delta_enabled {
                 ref_d = this.lf_ref_delta[0]
-                if (ref_d <= -1) and (ref_d >= -63) {
-                    level ~mod-= ((-(ref_d)) & 0x3F) as base.u32
-                } else if ref_d > 0 {
-                    level ~mod+= (ref_d & 0x3F) as base.u32
+                if ref_d <= -1 {
+                    if ref_d >= -63 {
+                        level ~mod-= (-(ref_d)) as base.u32
+                    }
+                } else {
+                    level ~mod+= (ref_d as base.u32) & 0x3F
                 }
                 if i4x4 <> 0 {
                     mode_d = this.lf_mode_delta[0]
-                    if (mode_d <= -1) and (mode_d >= -63) {
-                        level ~mod-= ((-(mode_d)) & 0x3F) as base.u32
-                    } else if mode_d > 0 {
-                        level ~mod+= (mode_d & 0x3F) as base.u32
+                    if mode_d <= -1 {
+                        if mode_d >= -63 {
+                            level ~mod-= (-(mode_d)) as base.u32
+                        }
+                    } else {
+                        level ~mod+= (mode_d as base.u32) & 0x3F
                     }
                 }
                 if level > 63 {
@@ -363,13 +367,13 @@ pri func decoder.clamp_qi!(qi: base.u32[..= 127], delta: base.i32) base.u32[..= 
         if args.delta <= -128 {
             return 0
         }
-        neg = ((-(args.delta)) & 0x7F) as base.u32[..= 127]
+        neg = (-(args.delta)) as base.u32[..= 127]
         if args.qi <= neg {
             return 0
         }
         return (args.qi - neg) as base.u32[..= 127]
     }
-    pos = (args.delta & 0x7F) as base.u32[..= 127]
+    pos = ((args.delta as base.u32) & 0x7F) as base.u32[..= 127]
     if (args.qi + pos) > 127 {
         return 127
     }

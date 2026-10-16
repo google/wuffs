@@ -2,7 +2,7 @@
 OK. 9720c028 test/data/36.png
 OK. c3528d19 test/data/49.bn4.nie
 OK. c3528d19 test/data/49.bn8.nie
-OK. e3bae566 test/data/49.bp4.nie
+OK. f6f62b59 test/data/49.bp4.nie
 OK. c3528d19 test/data/49.bp8.nie
 OK. f2a0a3f6 test/data/49.png
 OK. d3bb0beb test/data/DCI-P3-D65.icc
