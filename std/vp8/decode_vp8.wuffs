@@ -13,8 +13,6 @@ pub status "#bad coefficient"
 pub status "#truncated input"
 pub status "#unsupported VP8 file"
 
-pri status "#internal error: inconsistent decoder state"
-
 // Max workbuf: 1024 * 1024 * 384 (planes) + 524288 (partition0) = 0x1808_0000.
 // For multi-partition VP8, the WebP container adds coefficient data space.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x1808_0000

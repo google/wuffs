@@ -158,6 +158,13 @@ var Consts = [...]struct {
 
 	// ----
 
+	{t.IDU32, "0", "PIXEL_ALPHA_TRANSPARENCY__OPAQUE"},
+	{t.IDU32, "1", "PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA"},
+	{t.IDU32, "2", "PIXEL_ALPHA_TRANSPARENCY__PREMULTIPLIED_ALPHA"},
+	{t.IDU32, "3", "PIXEL_ALPHA_TRANSPARENCY__BINARY_ALPHA"},
+
+	// ----
+
 	{t.IDU32, "1", "QUIRK_IGNORE_CHECKSUM"},
 	{t.IDU32, "2", "QUIRK_QUALITY"},
 
@@ -690,6 +697,7 @@ var funcsOther = [...]string{
 
 	"pixel_format.bits_per_pixel() u32[..= 256]",
 	"pixel_format.default_background_color() u32",
+	"pixel_format.transparency() u32[..= 3]",
 
 	// ---- pixel_swizzler
 

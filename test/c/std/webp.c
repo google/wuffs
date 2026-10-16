@@ -120,7 +120,7 @@ const char*  //
 test_wuffs_webp_decode_interface_lossy_with_alpha() {
   CHECK_FOCUS(__func__);
   return wuffs_webp_decode_interface(
-      "test/data/bricks-color.lossy-with-alpha.webp", 16, 16, 0x64427FFF);
+      "test/data/bricks-color.lossy-with-alpha.webp", 16, 16, 0x641A3264);
 }
 
 // ---------------- Mimic Tests
