@@ -414,6 +414,9 @@ redirect:
       if (flags & DecodeImageArgFlags::REPORT_METADATA_CHRM) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
       }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_CICP) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CICP, true);
+      }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_EXIF) {
         interested_in_metadata_after_the_frame = true;
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__EXIF, true);

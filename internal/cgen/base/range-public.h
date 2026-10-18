@@ -1122,6 +1122,7 @@ typedef struct wuffs_base__more_information__struct {
   inline uint32_t metadata__fourcc() const;
   inline wuffs_base__range_ie_u64 metadata_raw_passthrough__range() const;
   inline int32_t metadata_parsed__chrm(uint32_t component) const;
+  inline uint8_t metadata_parsed__cicp(uint32_t component) const;
   inline uint32_t metadata_parsed__gama() const;
   inline uint32_t metadata_parsed__srgb() const;
 #endif  // __cplusplus
@@ -1264,6 +1265,55 @@ wuffs_base__more_information__metadata_parsed__chrm(
   return ((int32_t)(u << 8)) >> 8;
 }
 
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__COLOR_PRIMARIES 0
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__TRANSFER_FUNCTION 1
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__MATRIX_COEFFICIENTS \
+  2
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__VIDEO_FULL_RANGE_FLAG \
+  3
+
+// wuffs_base__more_information__metadata_parsed__cicp returns
+// Coding-Independent Code Points values.
+//
+//  - Component 0 is the Color Primaries.
+//  - Component 1 is the Transfer Function.
+//  - Component 2 is the Matrix Coefficients.
+//  - Component 3 is the Video Full Range Flag.
+//
+// The (CP, TF) pair is the most interesting of these four. Some examples:
+//
+//  - (CP:  1, TF:  1) is "bt.709".
+//  - (CP:  1, TF:  8) is "linear-light-srgb".
+//  - (CP:  1, TF: 13) is "srgb".
+//  - (CP:  5, TF:  6) is "bt.601-pal".
+//  - (CP:  6, TF:  6) is "bt.601-ntsc".
+//  - (CP:  9, TF: 14) is "bt.2020-10-bit".
+//  - (CP:  9, TF: 15) is "bt.2020-12-bit".
+//  - (CP:  9, TF: 16) is "bt.2100-pq".
+//  - (CP:  9, TF: 18) is "bt.2100-hlg".
+//  - (CP: 11, TF: 17) is "dci-p3".
+//  - (CP: 12, TF: 13) is "display-p3".
+//  - (CP: 12, TF: 16) is "p3-d65-pq".
+//
+// For PNG, the MC value is always zero, as PNG uses the RGB color model. For
+// H.273, valid values include 0, 1, 5, 6 and 9. See the AOMediaCodec page.
+//
+// For PNG, the VFRF value is 0 (for narrow range) or 1 (for full range).
+//
+// See:
+//
+//  - https://github.com/AOMediaCodec/libavif/wiki/CICP
+//  - https://svgees.us/blog/cICP.html
+//  - https://www.itu.int/rec/T-REC-H.273-202407-I
+//  - https://www.w3.org/TR/png-3/#cICP-chunk
+static inline uint8_t  //
+wuffs_base__more_information__metadata_parsed__cicp(
+    const wuffs_base__more_information* m,
+    uint32_t component) {
+  int shift = 8 * (component & 3);
+  return ((uint8_t)(m->x >> shift));
+}
+
 // wuffs_base__more_information__metadata_parsed__gama returns inverse gamma
 // correction values (scaled by 100000) like the PNG "gAMA" chunk. For example,
 // for gamma = 2.2, this returns 45455 (approximating 100000 / 2.2).
@@ -1326,6 +1376,11 @@ wuffs_base__more_information::metadata_raw_passthrough__range() const {
 inline int32_t  //
 wuffs_base__more_information::metadata_parsed__chrm(uint32_t component) const {
   return wuffs_base__more_information__metadata_parsed__chrm(this, component);
+}
+
+inline uint8_t  //
+wuffs_base__more_information::metadata_parsed__cicp(uint32_t component) const {
+  return wuffs_base__more_information__metadata_parsed__cicp(this, component);
 }
 
 inline uint32_t  //

@@ -782,6 +782,9 @@ typedef struct wuffs_base__transform__output__struct {
 // Primary Chromaticities and White Point.
 #define WUFFS_BASE__FOURCC__CHRM 0x4348524D
 
+// Coding-Independent Code Points for video signal type identification.
+#define WUFFS_BASE__FOURCC__CICP 0x43494350
+
 // Cascading Style Sheets.
 #define WUFFS_BASE__FOURCC__CSS 0x43535320
 
@@ -3224,6 +3227,7 @@ typedef struct wuffs_base__more_information__struct {
   inline uint32_t metadata__fourcc() const;
   inline wuffs_base__range_ie_u64 metadata_raw_passthrough__range() const;
   inline int32_t metadata_parsed__chrm(uint32_t component) const;
+  inline uint8_t metadata_parsed__cicp(uint32_t component) const;
   inline uint32_t metadata_parsed__gama() const;
   inline uint32_t metadata_parsed__srgb() const;
 #endif  // __cplusplus
@@ -3366,6 +3370,55 @@ wuffs_base__more_information__metadata_parsed__chrm(
   return ((int32_t)(u << 8)) >> 8;
 }
 
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__COLOR_PRIMARIES 0
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__TRANSFER_FUNCTION 1
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__MATRIX_COEFFICIENTS \
+  2
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CICP__VIDEO_FULL_RANGE_FLAG \
+  3
+
+// wuffs_base__more_information__metadata_parsed__cicp returns
+// Coding-Independent Code Points values.
+//
+//  - Component 0 is the Color Primaries.
+//  - Component 1 is the Transfer Function.
+//  - Component 2 is the Matrix Coefficients.
+//  - Component 3 is the Video Full Range Flag.
+//
+// The (CP, TF) pair is the most interesting of these four. Some examples:
+//
+//  - (CP:  1, TF:  1) is "bt.709".
+//  - (CP:  1, TF:  8) is "linear-light-srgb".
+//  - (CP:  1, TF: 13) is "srgb".
+//  - (CP:  5, TF:  6) is "bt.601-pal".
+//  - (CP:  6, TF:  6) is "bt.601-ntsc".
+//  - (CP:  9, TF: 14) is "bt.2020-10-bit".
+//  - (CP:  9, TF: 15) is "bt.2020-12-bit".
+//  - (CP:  9, TF: 16) is "bt.2100-pq".
+//  - (CP:  9, TF: 18) is "bt.2100-hlg".
+//  - (CP: 11, TF: 17) is "dci-p3".
+//  - (CP: 12, TF: 13) is "display-p3".
+//  - (CP: 12, TF: 16) is "p3-d65-pq".
+//
+// For PNG, the MC value is always zero, as PNG uses the RGB color model. For
+// H.273, valid values include 0, 1, 5, 6 and 9. See the AOMediaCodec page.
+//
+// For PNG, the VFRF value is 0 (for narrow range) or 1 (for full range).
+//
+// See:
+//
+//  - https://github.com/AOMediaCodec/libavif/wiki/CICP
+//  - https://svgees.us/blog/cICP.html
+//  - https://www.itu.int/rec/T-REC-H.273-202407-I
+//  - https://www.w3.org/TR/png-3/#cICP-chunk
+static inline uint8_t  //
+wuffs_base__more_information__metadata_parsed__cicp(
+    const wuffs_base__more_information* m,
+    uint32_t component) {
+  int shift = 8 * (component & 3);
+  return ((uint8_t)(m->x >> shift));
+}
+
 // wuffs_base__more_information__metadata_parsed__gama returns inverse gamma
 // correction values (scaled by 100000) like the PNG "gAMA" chunk. For example,
 // for gamma = 2.2, this returns 45455 (approximating 100000 / 2.2).
@@ -3428,6 +3481,11 @@ wuffs_base__more_information::metadata_raw_passthrough__range() const {
 inline int32_t  //
 wuffs_base__more_information::metadata_parsed__chrm(uint32_t component) const {
   return wuffs_base__more_information__metadata_parsed__chrm(this, component);
+}
+
+inline uint8_t  //
+wuffs_base__more_information::metadata_parsed__cicp(uint32_t component) const {
+  return wuffs_base__more_information__metadata_parsed__cicp(this, component);
 }
 
 inline uint32_t  //
@@ -13955,6 +14013,7 @@ struct wuffs_png__decoder__struct {
     uint64_t f_pass_workbuf_length;
     uint8_t f_call_sequence;
     bool f_report_metadata_chrm;
+    bool f_report_metadata_cicp;
     bool f_report_metadata_exif;
     bool f_report_metadata_gama;
     bool f_report_metadata_iccp;
@@ -13967,6 +14026,7 @@ struct wuffs_png__decoder__struct {
     uint8_t f_interlace_pass;
     bool f_seen_actl;
     bool f_seen_chrm;
+    bool f_seen_cicp;
     bool f_seen_fctl;
     bool f_seen_exif;
     bool f_seen_gama;
@@ -14032,6 +14092,7 @@ struct wuffs_png__decoder__struct {
     uint32_t p_decode_other_chunk;
     uint32_t p_decode_actl;
     uint32_t p_decode_chrm;
+    uint32_t p_decode_cicp;
     uint32_t p_decode_fctl;
     uint32_t p_decode_gama;
     uint32_t p_decode_iccp;
@@ -14074,6 +14135,9 @@ struct wuffs_png__decoder__struct {
     struct {
       uint64_t scratch;
     } s_decode_chrm;
+    struct {
+      uint64_t scratch;
+    } s_decode_cicp;
     struct {
       uint32_t v_x0;
       uint32_t v_x1;
@@ -18067,27 +18131,29 @@ struct DecodeImageArgFlags {
   static constexpr uint64_t REPORT_METADATA_BGCL = 0x0001;
   // Primary Chromaticities and White Point.
   static constexpr uint64_t REPORT_METADATA_CHRM = 0x0002;
+  // Coding-Independent Code Points for video signal type identification.
+  static constexpr uint64_t REPORT_METADATA_CICP = 0x0004;
   // Exchangeable Image File Format.
-  static constexpr uint64_t REPORT_METADATA_EXIF = 0x0004;
+  static constexpr uint64_t REPORT_METADATA_EXIF = 0x0008;
   // Gamma Correction.
-  static constexpr uint64_t REPORT_METADATA_GAMA = 0x0008;
+  static constexpr uint64_t REPORT_METADATA_GAMA = 0x0010;
   // International Color Consortium Profile.
-  static constexpr uint64_t REPORT_METADATA_ICCP = 0x0010;
+  static constexpr uint64_t REPORT_METADATA_ICCP = 0x0020;
   // Key-Value Pair.
   //
   // For PNG files, this includes iTXt, tEXt and zTXt chunks. In the
   // HandleMetadata callback, the raw argument contains UTF-8 strings.
-  static constexpr uint64_t REPORT_METADATA_KVP = 0x0020;
+  static constexpr uint64_t REPORT_METADATA_KVP = 0x0040;
   // Modification Time.
-  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0040;
+  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0080;
   // Offset (2-Dimensional).
-  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0080;
+  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0100;
   // Physical Dimensions.
-  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0100;
+  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0200;
   // Standard Red Green Blue (Rendering Intent).
-  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0200;
+  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0400;
   // Extensible Metadata Platform.
-  static constexpr uint64_t REPORT_METADATA_XMP = 0x0400;
+  static constexpr uint64_t REPORT_METADATA_XMP = 0x0800;
 
   uint64_t repr;
 };
@@ -70362,6 +70428,12 @@ wuffs_png__decoder__decode_chrm(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
+wuffs_png__decoder__decode_cicp(
+    wuffs_png__decoder* self,
+    wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
 wuffs_png__decoder__decode_exif(
     wuffs_png__decoder* self,
     wuffs_base__io_buffer* a_src);
@@ -72905,6 +72977,25 @@ wuffs_png__decoder__decode_other_chunk(
           }
           self->private_impl.f_seen_chrm = true;
         }
+      } else if (self->private_impl.f_chunk_type == 1346586979u) {
+        if (self->private_impl.f_report_metadata_cicp) {
+          if (self->private_impl.f_seen_cicp) {
+            status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+            goto exit;
+          }
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+          status = wuffs_png__decoder__decode_cicp(self, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+          if (status.repr) {
+            goto suspend;
+          }
+          self->private_impl.f_seen_cicp = true;
+        }
       } else if (self->private_impl.f_chunk_type == 1280598886u) {
         if (self->private_impl.f_seen_fctl) {
           status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
@@ -72913,7 +73004,7 @@ wuffs_png__decoder__decode_other_chunk(
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
         status = wuffs_png__decoder__decode_fctl(self, a_src);
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -72931,7 +73022,7 @@ wuffs_png__decoder__decode_other_chunk(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           status = wuffs_png__decoder__decode_gama(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -72950,7 +73041,7 @@ wuffs_png__decoder__decode_other_chunk(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
           status = wuffs_png__decoder__decode_iccp(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -72969,7 +73060,7 @@ wuffs_png__decoder__decode_other_chunk(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
           status = wuffs_png__decoder__decode_srgb(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -72988,7 +73079,7 @@ wuffs_png__decoder__decode_other_chunk(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
           status = wuffs_png__decoder__decode_trns(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -73002,7 +73093,7 @@ wuffs_png__decoder__decode_other_chunk(
     }
     if (self->private_impl.f_metadata_fourcc == 0u) {
       self->private_data.s_decode_other_chunk.scratch = self->private_impl.f_chunk_length;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
       if (self->private_data.s_decode_other_chunk.scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
         self->private_data.s_decode_other_chunk.scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
@@ -73433,6 +73524,88 @@ wuffs_png__decoder__decode_chrm(
   goto suspend;
   suspend:
   self->private_impl.p_decode_chrm = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func png.decoder.decode_cicp
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_png__decoder__decode_cicp(
+    wuffs_png__decoder* self,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_cicp;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_chunk_length != 4u) {
+      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      goto exit;
+    }
+    self->private_impl.f_chunk_length = 0u;
+    self->private_impl.f_metadata_flavor = 5u;
+    self->private_impl.f_metadata_fourcc = 1128874832u;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      uint64_t t_0;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+        t_0 = ((uint64_t)(wuffs_base__peek_u32le__no_bounds_check(iop_a_src)));
+        iop_a_src += 4;
+      } else {
+        self->private_data.s_decode_cicp.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_cicp.scratch;
+          uint32_t num_bits_0 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
+          if (num_bits_0 == 24) {
+            t_0 = ((uint64_t)(*scratch));
+            break;
+          }
+          num_bits_0 += 8u;
+          *scratch |= ((uint64_t)(num_bits_0)) << 56;
+        }
+      }
+      self->private_impl.f_metadata_x = t_0;
+    }
+    self->private_impl.f_metadata_y = 0u;
+    self->private_impl.f_metadata_z = 0u;
+
+    goto ok;
+    ok:
+    self->private_impl.p_decode_cicp = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_cicp = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
 
   goto exit;
   exit:
@@ -75614,6 +75787,8 @@ wuffs_png__decoder__set_report_metadata(
 
   if (a_fourcc == 1128813133u) {
     self->private_impl.f_report_metadata_chrm = a_report;
+  } else if (a_fourcc == 1128874832u) {
+    self->private_impl.f_report_metadata_cicp = a_report;
   } else if (a_fourcc == 1163413830u) {
     self->private_impl.f_report_metadata_exif = a_report;
   } else if (a_fourcc == 1195461953u) {
@@ -97098,6 +97273,9 @@ redirect:
     if (flags != 0) {
       if (flags & DecodeImageArgFlags::REPORT_METADATA_CHRM) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_CICP) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CICP, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_EXIF) {
         interested_in_metadata_after_the_frame = true;

@@ -32,6 +32,7 @@ var FourCCs = [...][2]string{
 	{"BZ2 ", "Bzip2"},
 	{"CBOR", "Concise Binary Object Representation"},
 	{"CHRM", "Primary Chromaticities and White Point"},
+	{"CICP", "Coding-Independent Code Points for video signal type identification"},
 	{"CSS ", "Cascading Style Sheets"},
 	{"EPS ", "Encapsulated PostScript"},
 	{"ETC2", "Ericsson Texture Compression 2 (iPACKMAN)"},

@@ -279,6 +279,11 @@ print_metadata(wuffs_base__image_decoder* dec,
                 printf("    %" PRId32 "\n", minfo.metadata_parsed__chrm(i));
               }
               break;
+            case WUFFS_BASE__FOURCC__CICP:
+              for (uint32_t i = 0; i < 4; i++) {
+                printf("    %" PRId32 "\n", minfo.metadata_parsed__cicp(i));
+              }
+              break;
             case WUFFS_BASE__FOURCC__GAMA:
               printf("    %" PRIu32 "\n", minfo.metadata_parsed__gama());
               break;
@@ -417,6 +422,7 @@ redirect:
     }
 
     dec->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
+    dec->set_report_metadata(WUFFS_BASE__FOURCC__CICP, true);
     dec->set_report_metadata(WUFFS_BASE__FOURCC__EXIF, true);
     dec->set_report_metadata(WUFFS_BASE__FOURCC__GAMA, true);
     dec->set_report_metadata(WUFFS_BASE__FOURCC__ICCP, true);

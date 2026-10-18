@@ -32,6 +32,7 @@ pub struct decoder? implements base.image_decoder(
         call_sequence : base.u8,
 
         report_metadata_chrm : base.bool,
+        report_metadata_cicp : base.bool,
         report_metadata_exif : base.bool,
         report_metadata_gama : base.bool,
         report_metadata_iccp : base.bool,
@@ -47,6 +48,7 @@ pub struct decoder? implements base.image_decoder(
 
         seen_actl : base.bool,
         seen_chrm : base.bool,
+        seen_cicp : base.bool,
         seen_fctl : base.bool,
         seen_exif : base.bool,
         seen_gama : base.bool,
@@ -582,6 +584,15 @@ pri func decoder.decode_other_chunk?(src: base.io_reader, framy: base.bool) {
                 this.seen_chrm = true
             }
 
+        } else if this.chunk_type == 'cICP'le {
+            if this.report_metadata_cicp {
+                if this.seen_cicp {
+                    return "#bad chunk"
+                }
+                this.decode_cicp?(src: args.src)
+                this.seen_cicp = true
+            }
+
         } else if this.chunk_type == 'fcTL'le {
             if this.seen_fctl {
                 return "#bad chunk"
@@ -692,6 +703,18 @@ pri func decoder.decode_chrm?(src: base.io_reader) {
     this.metadata_z |= (0xFF_FFFF & u) << 16
     u = args.src.read_u32be_as_u64?()
     this.metadata_z |= (0xFF_FFFF & u) << 40
+}
+
+pri func decoder.decode_cicp?(src: base.io_reader) {
+    if this.chunk_length <> 4 {
+        return "#bad chunk"
+    }
+    this.chunk_length = 0
+    this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
+    this.metadata_fourcc = 'CICP'be
+    this.metadata_x = args.src.read_u32le_as_u64?()
+    this.metadata_y = 0
+    this.metadata_z = 0
 }
 
 pri func decoder.decode_exif?(src: base.io_reader) {
@@ -1410,6 +1433,8 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
     if args.fourcc == 'CHRM'be {
         this.report_metadata_chrm = args.report
+    } else if args.fourcc == 'CICP'be {
+        this.report_metadata_cicp = args.report
     } else if args.fourcc == 'EXIF'be {
         this.report_metadata_exif = args.report
     } else if args.fourcc == 'GAMA'be {
