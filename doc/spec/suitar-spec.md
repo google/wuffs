@@ -14,9 +14,8 @@ archive containing 1 file) as [Farbfeld](https://tools.suckless.org/farbfeld/)
 or [NIE](./nie-spec.md) is to image files: an uncompressed, "designed for Unix
 pipes" format that is trivial to read or write in a few hundred lines of code,
 ideally in a memory-safe programming language. It's a format for what the
-Chromium web browser's
-[https://chromium.googlesource.com/chromium/src/+/master/docs/security/rule-of-2.md](Rule of 2)
-security advice calls Normalization.
+Chromium web browser's "Rule of 2" security advice calls
+[Normalization](https://chromium.googlesource.com/chromium/src/+/master/docs/security/rule-of-2.md#normalization).
 
 
 ## Subset of TAR
