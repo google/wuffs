@@ -85,15 +85,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 40445d992b97be816cd09b0460c55e6a160389f6 committed on 2026-07-11.
-#define WUFFS_VERSION 0x000030005
+// 55279938422060f30cd487173b98a651da075e3a committed on 2026-10-20.
+#define WUFFS_VERSION 0x000030006
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
-#define WUFFS_VERSION_PATCH 5
+#define WUFFS_VERSION_PATCH 6
 #define WUFFS_VERSION_PRE_RELEASE_LABEL ""
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3404
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20260711
-#define WUFFS_VERSION_STRING "0.3.5+3404.20260711"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3407
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20261020
+#define WUFFS_VERSION_STRING "0.3.6+3407.20261020"
 
 // ---------------- Configuration
 
@@ -13794,13 +13794,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint8_t* q = s.ptr + s.len;
 
   if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
-      }
+    for (; (p < q) && (*p == '_'); p++) {
     }
+  }
+  if (p >= q) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
   // Parse sign.
@@ -13814,13 +13812,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       break;
     }
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   } while (0);
 
@@ -13873,9 +13869,12 @@ wuffs_base__private_implementation__high_prec_dec__parse(
         if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
           h->digits[nd++] = (uint8_t)(*p - '0');
           dp = (int32_t)nd;
-        } else if ('0' != *p) {
-          // Long-tail non-zeroes set the truncated bit.
-          h->truncated = true;
+        } else {
+          dp++;
+          if ('0' != *p) {
+            // Long-tail non-zeroes set the truncated bit.
+            h->truncated = true;
+          }
         }
       } else if (*p ==
                  ((options &
@@ -13935,13 +13934,11 @@ after_sep:
 after_exp:
   do {
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
 
     int32_t exp_sign = +1;
@@ -15751,6 +15748,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto hexadecimal;
       }
+      goto fail_bad_argument;
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
@@ -15761,6 +15759,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto decimal;
       }
+      goto fail_bad_argument;
     }
 
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {

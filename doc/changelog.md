@@ -70,6 +70,12 @@ code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
   a tab).
 
 
+## 2026-10-20 version 0.3.6
+
+- Fix some `parse_number_f64` and `parse_number_u64` bugs.
+- Fix "go test" example names for newer Go toolchains.
+
+
 ## 2026-07-11 version 0.3.5
 
 - No significant changes to `wuffs-v0.3.c` per se.
