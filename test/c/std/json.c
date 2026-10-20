@@ -1092,9 +1092,34 @@ test_wuffs_strconv_parse_number_f64_regular() {
           wuffs_base__make_slice_u8((uint8_t*)(void*)strs[i], strlen(strs[i])),
           WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (r.status.repr != wuffs_base__error__bad_argument) {
-        RETURN_FAIL("\"%s\": have \"%s\", want \"%s\"", strs[i],
-                    r.status.repr, wuffs_base__error__bad_argument);
+        RETURN_FAIL("\"%s\": have \"%s\", want \"%s\"", strs[i], r.status.repr,
+                    wuffs_base__error__bad_argument);
       }
+    }
+  }
+
+  // Test the integer part being more than 800 digits.
+  {
+    // Initialize buf to "1222...222e-805" with 805 twos.
+    char buf[1024];
+    buf[0] = '1';
+    for (int i = 1; i < 806; i++) {
+      buf[i] = '2';
+    }
+    memcpy(buf + 806, "e-805", 5);
+
+    wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+        wuffs_base__make_slice_u8((uint8_t*)(void*)buf, 811),
+        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+    uint64_t have =
+        (r.status.repr == NULL)
+            ? wuffs_base__ieee_754_bit_representation__from_f64_to_u64(r.value)
+            : fail;
+    uint64_t want = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(
+        1.2222222222222222222222222222222222222222222222222222222222222222);
+    if (have != want) {
+      RETURN_FAIL("\"%s\": have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+                  "1222...222e-805", have, want);
     }
   }
 
