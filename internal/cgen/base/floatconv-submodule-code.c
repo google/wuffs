@@ -301,7 +301,7 @@ wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
   //  - ".789"
   //  - Other (invalid input).
   uint32_t nd = 0;
-  int32_t dp = 0;
+  int64_t dp = 0;
   bool no_digits_before_separator = false;
   if (('0' == *p) &&
       !(options &
@@ -332,7 +332,7 @@ wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
       }
     } else {
       h->digits[nd++] = (uint8_t)(*p - '0');
-      dp = (int32_t)nd;
+      dp = (int64_t)nd;
       p++;
     }
 
@@ -342,7 +342,7 @@ wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
       } else if (('0' <= *p) && (*p <= '9')) {
         if (nd < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
           h->digits[nd++] = (uint8_t)(*p - '0');
-          dp = (int32_t)nd;
+          dp = (int64_t)nd;
         } else {
           dp++;
           if ('0' != *p) {
@@ -414,7 +414,7 @@ after_exp:
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
 
-    int32_t exp_sign = +1;
+    int64_t exp_sign = +1;
     if (*p == '+') {
       p++;
     } else if (*p == '-') {
@@ -422,9 +422,13 @@ after_exp:
       p++;
     }
 
-    int32_t exp = 0;
-    const int32_t exp_large = WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE +
-                              WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION;
+    // dp's magnitude is at most s.len, so any exp larger than exp_large gives
+    // the same (infinite or zero) result.
+    int64_t exp = 0;
+    const int64_t exp_large =
+        WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE +
+        WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION +
+        (int64_t)(wuffs_base__u64__min(s.len, 0xFFFFFFFFFFFFul));
     bool saw_exp_digits = false;
     for (; p < q; p++) {
       if ((*p == '_') &&
@@ -433,7 +437,7 @@ after_exp:
       } else if (('0' <= *p) && (*p <= '9')) {
         saw_exp_digits = true;
         if (exp < exp_large) {
-          exp = (10 * exp) + ((int32_t)(*p - '0'));
+          exp = (10 * exp) + ((int64_t)(*p - '0'));
         }
       } else {
         break;
@@ -460,7 +464,7 @@ after_all:
   } else if (dp > +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
     h->decimal_point = +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE + 1;
   } else {
-    h->decimal_point = dp;
+    h->decimal_point = (int32_t)dp;
   }
   wuffs_private_impl__high_prec_dec__trim(h);
   return wuffs_base__make_status(NULL);

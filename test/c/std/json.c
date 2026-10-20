@@ -1123,6 +1123,45 @@ test_wuffs_strconv_parse_number_f64_regular() {
     }
   }
 
+  // Test long inputs whose large exponent cancels out the decimal point.
+  {
+    // Initialize buf to "0.000...0001e30001" and "1000...000e-30000" with
+    // 30000 zeroes. Both are equal to 1.
+    static char buf[30016];
+    const char* names[2] = {"0.000...0001e30001", "1000...000e-30000"};
+    for (int j = 0; j < 2; j++) {
+      size_t n = 0;
+      if (j == 0) {
+        buf[n++] = '0';
+        buf[n++] = '.';
+        memset(buf + n, '0', 30000);
+        n += 30000;
+        memcpy(buf + n, "1e30001", 7);
+        n += 7;
+      } else {
+        buf[n++] = '1';
+        memset(buf + n, '0', 30000);
+        n += 30000;
+        memcpy(buf + n, "e-30000", 7);
+        n += 7;
+      }
+
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((uint8_t*)(void*)buf, n),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+      uint64_t have =
+          (r.status.repr == NULL)
+              ? wuffs_base__ieee_754_bit_representation__from_f64_to_u64(
+                    r.value)
+              : fail;
+      uint64_t want = 0x3FF0000000000000;
+      if (have != want) {
+        RETURN_FAIL("\"%s\": have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+                    names[j], have, want);
+      }
+    }
+  }
+
   return NULL;
 }
 
