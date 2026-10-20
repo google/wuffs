@@ -13793,13 +13793,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint8_t* q = s.ptr + s.len;
 
   if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
-      }
+    for (; (p < q) && (*p == '_'); p++) {
     }
+  }
+  if (p >= q) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
   // Parse sign.
@@ -13813,13 +13811,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       break;
     }
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   } while (0);
 
@@ -13872,9 +13868,12 @@ wuffs_base__private_implementation__high_prec_dec__parse(
         if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
           h->digits[nd++] = (uint8_t)(*p - '0');
           dp = (int32_t)nd;
-        } else if ('0' != *p) {
-          // Long-tail non-zeroes set the truncated bit.
-          h->truncated = true;
+        } else {
+          dp++;
+          if ('0' != *p) {
+            // Long-tail non-zeroes set the truncated bit.
+            h->truncated = true;
+          }
         }
       } else if (*p ==
                  ((options &
@@ -13934,13 +13933,11 @@ after_sep:
 after_exp:
   do {
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
 
     int32_t exp_sign = +1;
@@ -15750,6 +15747,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto hexadecimal;
       }
+      goto fail_bad_argument;
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
@@ -15760,6 +15758,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto decimal;
       }
+      goto fail_bad_argument;
     }
 
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {

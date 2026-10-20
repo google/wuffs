@@ -219,6 +219,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto hexadecimal;
       }
+      goto fail_bad_argument;
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
@@ -229,6 +230,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto decimal;
       }
+      goto fail_bad_argument;
     }
 
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
