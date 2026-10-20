@@ -21668,13 +21668,11 @@ wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
   uint8_t* q = s.ptr + s.len;
 
   if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
-      }
+    for (; (p < q) && (*p == '_'); p++) {
     }
+  }
+  if (p >= q) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
   // Parse sign.
@@ -21688,13 +21686,11 @@ wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
       break;
     }
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   } while (0);
 
@@ -21808,13 +21804,11 @@ after_sep:
 after_exp:
   do {
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
-      for (;; p++) {
-        if (p >= q) {
-          return wuffs_base__make_status(wuffs_base__error__bad_argument);
-        } else if (*p != '_') {
-          break;
-        }
+      for (; (p < q) && (*p == '_'); p++) {
       }
+    }
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
 
     int32_t exp_sign = +1;
@@ -23585,6 +23579,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto hexadecimal;
       }
+      goto fail_bad_argument;
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
@@ -23595,6 +23590,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       if (p < q) {
         goto decimal;
       }
+      goto fail_bad_argument;
     }
 
     if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {

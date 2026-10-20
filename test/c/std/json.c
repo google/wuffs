@@ -1082,6 +1082,22 @@ test_wuffs_strconv_parse_number_f64_regular() {
     }
   }
 
+  // Input that ends right after a sign or an exponent marker must be rejected
+  // without reading past the end of the slice. Use DEFAULT_OPTIONS, as
+  // ALLOW_UNDERSCORES takes a different code path.
+  {
+    const char* strs[] = {"", "+", "-", "1e", "1E", "12.5e"};
+    for (size_t i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(strs); i++) {
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((uint8_t*)(void*)strs[i], strlen(strs[i])),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+      if (r.status.repr != wuffs_base__error__bad_argument) {
+        RETURN_FAIL("\"%s\": have \"%s\", want \"%s\"", strs[i],
+                    r.status.repr, wuffs_base__error__bad_argument);
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -1241,6 +1257,23 @@ test_wuffs_strconv_parse_number_u64() {
         RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have %" PRIu64
                     ", want %" PRIu64,
                     r.value, want);
+      }
+    }
+  }
+
+  // A bare "0x" or "0d" prefix is invalid, even with
+  // ALLOW_MULTIPLE_LEADING_ZEROES. Pass an explicit length (not strlen) so
+  // that the byte just past the end of the slice is a digit, which must not be
+  // read.
+  {
+    const char* strs[] = {"0x7", "0X7", "0d7", "0D7"};
+    for (size_t i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(strs); i++) {
+      wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
+          wuffs_base__make_slice_u8((uint8_t*)(void*)strs[i], 2),
+          WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES);
+      if (r.status.repr != wuffs_base__error__bad_argument) {
+        RETURN_FAIL("\"%.2s\": have \"%s\", want \"%s\"", strs[i],
+                    r.status.repr, wuffs_base__error__bad_argument);
       }
     }
   }
