@@ -21832,9 +21832,15 @@ after_exp:
       p++;
     }
 
+    // (1 << 24) is both smaller than ((INT32_MAX - 9) / 10) and larger than
+    // ((WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL * 10) + 9).
+    //
+    // dp's magnitude is at most s.len, and so at most
+    // WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL. Any exp outside
+    // ±exp_large gives the same (infinite or zero) result.
+    const int32_t exp_large =  1 << 24;
+
     int32_t exp = 0;
-    const int32_t exp_large = WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE +
-                              WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION;
     bool saw_exp_digits = false;
     for (; p < q; p++) {
       if ((*p == '_') &&
