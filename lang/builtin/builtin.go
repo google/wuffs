@@ -289,6 +289,7 @@ var Statuses = [...]string{
 
 	// Errors.
 	`"#bad I/O position"`,
+	`"#bad argument (length too long)"`,
 	`"#bad argument (length too short)"`,
 	`"#bad argument"`,
 	`"#bad call sequence"`,

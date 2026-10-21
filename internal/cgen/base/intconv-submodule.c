@@ -174,6 +174,13 @@ fail_out_of_bounds:
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
+  if (s.len > WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL) {
+    wuffs_base__result_u64 ret;
+    ret.status.repr = wuffs_base__error__bad_argument_length_too_long;
+    ret.value = 0;
+    return ret;
+  }
+
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 

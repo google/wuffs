@@ -594,6 +594,7 @@ extern const char wuffs_base__suspension__short_read[];
 extern const char wuffs_base__suspension__short_workbuf[];
 extern const char wuffs_base__suspension__short_write[];
 extern const char wuffs_base__error__bad_i_o_position[];
+extern const char wuffs_base__error__bad_argument_length_too_long[];
 extern const char wuffs_base__error__bad_argument_length_too_short[];
 extern const char wuffs_base__error__bad_argument[];
 extern const char wuffs_base__error__bad_call_sequence[];
@@ -6477,6 +6478,14 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 #endif  // __cplusplus
 
 // ---------------- String Conversions
+
+// WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL is the largest acceptible
+// length for the wuffs_base__parse_number_xxx functions' slice argument.
+//
+// It equals ((1 << 20) - 1), which is one less than 1 MiB.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL 0xFFFFF
+
+// --------
 
 // Options (bitwise or'ed together) for wuffs_base__parse_number_xxx
 // functions. The XXX options apply to both integer and floating point. The FXX
@@ -19506,6 +19515,7 @@ const char wuffs_base__suspension__short_read[] = "$base: short read";
 const char wuffs_base__suspension__short_workbuf[] = "$base: short workbuf";
 const char wuffs_base__suspension__short_write[] = "$base: short write";
 const char wuffs_base__error__bad_i_o_position[] = "#base: bad I/O position";
+const char wuffs_base__error__bad_argument_length_too_long[] = "#base: bad argument (length too long)";
 const char wuffs_base__error__bad_argument_length_too_short[] = "#base: bad argument (length too short)";
 const char wuffs_base__error__bad_argument[] = "#base: bad argument";
 const char wuffs_base__error__bad_call_sequence[] = "#base: bad call sequence";
@@ -22881,6 +22891,12 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     // As the pointer p walks the contents, it's faster to repeatedly check "is
     // *p a valid digit" than "is p within bounds and *p a valid digit".
     if (s.len >= 256) {
+      if (s.len > WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL) {
+        wuffs_base__result_f64 ret;
+        ret.status.repr = wuffs_base__error__bad_argument_length_too_long;
+        ret.value = 0;
+        return ret;
+      }
       goto fallback;
     }
     uint8_t z[256];
@@ -23541,6 +23557,13 @@ fail_out_of_bounds:
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
+  if (s.len > WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL) {
+    wuffs_base__result_u64 ret;
+    ret.status.repr = wuffs_base__error__bad_argument_length_too_long;
+    ret.value = 0;
+    return ret;
+  }
+
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 

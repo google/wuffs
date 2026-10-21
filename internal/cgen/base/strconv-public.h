@@ -10,6 +10,14 @@
 
 // ---------------- String Conversions
 
+// WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL is the largest acceptible
+// length for the wuffs_base__parse_number_xxx functions' slice argument.
+//
+// It equals ((1 << 20) - 1), which is one less than 1 MiB.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__SLICE_LEN_MAX_INCL 0xFFFFF
+
+// --------
+
 // Options (bitwise or'ed together) for wuffs_base__parse_number_xxx
 // functions. The XXX options apply to both integer and floating point. The FXX
 // options apply only to floating point.
