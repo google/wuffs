@@ -514,3 +514,55 @@ func TestSizeIsImplicit(tt *testing.T) {
 		}
 	}
 }
+
+func TestNextSkipsSparse(tt *testing.T) {
+	sizes := []int64{1 << 20, (1 << 53) - 1}
+
+	buf := bytes.Buffer{}
+	sWriter := NewWriter(&buf)
+	for i, size := range sizes {
+		if err := sWriter.WriteHeader(&Header{
+			Typeflag: TypeGNUSparse,
+			Name:     fmt.Sprintf("%d.sparse", i),
+			Size:     size,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		}
+		if err := sWriter.WriteHeader(&Header{
+			Typeflag: TypeReg,
+			Name:     fmt.Sprintf("%d.dense", i),
+			Size:     0,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		}
+	}
+	if err := sWriter.Close(); err != nil {
+		tt.Fatalf("Close: %v", err)
+	}
+
+	// Calling Next without reading a TypeGNUSparse entry's contents should not
+	// have to produce its (all-NUL) contents.
+	sReader := NewReader(&buf)
+	for i := range sizes {
+		if sHeader, err := sReader.Next(); err != nil {
+			tt.Fatalf("Next: %v", err)
+		} else if want := fmt.Sprintf("%d.sparse", i); sHeader.Name != want {
+			tt.Fatalf("sHeader.Name: got %q, want %q", sHeader.Name, want)
+		}
+
+		if sHeader, err := sReader.Next(); err != nil {
+			tt.Fatalf("Next: %v", err)
+		} else if want := fmt.Sprintf("%d.dense", i); sHeader.Name != want {
+			tt.Fatalf("sHeader.Name: got %q, want %q", sHeader.Name, want)
+		} else if n := sReader.NumBytesRead(); n != 0 {
+			tt.Fatalf("NumBytesRead: got %d, want 0", n)
+		}
+	}
+	if _, err := sReader.Next(); err != io.EOF {
+		tt.Fatalf("Next: got %v, want %v", err, io.EOF)
+	}
+}
