@@ -514,3 +514,37 @@ func TestSizeIsImplicit(tt *testing.T) {
 		}
 	}
 }
+
+func TestNextSkipsImplicitChunks(tt *testing.T) {
+	buf := bytes.Buffer{}
+	sWriter := NewWriter(&buf)
+	for _, name := range []string{"a.dat", "b.dat"} {
+		if err := sWriter.WriteHeader(&Header{
+			Typeflag: TypeReg,
+			Name:     name,
+			Size:     SizeIsImplicit,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		} else if _, err := sWriter.Write(make([]byte, 8192)); err != nil {
+			tt.Fatalf("Write: %v", err)
+		}
+	}
+	if err := sWriter.Close(); err != nil {
+		tt.Fatalf("Close: %v", err)
+	}
+
+	// Read exactly the first chunk of "a.dat", leaving its final (empty) chunk
+	// unread, before calling Next.
+	sReader := NewReader(&buf)
+	if _, err := sReader.Next(); err != nil {
+		tt.Fatalf("Next #0: %v", err)
+	} else if _, err := io.ReadFull(sReader, make([]byte, 8192)); err != nil {
+		tt.Fatalf("ReadFull: %v", err)
+	} else if sHeader, err := sReader.Next(); err != nil {
+		tt.Fatalf("Next #1: %v", err)
+	} else if sHeader.Name != "b.dat" {
+		tt.Fatalf("sHeader.Name: got %q, want %q", sHeader.Name, "b.dat")
+	}
+}
