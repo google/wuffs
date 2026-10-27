@@ -1,0 +1,48 @@
+Running degenerate-huffman-empty-distance.deflate through script/print-bits.go and
+adding commentary:
+
+    offset  xoffset ASCII   hex     binary
+    000000  0x0000  .       0x05    0b_...._.101  Dynamic Huffman block, final
+    000000  0x0000  .       0x05    0b_0000_0...  NumLCodes: 257
+    000001  0x0001  .       0xC0    0b_...0_0000  NumDCodes: 1
+    000001  0x0001  .       0xC0    0b_110._....  NumCLCodeLengths: 18
+
+Decode the H-CL Huffman table (NumCLCodeLengths = 18). Recall the peculiar
+code_order: 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15.
+The zero values are omitted for brevity. The non-zero values are:
+
+    CLCLs[17] is 3
+    CLCLs[18] is 3
+    CLCLs[ 0] is 2
+    CLCLs[ 2] is 2
+    CLCLs[ 1] is 2
+
+The H-CL Huffman table is:
+"00" -> CodeLength=0
+"01" -> CodeLength=1
+"10" -> CodeLength=2
+"110" -> CodeLength=17 which means a block of ( 3 + 3_extra_bits) zeroes
+"111" -> CodeLength=18 which means a block of (11 + 7_extra_bits) zeroes
+
+Decode the H-L and H-D Huffman tables (NumLCodes = 257 and NumDCodes = 1):
+
+    102 zeroes, then CL=2 (70='F'), then 40 zeroes, then CL=2 (111='o'),
+    then 144 zeroes, then CL=1 (256=EOB), then one more CL=0.
+
+The H-L Huffman table is:
+"0"  -> EOB
+"10" -> 'F'
+"11" -> 'o'
+
+The H-D Huffman table is empty: its sole code length is zero. RFC 1951
+section 3.2.7 says "One distance code of zero bits means that there are no
+distance codes used at all (the data is all literals)". Decoding a distance
+code would still fail (both of the two 1-bit table entries are invalid) but
+this block contains only literals, so that never happens.
+
+Apply H-L.
+
+    literal 'F'
+    literal 'o'
+    literal 'o'
+    end of block

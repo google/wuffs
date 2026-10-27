@@ -628,6 +628,12 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
         i += 1
     }
     if ((counts[0] as base.u32) + args.n_codes0) == args.n_codes1 {
+        if args.which == 1 {
+            this.n_huffs_bits[1] = 1
+            this.huffs[1][0] = DCODE_MAGIC_NUMBERS[31] | 1
+            this.huffs[1][1] = DCODE_MAGIC_NUMBERS[31] | 1
+            return ok
+        }
         return "#no Huffman codes"
     }
 

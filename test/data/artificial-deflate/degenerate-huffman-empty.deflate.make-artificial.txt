@@ -1,0 +1,33 @@
+# Feed this file to script/make-artificial.go
+
+make deflate
+
+blockDynamicHuffman (final) {
+	huffman CodeLength {
+		0  00
+		1  01
+		2  10
+		17 110
+		18 111
+	}
+
+	huffman Literal/Length {
+		# 70='F', 111='o', 256=EOB
+		256 0
+		70  10
+		111 11
+	}
+
+	huffman Distance {
+		# Empty. There are no key/value pairs at all: the sole distance code
+		# length is zero.
+		#
+		# RFC 1951 section 3.2.7 says "One distance code of zero bits means
+		# that there are no distance codes used at all (the data is all
+		# literals)."
+		empty
+	}
+
+	literal "Foo"
+	endOfBlock
+}
