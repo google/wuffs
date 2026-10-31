@@ -623,7 +623,7 @@ func (r *Reader) Next() (Header, error) {
 	r.numBytesRead = 0
 	if r.err != nil {
 		return Header{}, r.err
-	} else if r.remaining > 0 {
+	} else if (r.remaining > 0) || r.sizeIsImplicit {
 		if r.sparse {
 			// TypeGNUSparse entries have no payload blocks to skip over.
 			r.remaining = 0
