@@ -624,6 +624,10 @@ func (r *Reader) Next() (Header, error) {
 	if r.err != nil {
 		return Header{}, r.err
 	} else if (r.remaining > 0) || r.sizeIsImplicit {
+		if r.sparse {
+			// TypeGNUSparse entries have no payload blocks to skip over.
+			r.remaining = 0
+		} else if _, err := io.Copy(io.Discard, r); err != nil {
 			r.err = err
 			return Header{}, r.err
 		}
