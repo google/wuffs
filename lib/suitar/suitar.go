@@ -623,14 +623,13 @@ func (r *Reader) Next() (Header, error) {
 	r.numBytesRead = 0
 	if r.err != nil {
 		return Header{}, r.err
-	} else if (r.remaining > 0) || r.sizeIsImplicit {
-		if r.sparse {
-			// TypeGNUSparse entries have no payload blocks to skip over.
-			r.remaining = 0
-		} else if _, err := io.Copy(io.Discard, r); err != nil {
-			r.err = err
-			return Header{}, r.err
-		}
+	} else if r.sparse {
+		r.remaining = 0
+	} else if (r.remaining == 0) && !r.sizeIsImplicit {
+		// No-op.
+	} else if _, err := io.Copy(io.Discard, r); err != nil {
+		r.err = err
+		return Header{}, r.err
 	}
 
 	if _, err := readFullNoEOF(r.r, r.block[:]); err != nil {
