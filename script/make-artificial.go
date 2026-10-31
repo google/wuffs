@@ -347,6 +347,7 @@ var deflateGlobals struct {
 	prevLine   string
 	etcetera   bool
 	incomplete bool
+	empty      bool
 }
 
 func deflateGlobalsClearDynamicHuffmanState() {
@@ -355,6 +356,7 @@ func deflateGlobalsClearDynamicHuffmanState() {
 	deflateGlobals.prevLine = ""
 	deflateGlobals.etcetera = false
 	deflateGlobals.incomplete = false
+	deflateGlobals.empty = false
 }
 
 func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLengths uint32, retErr error) {
@@ -368,6 +370,11 @@ func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLe
 		if numDCodes < (k + 1) {
 			numDCodes = (k + 1)
 		}
+	}
+	// An empty Distance table still needs at least one (zero-valued) code
+	// length.
+	if numDCodes < 1 {
+		numDCodes = 1
 	}
 
 	for k := range deflateGlobals.huffmans[1] {
@@ -406,6 +413,10 @@ func deflateGlobalsIsHuffmanCanonical() bool {
 		pairs = append(pairs, pair{k, v})
 	}
 	if len(pairs) == 0 {
+		return g.empty
+	}
+
+	if g.empty {
 		return false
 	}
 
@@ -775,6 +786,9 @@ func stateDeflateDynamicHuffmanHuffman(line string) (stateFunc, error) {
 outer:
 	switch {
 	case line == "}":
+		if g.empty && (g.huffmans[g.whichHuffman] == nil) {
+			g.huffmans[g.whichHuffman] = deflateHuffmanTable{}
+		}
 		if !deflateGlobalsIsHuffmanCanonical() {
 			return nil, fmt.Errorf(`"huffman %s" is non-canonical`, deflateHuffmanNames[g.whichHuffman])
 		}
@@ -782,6 +796,7 @@ outer:
 		g.prevLine = ""
 		g.etcetera = false
 		g.incomplete = false
+		g.empty = false
 
 		// If we have all three Huffman tables, write them.
 		for i := 1; ; i++ {
@@ -804,6 +819,10 @@ outer:
 
 	case line == "incomplete":
 		g.incomplete = true
+		return stateDeflateDynamicHuffmanHuffman, nil
+
+	case line == "empty":
+		g.empty = true
 		return stateDeflateDynamicHuffmanHuffman, nil
 
 	default:

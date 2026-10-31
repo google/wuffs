@@ -44372,6 +44372,12 @@ wuffs_deflate__decoder__init_huff(
     v_i += 1u;
   }
   if ((((uint32_t)(v_counts[0u])) + a_n_codes0) == a_n_codes1) {
+    if (a_which == 1u) {
+      self->private_impl.f_n_huffs_bits[1u] = 1u;
+      self->private_data.f_huffs[1u][0u] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[31u] | 1u);
+      self->private_data.f_huffs[1u][1u] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[31u] | 1u);
+      return wuffs_base__make_status(NULL);
+    }
     return wuffs_base__make_status(wuffs_deflate__error__no_huffman_codes);
   }
   v_remaining = 1u;
