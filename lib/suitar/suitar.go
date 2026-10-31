@@ -624,7 +624,6 @@ func (r *Reader) Next() (Header, error) {
 	if r.err != nil {
 		return Header{}, r.err
 	} else if (r.remaining > 0) || r.sizeIsImplicit {
-		if _, err := io.Copy(io.Discard, r); err != nil {
 			r.err = err
 			return Header{}, r.err
 		}
