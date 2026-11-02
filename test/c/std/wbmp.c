@@ -541,6 +541,61 @@ test_wuffs_pixel_swizzler_swizzle() {
 }
 
 const char*  //
+test_wuffs_pixel_swizzler_swizzle_ycck_clipped_dst() {
+  CHECK_FOCUS(__func__);
+
+  // The dst is 4 pixels wide but x_max_excl is 8. The Cb and Cr slices only
+  // cover the 4 dst pixels (2 bytes each, after 2:1 subsampling). The 0xFF
+  // bytes just past each slice must not affect the (gray) output.
+  uint8_t src_array0[8] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+  uint8_t src_array1[3] = {0x80, 0x80, 0xFF};
+  uint8_t src_array2[3] = {0x80, 0x80, 0xFF};
+  uint8_t dst_array[4 * 4] = {0};
+  uint8_t scratch_buffer_2k[2048];
+
+  wuffs_base__pixel_config dst_pixcfg = wuffs_base__null_pixel_config();
+  wuffs_base__pixel_config__set(&dst_pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRX,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, 4, 1);
+  wuffs_base__pixel_buffer dst_pixbuf;
+  CHECK_STATUS("set_from_slice",
+               wuffs_base__pixel_buffer__set_from_slice(
+                   &dst_pixbuf, &dst_pixcfg,
+                   wuffs_base__make_slice_u8(dst_array, sizeof dst_array)));
+
+  wuffs_base__pixel_swizzler swizzler = {0};
+  CHECK_STATUS("swizzle_ycck",
+               wuffs_base__pixel_swizzler__swizzle_ycck(
+                   &swizzler, &dst_pixbuf, wuffs_base__empty_slice_u8(),  //
+                   0, 8, 0, 1,                                            //
+                   wuffs_base__make_slice_u8(src_array0, 8),              //
+                   wuffs_base__make_slice_u8(src_array1, 2),              //
+                   wuffs_base__make_slice_u8(src_array2, 2),              //
+                   wuffs_base__empty_slice_u8(),                          //
+                   8, 4, 4, 0,                                            //
+                   1, 1, 1, 0,                                            //
+                   8, 4, 4, 0,                                            //
+                   2, 1, 1, 0,                                            //
+                   1, 1, 1, 0,                                            //
+                   WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE,
+                   1,  // YCC_UPSAMPLING__FANCY_LIKE_LIBJPEG.
+                   wuffs_base__make_slice_u8(scratch_buffer_2k,
+                                             sizeof scratch_buffer_2k)));
+
+  wuffs_base__color_u32_argb_premul want =
+      wuffs_base__color_ycc__as__color_u32(0x80, 0x80, 0x80);
+  uint32_t x;
+  for (x = 0; x < 4; x++) {
+    wuffs_base__color_u32_argb_premul have =
+        wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, x, 0);
+    if (have != want) {
+      RETURN_FAIL("x=%" PRIu32 ": have 0x%08" PRIX32 ", want 0x%08" PRIX32, x,
+                  have, want);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_upsample_inv_h2v1() {
   CHECK_FOCUS(__func__);
 
@@ -833,6 +888,7 @@ proc g_tests[] = {
     test_wuffs_color_ycc_as_color_u32,
     test_wuffs_pixel_buffer_fill_rect,
     test_wuffs_pixel_swizzler_swizzle,
+    test_wuffs_pixel_swizzler_swizzle_ycck_clipped_dst,
     test_wuffs_upsample_inv_h2v1,
 
     test_wuffs_wbmp_decode_frame_config,

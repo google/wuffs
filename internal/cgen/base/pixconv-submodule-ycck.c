@@ -1498,34 +1498,6 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     }
   }
 
-  uint32_t half_width_for_2to1 = ((x_max_excl - x_min_incl) + 1u) / 2u;
-  if (inv_h0 == 2) {
-    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width0);
-  }
-  if (inv_h1 == 2) {
-    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width1);
-  }
-  if (inv_h2 == 2) {
-    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width2);
-  }
-  if (inv_h3 == 2) {
-    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width3);
-  }
-
-  uint32_t half_height_for_2to1 = ((y_max_excl - y_min_incl) + 1u) / 2u;
-  if (inv_v0 == 2) {
-    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height0);
-  }
-  if (inv_v1 == 2) {
-    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height1);
-  }
-  if (inv_v2 == 2) {
-    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height2);
-  }
-  if (inv_v3 == 2) {
-    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height3);
-  }
-
   x_max_excl = wuffs_base__u32__min(                   //
       wuffs_base__pixel_config__width(&dst->pixcfg),   //
       x_min_incl + wuffs_private_impl__u32__min_of_5(  //
@@ -1548,6 +1520,34 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   }
   uint32_t width = x_max_excl - x_min_incl;
   uint32_t height = y_max_excl - y_min_incl;
+
+  uint32_t half_width_for_2to1 = (width + 1u) / 2u;
+  if (inv_h0 == 2) {
+    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width0);
+  }
+  if (inv_h1 == 2) {
+    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width1);
+  }
+  if (inv_h2 == 2) {
+    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width2);
+  }
+  if (inv_h3 == 2) {
+    half_width_for_2to1 = wuffs_base__u32__min(half_width_for_2to1, width3);
+  }
+
+  uint32_t half_height_for_2to1 = (height + 1u) / 2u;
+  if (inv_v0 == 2) {
+    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height0);
+  }
+  if (inv_v1 == 2) {
+    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height1);
+  }
+  if (inv_v2 == 2) {
+    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height2);
+  }
+  if (inv_v3 == 2) {
+    half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height3);
+  }
 
   if (((h0 * inv_h0) != max_incl_h) ||  //
       ((h1 * inv_h1) != max_incl_h) ||  //
