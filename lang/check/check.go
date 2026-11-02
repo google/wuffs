@@ -525,29 +525,35 @@ func (c *Checker) checkFields(fields []*a.Node, banCPUArchTypes bool, banNonBase
 	fieldNames := map[t.ID]bool{}
 	for _, n := range fields {
 		f := n.AsField()
+		fTyp := f.XType()
 		if _, ok := fieldNames[f.Name()]; ok {
 			return fmt.Errorf("check: duplicate field %q", f.Name().Str(c.tm))
 		}
-		if err := checkTypeExpr(q, f.XType()); err != nil {
+		if err := checkTypeExpr(q, fTyp); err != nil {
 			return fmt.Errorf("%v for field %q", err, f.Name().Str(c.tm))
 		}
 
-		innermost := f.XType().Innermost()
+		if fTyp.HasIOTokenTypes() && !fTyp.IsIOTokenType() {
+			return fmt.Errorf("check: nested IO/Token Reader/Writer type %q not allowed for field %q",
+				fTyp.Str(c.tm), f.Name().Str(c.tm))
+		}
+
+		innermost := fTyp.Innermost()
 		if banCPUArchTypes && innermost.IsCPUArchType() {
 			return fmt.Errorf("check: cpu_arch type %q not allowed for field %q",
-				f.XType().Str(c.tm), f.Name().Str(c.tm))
+				fTyp.Str(c.tm), f.Name().Str(c.tm))
 		}
 		if banNonBaseTypes && (innermost.QID()[0] != t.IDBase) {
 			return fmt.Errorf("check: non-base type %q not allowed for field %q",
-				f.XType().Str(c.tm), f.Name().Str(c.tm))
+				fTyp.Str(c.tm), f.Name().Str(c.tm))
 		}
-		if banPtrTypes && f.XType().HasPointers() {
+		if banPtrTypes && fTyp.HasPointers() {
 			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
-				f.XType().Str(c.tm), f.Name().Str(c.tm))
+				fTyp.Str(c.tm), f.Name().Str(c.tm))
 		}
 
 		if checkDefaultZeroValue {
-			fb := f.XType().Innermost().AsNode().MBounds()
+			fb := fTyp.Innermost().AsNode().MBounds()
 			if (zero.Cmp(fb[0]) < 0) || (zero.Cmp(fb[1]) > 0) {
 				return fmt.Errorf("check: default zero value is not within bounds %v for field %q",
 					fb, f.Name().Str(c.tm))

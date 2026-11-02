@@ -364,6 +364,10 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	lTyp := lhs.MType()
 	rTyp := rhs.MType()
 
+	if lTyp.HasIOTokenTypes() {
+			return fmt.Errorf("check: cannot assign to an IO/Token Reader/Writer")
+	}
+
 	if op := n.Operator(); op == t.IDEq || op == t.IDEqQuestion {
 		if (op == t.IDEqQuestion) && !rTyp.Eq(typeExprStatus) {
 			return fmt.Errorf("check: =? only works with the base.status type")

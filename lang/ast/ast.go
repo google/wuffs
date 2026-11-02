@@ -1018,6 +1018,21 @@ func (n *TypeExpr) IsUnsignedInteger() bool {
 		(n.id2 == t.IDU8 || n.id2 == t.IDU16 || n.id2 == t.IDU32 || n.id2 == t.IDU64)
 }
 
+func (n *TypeExpr) HasIOTokenTypes() bool {
+	for ; n != nil; n = n.Inner() {
+		switch n.id0 {
+		case 0:
+			if n.id1 == t.IDBase {
+				switch n.id2 {
+				case t.IDIOReader, t.IDIOWriter, t.IDTokenReader, t.IDTokenWriter:
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
 		switch n.id0 {
