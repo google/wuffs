@@ -626,6 +626,12 @@ func (c *Checker) checkFuncSignature1(node *a.Node, banCPUArchTypes bool) error 
 				Filename: n.Filename(),
 				Line:     n.Line(),
 			}
+		} else if (n.QQID()[0] != t.IDBase) && out.HasPointers() {
+			return &Error{
+				Err:      fmt.Errorf("func %s returns a pointery type", n.QQID().Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
 		}
 		// TODO: does checking a TypeExpr need a q?
 		q := &checker{

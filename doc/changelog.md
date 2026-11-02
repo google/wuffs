@@ -42,7 +42,6 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
-- Deprecated `std/lzw.decoder.flush`.
 - Fixed `PIXEL_FORMAT__YA_{NON,}PREMUL` constant values.
 - Generated constants now default to unsigned.
 - Halved the sizeof `wuffs_foo__bar::unique_ptr`.
@@ -52,6 +51,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Removed the `std/gif -> std/lzw` dependency.
 - Removed `endwhile` keyword.
 - Removed `example/bzcat`.
+- Removed `std/lzw.decoder.flush`.
 - Renamed `std/tga` to `std/targa`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.

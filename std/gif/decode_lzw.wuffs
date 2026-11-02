@@ -13,8 +13,8 @@
 // This file (in std/gif) is a fork of std/lzw/decode_lzw.wuffs, inlined so
 // that the gif 'caller' can take the this.lzw_output[this.lzw_output_ri ..
 // this.lzw_output_wi] slice directly. Wuffs version 0.3 provided this as the
-// lzw.decoder.flush!() method, but we'd like to deprecate (and eventually
-// remove) methods that return anything pointer-y (including slices).
+// lzw.decoder.flush!() method, but we now ban methods that return anything
+// pointer-y (including slices), to simplify memory-safety analysis.
 //
 // It also changes the ? methods to ! methods, so that the LZW-decoder does not
 // need a "this.lzw.reset!()" call in case of a recoverable error.

@@ -12675,11 +12675,6 @@ wuffs_lzw__decoder__transform_io(
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
 
-WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8
-wuffs_lzw__decoder__flush(
-    wuffs_lzw__decoder* self);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -12822,11 +12817,6 @@ struct wuffs_lzw__decoder__struct {
       wuffs_base__io_buffer* a_src,
       wuffs_base__slice_u8 a_workbuf) {
     return wuffs_lzw__decoder__transform_io(this, a_dst, a_src, a_workbuf);
-  }
-
-  inline wuffs_base__slice_u8
-  flush() {
-    return wuffs_lzw__decoder__flush(this);
   }
 
 #endif  // __cplusplus
@@ -66853,32 +66843,6 @@ wuffs_lzw__decoder__write_to(
   }
 
   return status;
-}
-
-// -------- func lzw.decoder.flush
-
-WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8
-wuffs_lzw__decoder__flush(
-    wuffs_lzw__decoder* self) {
-  if (!self) {
-    return wuffs_base__empty_slice_u8();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__empty_slice_u8();
-  }
-
-  uint32_t v_ri = 0;
-  uint32_t v_wi = 0;
-
-  v_ri = self->private_impl.f_output_ri;
-  v_wi = self->private_impl.f_output_wi;
-  self->private_impl.f_output_ri = 0u;
-  self->private_impl.f_output_wi = 0u;
-  if (v_ri <= v_wi) {
-    return wuffs_base__make_slice_u8_ij(self->private_data.f_output, v_ri, v_wi);
-  }
-  return wuffs_base__make_slice_u8(self->private_data.f_output, 0);
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW)

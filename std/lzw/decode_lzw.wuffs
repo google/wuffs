@@ -379,19 +379,4 @@ pri func decoder.write_to?(dst: base.io_writer) {
 
 // Deprecated. Use transform_io and an io_writer instead.
 //
-// We'd like to deprecate (and eventually remove) methods that return anything
-// pointer-y (including slices).
-pub func decoder.flush!() roslice base.u8 {
-    var ri : base.u32[..= 8191]
-    var wi : base.u32[..= 8191]
-
-    ri = this.output_ri
-    wi = this.output_wi
-    this.output_ri = 0
-    this.output_wi = 0
-
-    if ri <= wi {
-        return this.output[ri .. wi]
-    }
-    return this.output[.. 0]
-}
+// pri func decoder.flush!() base.u32
