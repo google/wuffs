@@ -628,10 +628,14 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
         i += 1
     }
     if ((counts[0] as base.u32) + args.n_codes0) == args.n_codes1 {
-        if args.which == 1 {
-            this.n_huffs_bits[1] = 1
+        // As a special case, allow a degenerate H-D Huffman table, with one
+        // implicit (and invalid) 0-bit code.
+        //
+        // RFC section 3.2.7 says "One distance code of zero bits means that
+        // there are no distance codes used at all (the data is all literals)."
+        if (counts[0] == 1) and (args.which == 1) {
+            this.n_huffs_bits[1] = 0
             this.huffs[1][0] = DCODE_MAGIC_NUMBERS[31] | 1
-            this.huffs[1][1] = DCODE_MAGIC_NUMBERS[31] | 1
             return ok
         }
         return "#no Huffman codes"
@@ -653,8 +657,12 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
         i += 1
     }
     if remaining <> 0 {
-        // As a special case, allow a degenerate H-D Huffman table, with only
-        // one 1-bit code.
+        // As a special case, allow a degenerate H-D Huffman table, with one
+        // explicit 1-bit code and one implicit (and invalid) 1-bit code.
+        //
+        // RFC section 3.2.7 says "If only one distance code is used, it is
+        // encoded using one bit, not zero bits; in this case there is a single
+        // code length of one, with one unused code."
         if (args.which == 1) and (counts[1] == 1) and
                 (((counts[0] as base.u32) + args.n_codes0 + 1) == args.n_codes1) {
 

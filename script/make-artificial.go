@@ -345,18 +345,18 @@ var deflateGlobals struct {
 
 	// DHH (Dynamic Huffman, inside a Huffman table) state.
 	prevLine   string
+	empty      bool
 	etcetera   bool
 	incomplete bool
-	empty      bool
 }
 
 func deflateGlobalsClearDynamicHuffmanState() {
 	deflateGlobals.whichHuffman = 0
 	deflateGlobals.huffmans = [4]deflateHuffmanTable{}
 	deflateGlobals.prevLine = ""
+	deflateGlobals.empty = false
 	deflateGlobals.etcetera = false
 	deflateGlobals.incomplete = false
-	deflateGlobals.empty = false
 }
 
 func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLengths uint32, retErr error) {
@@ -371,6 +371,7 @@ func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLe
 			numDCodes = (k + 1)
 		}
 	}
+
 	// An empty Distance table still needs at least one (zero-valued) code
 	// length.
 	if numDCodes < 1 {
@@ -414,9 +415,7 @@ func deflateGlobalsIsHuffmanCanonical() bool {
 	}
 	if len(pairs) == 0 {
 		return g.empty
-	}
-
-	if g.empty {
+	} else if g.empty {
 		return false
 	}
 
@@ -786,17 +785,14 @@ func stateDeflateDynamicHuffmanHuffman(line string) (stateFunc, error) {
 outer:
 	switch {
 	case line == "}":
-		if g.empty && (g.huffmans[g.whichHuffman] == nil) {
-			g.huffmans[g.whichHuffman] = deflateHuffmanTable{}
-		}
 		if !deflateGlobalsIsHuffmanCanonical() {
 			return nil, fmt.Errorf(`"huffman %s" is non-canonical`, deflateHuffmanNames[g.whichHuffman])
 		}
 		g.whichHuffman = 0
 		g.prevLine = ""
+		g.empty = false
 		g.etcetera = false
 		g.incomplete = false
-		g.empty = false
 
 		// If we have all three Huffman tables, write them.
 		for i := 1; ; i++ {
@@ -813,16 +809,22 @@ outer:
 
 		return stateDeflateDynamicHuffman, nil
 
+	case line == "empty":
+		if g.whichHuffman != 3 {
+			return nil, fmt.Errorf(`only "huffman Distance" can be empty`)
+		} else if g.huffmans[3] != nil {
+			return nil, fmt.Errorf(`"empty" stated twice`)
+		}
+		g.huffmans[3] = deflateHuffmanTable{}
+		g.empty = true
+		return stateDeflateDynamicHuffmanHuffman, nil
+
 	case line == "etcetera":
 		g.etcetera = true
 		return stateDeflateDynamicHuffmanHuffman, nil
 
 	case line == "incomplete":
 		g.incomplete = true
-		return stateDeflateDynamicHuffmanHuffman, nil
-
-	case line == "empty":
-		g.empty = true
 		return stateDeflateDynamicHuffmanHuffman, nil
 
 	default:

@@ -1,4 +1,4 @@
-Running degenerate-huffman-empty-distance.deflate through script/print-bits.go and
+Running degenerate-huffman-empty.deflate through script/print-bits.go and
 adding commentary:
 
     offset  xoffset ASCII   hex     binary
@@ -6,43 +6,62 @@ adding commentary:
     000000  0x0000  .       0x05    0b_0000_0...  NumLCodes: 257
     000001  0x0001  .       0xC0    0b_...0_0000  NumDCodes: 1
     000001  0x0001  .       0xC0    0b_110._....  NumCLCodeLengths: 18
+    000002  0x0002  .       0xB1    0b_...._...1
 
 Decode the H-CL Huffman table (NumCLCodeLengths = 18). Recall the peculiar
-code_order: 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15.
-The zero values are omitted for brevity. The non-zero values are:
+code_order: 16, 17, 18, 0, 8, ..., 2, 14, 1, 15:
 
-    CLCLs[17] is 3
-    CLCLs[18] is 3
-    CLCLs[ 0] is 2
-    CLCLs[ 2] is 2
-    CLCLs[ 1] is 2
+    000002  0x0002  .       0xB1    0b_1011_000.  CLCodeLengths: 18 x 3 bits
+    000003  0x0003  .       0x09    0b_0000_1001    CLCLs[ 0] is 2
+    000004  0x0004  .       0x00    0b_0000_0000    CLCLs[ 1] is 2
+    000005  0x0005  .       0x00    0b_0000_0000    CLCLs[ 2] is 2
+    000006  0x0006  .       0x00    0b_0000_0000    CLCLs[17] is 3
+    000007  0x0007  .       0x80    0b_1000_0000    CLCLs[18] is 3
+    000008  0x0008  .       0xA0    0b_.010_0000
 
 The H-CL Huffman table is:
-"00" -> CodeLength=0
-"01" -> CodeLength=1
-"10" -> CodeLength=2
+"00"  -> CodeLength=0
+"01"  -> CodeLength=1
+"10"  -> CodeLength=2
 "110" -> CodeLength=17 which means a block of ( 3 + 3_extra_bits) zeroes
 "111" -> CodeLength=18 which means a block of (11 + 7_extra_bits) zeroes
 
-Decode the H-L and H-D Huffman tables (NumLCodes = 257 and NumDCodes = 1):
+Decode the H-L Huffman table (NumLCodes = 257):
 
-    70 zeroes, then CL=2 (70='F'), then 40 zeroes, then CL=2 (111='o'),
-    then 144 zeroes, then CL=1 (256=EOB), then one more CL=0.
+    000008  0x0008  .       0xA0    0b_1..._....  "111" is CL=18: 11+7extra
+    000009  0x0009  .       0xEF    0b_...._..11
+    000009  0x0009  .       0xEF    0b_1110_11..  7extra=59: 70 zeroes
+    000010  0x000A  z       0x7A    0b_...._...0
+    000010  0x000A  z       0x7A    0b_...._.01.  "10"  is CL= 2 (70='F')
+    000010  0x000A  z       0x7A    0b_..11_1...  "111" is CL=18: 11+7extra
+    000010  0x000A  z       0x7A    0b_01.._....  7extra=29: 40 zeroes
+    000011  0x000B  .       0xA7    0b_...0_0111
+    000011  0x000B  .       0xA7    0b_.01._....  "10"  is CL= 2 (111='o')
+    000011  0x000B  .       0xA7    0b_1..._....  "111" is CL=18: 11+7extra
+    000012  0x000C  .       0xFF    0b_...._..11
+    000012  0x000C  .       0xFF    0b_1111_11..  7extra=127: 138 zeroes
+    000013  0x000D  7       0x37    0b_...._...1
+    000013  0x000D  7       0x37    0b_...._011.  "110" is CL=17:  3+3extra
+    000013  0x000D  7       0x37    0b_.011_....  3extra=3: 6 zeroes
+    000013  0x000D  7       0x37    0b_0..._....  "01"  is CL= 1 (256=EOB)
+    000014  0x000E  .       0xE9    0b_...._...1
 
 The H-L Huffman table is:
 "0"  -> EOB
 "10" -> 'F'
 "11" -> 'o'
 
-The H-D Huffman table is empty: its sole code length is zero. RFC 1951
-section 3.2.7 says "One distance code of zero bits means that there are no
-distance codes used at all (the data is all literals)". Decoding a distance
-code would still fail (both of the two 1-bit table entries are invalid) but
-this block contains only literals, so that never happens.
+Decode the H-D Huffman table (NumDCodes = 1):
 
-Apply H-L.
+    000014  0x000E  .       0xE9    0b_...._.00.  "00"  is CL= 0 (DCode 0)
 
-    literal 'F'
-    literal 'o'
-    literal 'o'
-    end of block
+The H-D Huffman table empty: there are no codes with positive length. It is
+therefore degenerate, but not used below.
+
+Apply H-L (and H-D, but the block contains only literals).
+
+    000014  0x000E  .       0xE9    0b_...0_1...  lcode:   70  literal 'F'
+    000014  0x000E  .       0xE9    0b_.11._....  lcode:  111  literal 'o'
+    000014  0x000E  .       0xE9    0b_1..._....  lcode:  111  literal 'o'
+    000015  0x000F  .       0x01    0b_...._...1
+    000015  0x000F  .       0x01    0b_...._..0.  lcode:  256  end of block

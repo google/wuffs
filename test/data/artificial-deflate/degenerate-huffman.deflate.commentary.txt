@@ -53,9 +53,9 @@ Decode the H-D Huffman table (NumDCodes = 1):
     000013  0x000D  .       0x89    0b_...._.00.  "00" is CL= 1 (DCode 0)
 
 The H-D Huffman table is:
-"0"  -> 0
+"0" -> Distance code 0
 This table is incomplete: there is no entry starting with a "1" bit. It is
-therefore degenerate, but not used below.
+therefore degenerate, but not used in the first Dynamic Huffman block.
 
 Apply H-L and H-D.
 
@@ -65,5 +65,81 @@ Apply H-L and H-D.
     000013  0x000D  .       0x89    0b_1..._....  lcode:  256  end of block
     000014  0x000E  .       0x1B    0b_...._...1
 
-The second Dynamic Huffman block (the final one) continues after that, but this
-commentary stops here.
+---
+
+The second Dynamic Huffman block (the final one) continues after that.
+
+    000014  0x000E  .       0x1B    0b_...._101.  Dynamic Huffman block, final
+    000014  0x000E  .       0x1B    0b_0001_....  NumLCodes: 258
+    000015  0x000F  .       0x86    0b_...._...0
+    000015  0x000F  .       0x86    0b_..00_011.  NumDCodes: 4
+    000015  0x000F  .       0x86    0b_10.._....  NumCLCodeLengths: 18
+    000016  0x0010  c       0x63    0b_...._..11
+
+Decode the H-CL Huffman table (NumCLCodeLengths = 18). Recall the peculiar
+code_order: 16, 17, 18, 0, 8, ..., 2, 14, 1, 15:
+
+    000016  0x0010  c       0x63    0b_0110_00..  CLCodeLengths: 18 x 3 bits
+    000017  0x0011  .       0x13    0b_0001_0011    CLCLs[ 0] is 2
+    000018  0x0012  .       0x00    0b_0000_0000    CLCLs[ 1] is 2
+    000019  0x0013  .       0x00    0b_0000_0000    CLCLs[ 2] is 3
+    000020  0x0014  .       0x00    0b_0000_0000    CLCLs[ 3] is 3
+    000021  0x0015  .       0x86    0b_1000_0110    CLCLs[17] is 3
+    000022  0x0016  A       0x41    0b_0100_0001    CLCLs[18] is 3
+
+The H-CL Huffman table is:
+"00"  -> CodeLength=0
+"01"  -> CodeLength=1
+"100" -> CodeLength=2
+"101" -> CodeLength=3
+"110" -> CodeLength=17 which means a block of ( 3 + 3_extra_bits) zeroes
+"111" -> CodeLength=18 which means a block of (11 + 7_extra_bits) zeroes
+
+Decode the H-L Huffman table (NumLCodes = 258):
+
+    000023  0x0017  .       0xB7    0b_...._.111  "111" is CL=18: 11+7extra
+    000023  0x0017  .       0xB7    0b_1011_0...  7extra=54: 65 zeroes
+    000024  0x0018  .       0xB5    0b_...._..01
+    000024  0x0018  .       0xB5    0b_...1_01..  "101" is CL= 3 (65='A')
+    000024  0x0018  .       0xB5    0b_101._....  "101" is CL= 3 (66='B')
+    000025  0x0019  .       0xED    0b_...._.101  "101" is CL= 3 (67='C')
+    000025  0x0019  .       0xED    0b_..10_1...  "101" is CL= 3 (68='D')
+    000025  0x0019  .       0xED    0b_11.._....  "111" is CL=18: 11+7extra
+    000026  0x001A  .       0xFF    0b_...._...1
+    000026  0x001A  .       0xFF    0b_1111_111.  7extra=127: 138 zeroes
+    000027  0x001B  7       0x37    0b_...._.111  "111" is CL=18: 11+7extra
+    000027  0x001B  7       0x37    0b_0011_0...  7extra= 38:  49 zeroes
+    000028  0x001C  %       0x25    0b_...._..01
+    000028  0x001C  %       0x25    0b_...0_01..  "100" is CL= 2 (256=EOB)
+    000028  0x001C  %       0x25    0b_001._....  "100" is CL= 2 (257=Len3)
+
+The H-L Huffman table is:
+"00"  -> EOB
+"01"  -> Len3
+"100" -> 'A'
+"101" -> 'B'
+"110" -> 'C'
+"111" -> 'D'
+
+Decode the H-D Huffman table (NumDCodes = 4):
+
+    000029  0x001D  .       0x83    0b_...._.011  "110" is CL=17:  3+3extra
+    000029  0x001D  .       0x83    0b_..00_0...  3extra=0: 3 zeroes
+    000029  0x001D  .       0x83    0b_10.._....  "01"  is CL= 1 (DCode 3)
+
+The H-D Huffman table is:
+"0" -> Distance code 3
+This table is incomplete: there is no entry starting with a "1" bit. It is
+therefore degenerate, but still used in the second Dynamic Huffman block.
+
+Apply H-L and H-D.
+
+    000030  0x001E  .       0xE9    0b_...._.001  lcode:   65  literal 'A'
+    000030  0x001E  .       0xE9    0b_..10_1...  lcode:   66  literal 'B'
+    000030  0x001E  .       0xE9    0b_11.._....  lcode:   67  literal 'C'
+    000031  0x001F  .       0x2E    0b_...._...0
+    000031  0x001F  .       0x2E    0b_...._111.  lcode:   68  literal 'D'
+    000031  0x001F  .       0x2E    0b_..10_....  lcode:  257  length:   3
+    000031  0x001F  .       0x2E    0b_.0.._....  dcode:    3  distance: 4
+    000031  0x001F  .       0x2E    0b_0..._....  lcode:  256  end of block
+    000032  0x0020  .       0x00    0b_...._...0
