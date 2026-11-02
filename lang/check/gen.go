@@ -137,28 +137,55 @@ func genClaim(claim string) error {
 	if err != nil {
 		return err
 	}
-	if err := genParseBinaryOps(n, "n.Condition()"); err != nil {
+	xVars := map[string]bool{}
+	if err := genParseBinaryOps(xVars, n, "n.Condition()"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func genParseBinaryOps(n *node, arg string) error {
-	l := genName(n.lhs)
-	r := genName(n.rhs)
+func genParseBinaryOps(xVars map[string]bool, n *node, arg string) error {
+	l, lAlt := genName(n.lhs), ""
+	if l[0] != 'x' {
+		// No-op.
+	} else if xVars[l] {
+		nextTmp++
+		l, lAlt = fmt.Sprintf("y%d", nextTmp-1), l
+	} else {
+		xVars[l] = true
+	}
+
+	r, rAlt := genName(n.rhs), ""
+	if r[0] != 'x' {
+		// No-op.
+	} else if xVars[r] {
+		nextTmp++
+		r, rAlt = fmt.Sprintf("y%d", nextTmp-1), r
+	} else {
+		xVars[r] = true
+	}
+
 	key := keys[n.op]
 	if key == "" {
 		return fmt.Errorf("bad op %q", n.op)
 	}
 	fmt.Fprintf(&out, "op, %s, %s := parseBinaryOp(%s)\n", l, r, arg)
 	fmt.Fprintf(&out, "if op != t.ID%s { return errFailed }\n", key)
+
+	if lAlt != "" {
+		fmt.Fprintf(&out, "if !%s.Eq(%s) { return errFailed }\n", l, lAlt)
+	}
+	if rAlt != "" {
+		fmt.Fprintf(&out, "if !%s.Eq(%s) { return errFailed }\n", r, rAlt)
+	}
+
 	if l[0] == 't' {
-		if err := genParseBinaryOps(n.lhs, l); err != nil {
+		if err := genParseBinaryOps(xVars, n.lhs, l); err != nil {
 			return err
 		}
 	}
 	if r[0] == 't' {
-		if err := genParseBinaryOps(n.rhs, r); err != nil {
+		if err := genParseBinaryOps(xVars, n.rhs, r); err != nil {
 			return err
 		}
 	}

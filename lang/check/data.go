@@ -380,8 +380,11 @@ var reasons = [...]struct {
 		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
-		op, xa, xb := parseBinaryOp(t0)
+		op, y1, xb := parseBinaryOp(t0)
 		if op != t.IDXBinaryPlus {
+			return errFailed
+		}
+		if !y1.Eq(xa) {
 			return errFailed
 		}
 		// 0 <= b
