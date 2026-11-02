@@ -1,4 +1,4 @@
-Running degenerate-huffman-empty.deflate through script/print-bits.go and
+Running degenerate-huffman-0-bit.deflate through script/print-bits.go and
 adding commentary:
 
     offset  xoffset ASCII   hex     binary

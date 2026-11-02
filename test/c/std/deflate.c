@@ -85,22 +85,22 @@ golden_test g_deflate_deflate_backref_crosses_blocks_gt = {
         "backref-crosses-blocks.deflate",
 };
 
-golden_test g_deflate_deflate_degenerate_huffman_gt = {
+golden_test g_deflate_deflate_degenerate_huffman_0_bit_gt = {
     .want_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman.deflate.decompressed",
+        "degenerate-huffman-0-bit.deflate.decompressed",
     .src_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman.deflate",
+        "degenerate-huffman-0-bit.deflate",
 };
 
-golden_test g_deflate_deflate_degenerate_huffman_empty_gt = {
+golden_test g_deflate_deflate_degenerate_huffman_1_bit_gt = {
     .want_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman-empty.deflate.decompressed",
+        "degenerate-huffman-1-bit.deflate.decompressed",
     .src_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman-empty.deflate",
+        "degenerate-huffman-1-bit.deflate",
 };
 
 golden_test g_deflate_deflate_distance_32768_gt = {
@@ -248,18 +248,18 @@ test_wuffs_deflate_decode_deflate_backref_crosses_blocks() {
 }
 
 const char*  //
-test_wuffs_deflate_decode_deflate_degenerate_huffman() {
+test_wuffs_deflate_decode_deflate_degenerate_huffman_0_bit() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_gt,
+                            &g_deflate_deflate_degenerate_huffman_0_bit_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
-test_wuffs_deflate_decode_deflate_degenerate_huffman_empty() {
+test_wuffs_deflate_decode_deflate_degenerate_huffman_1_bit() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_empty_gt,
+                            &g_deflate_deflate_degenerate_huffman_1_bit_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -765,18 +765,18 @@ test_mimic_deflate_decode_deflate_backref_crosses_blocks() {
 }
 
 const char*  //
-test_mimic_deflate_decode_deflate_degenerate_huffman() {
+test_mimic_deflate_decode_deflate_degenerate_huffman_0_bit() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_gt,
+                            &g_deflate_deflate_degenerate_huffman_0_bit_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
-test_mimic_deflate_decode_deflate_degenerate_huffman_empty() {
+test_mimic_deflate_decode_deflate_degenerate_huffman_1_bit() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_empty_gt,
+                            &g_deflate_deflate_degenerate_huffman_1_bit_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -941,8 +941,8 @@ proc g_tests[] = {
 
     test_wuffs_deflate_decode_256_bytes,
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,
-    test_wuffs_deflate_decode_deflate_degenerate_huffman,
-    test_wuffs_deflate_decode_deflate_degenerate_huffman_empty,
+    test_wuffs_deflate_decode_deflate_degenerate_huffman_0_bit,
+    test_wuffs_deflate_decode_deflate_degenerate_huffman_1_bit,
     test_wuffs_deflate_decode_deflate_distance_32768,
     test_wuffs_deflate_decode_deflate_distance_code_31,
     test_wuffs_deflate_decode_deflate_huffman_primlen_9,
@@ -964,8 +964,8 @@ proc g_tests[] = {
 
     test_mimic_deflate_decode_256_bytes,
     test_mimic_deflate_decode_deflate_backref_crosses_blocks,
-    test_mimic_deflate_decode_deflate_degenerate_huffman,
-    test_mimic_deflate_decode_deflate_degenerate_huffman_empty,
+    test_mimic_deflate_decode_deflate_degenerate_huffman_0_bit,
+    test_mimic_deflate_decode_deflate_degenerate_huffman_1_bit,
     test_mimic_deflate_decode_deflate_distance_32768,
     test_mimic_deflate_decode_deflate_distance_code_31,
     test_mimic_deflate_decode_deflate_huffman_primlen_9,
