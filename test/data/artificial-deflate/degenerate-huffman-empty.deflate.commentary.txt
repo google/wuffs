@@ -26,7 +26,7 @@ The H-CL Huffman table is:
 
 Decode the H-L and H-D Huffman tables (NumLCodes = 257 and NumDCodes = 1):
 
-    102 zeroes, then CL=2 (70='F'), then 40 zeroes, then CL=2 (111='o'),
+    70 zeroes, then CL=2 (70='F'), then 40 zeroes, then CL=2 (111='o'),
     then 144 zeroes, then CL=1 (256=EOB), then one more CL=0.
 
 The H-L Huffman table is:
