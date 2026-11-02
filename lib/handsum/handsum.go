@@ -40,7 +40,10 @@
 //   - A quality=3 file is 147 bytes long.
 //   - A quality=4 file is 171 bytes long.
 //
-// Every Gray/q1 image file is exactly 48 bytes (384 bits) long. For a 16×16
+// Every Gray/q1 image file is exactly 33 bytes (264 bits) long. For a 16×16
+// pixel image, this uses 1.03125 bits (0.12890625 bytes) per pixel.
+//
+// Every RGB/q1 image file is exactly 48 bytes (384 bits) long. For a 16×16
 // pixel image, this uses 1.5 bits (0.1875 bytes) per pixel.
 //
 // Every RGB/q4 image file is exactly 147 bytes (1176 bits) long. This uses
