@@ -23860,7 +23860,7 @@ wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
     len = src_len4;
     if (!src_closed) {
       o.status.repr = wuffs_base__suspension__short_read;
-    } else if (src.len & 1) {
+    } else if (src.len & 3) {
       o.status.repr = wuffs_base__error__bad_data;
     } else {
       o.status.repr = NULL;
