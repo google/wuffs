@@ -716,6 +716,29 @@ test_wuffs_strconv_base_16() {
     }
   }
 
+  {
+    const char* str = "\\xa9\\x";  // The "\\x" should cause "#base: bad data".
+    wuffs_base__slice_u8 dst = g_have_slice_u8;
+    wuffs_base__slice_u8 src =
+        wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str));
+    wuffs_base__transform__output have = wuffs_base__base_16__decode4(
+        dst, src, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+    if (have.status.repr != wuffs_base__error__bad_data) {
+      RETURN_FAIL("decode4: have \"%s\", want \"%s\"", have.status.repr,
+                  wuffs_base__error__bad_data);
+    }
+    if (have.num_dst != 1) {
+      RETURN_FAIL("decode4: num_dst: have %zu, want 1", have.num_dst);
+    }
+    if (have.num_src != 4) {
+      RETURN_FAIL("decode4: num_src: have %zu, want 4", have.num_src);
+    }
+    if (g_have_array_u8[0] != 0xA9) {
+      RETURN_FAIL("decode4: dst[0]: have 0x%02X, want 0xA9",
+                  (int)(g_have_array_u8[0]));
+    }
+  }
+
   return NULL;
 }
 
