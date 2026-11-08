@@ -1039,7 +1039,7 @@ func (n *TypeExpr) HasPointers() bool {
 		case 0:
 			if n.id1 == t.IDBase {
 				switch n.id2 {
-				case t.IDIOReader, t.IDIOWriter:
+				case t.IDIOReader, t.IDIOWriter, t.IDTokenReader, t.IDTokenWriter:
 					return true
 				}
 			}
