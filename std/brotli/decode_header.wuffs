@@ -1,0 +1,692 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// decode_compressed_header decodes the rest of a compressed meta-block's
+// header, from NBLTYPESL onwards, as per RFC 7932 section 9.2.
+pri func decoder.decode_compressed_header?(src: base.io_reader, workbuf: slice base.u8) {
+    var k     : base.u32[..= 3]
+    var n     : base.u32[..= 256]
+    var i     : base.u32
+    var v     : base.u32
+    var count : base.u32[..= 256]
+    var alpha : base.u32[..= 520]
+    var from  : base.u32[..= 165980]
+
+    this.huff_next = 0
+    this.fused_next = 0
+    this.ovf_next = 0
+    this.lit_slot_bt[0] = 0xFFFF_FFFF
+    this.lit_slot_bt[1] = 0xFFFF_FFFF
+    this.lit_slot_bt[2] = 0xFFFF_FFFF
+    this.lit_slot_bt[3] = 0xFFFF_FFFF
+    // huff is about to be rebuilt: lit_wide no longer matches any table.
+    this.lit_wide_tree = 0xFFFF_FFFF
+    this.lit_narrow = 0
+    this.lit_row_bt = 0xFFFF_FFFF
+
+    // Block types and counts for each category.
+    k = 0
+    while k < 3 {
+        this.read_varlen_u8?(src: args.src)
+        n = (this.rb_value & 0xFF) + 1
+        this.num_block_types[k] = n
+        this.block_type[k] = 0
+        this.prev_block_type[k] = 1
+        if n >= 2 {
+            this.block_type_trees[k] = this.huff_next
+            this.read_prefix_code?(src: args.src, alphabet_size: n + 2, kind: 0)
+            this.block_count_trees[k] = this.huff_next
+            this.read_prefix_code?(src: args.src, alphabet_size: 26, kind: 0)
+            this.read_block_count?(src: args.src, k: k)
+        } else {
+            // A single block type: the count is implicit (and, as for
+            // google/brotli, running it down is an error).
+            this.block_count[k] = 0x100_0000
+        }
+        k += 1
+    }
+    this.lit_block_len = this.block_count[0]
+
+    // NPOSTFIX and NDIRECT. Fused distance tables need dist_extra, which
+    // depends on them only: keep it (and dist_base) while they stay the same.
+    this.read_bits?(src: args.src, n: 6)
+    v = this.rb_value
+    this.npostfix = v & 3
+    this.ndirect = ((v >> 2) & 15) << (v & 3)
+    this.dist_alphabet = 16 + this.ndirect + ((48 as base.u32) << this.npostfix)
+    if this.dist_lut_key <> (0x100 | (v & 0x3F)) {
+        this.compute_dist_lut!()
+        this.dist_lut_key = 0x100 | (v & 0x3F)
+    }
+
+    // Context modes, one per literal block type.
+    count = this.num_block_types[0]
+    i = 0
+    while i < count,
+            inv count <= 256,
+    {
+        assert i < 256 via "a < b: a < c; c <= b"(c: count)
+        this.read_bits?(src: args.src, n: 2)
+        this.context_modes[i] = (this.rb_value & 3) as base.u8
+        i += 1
+    }
+
+    // Context maps.
+    this.decode_context_map?(src: args.src, which: 0)
+    this.decode_context_map?(src: args.src, which: 1)
+
+    // The literal, insert-and-copy and distance prefix code groups.
+    count = this.num_lit_trees
+    i = 0
+    while i < count,
+            inv count <= 256,
+    {
+        assert i < 256 via "a < b: a < c; c <= b"(c: count)
+        this.lit_trees[i] = this.huff_next
+        this.read_prefix_code?(src: args.src, alphabet_size: 256, kind: 0)
+        i += 1
+    }
+    // The insert-and-copy and distance codes: each table is built fused (see
+    // fused) in place while fused has room for the largest table there can
+    // be (A + 376 entries for an alphabet of A symbols). Otherwise it is
+    // built in huff, converted into a fused table where it fits (place_fused),
+    // and its space in huff reused.
+    count = this.num_block_types[1]
+    i = 0
+    while i < count,
+            inv count <= 256,
+    {
+        assert i < 256 via "a < b: a < c; c <= b"(c: count)
+        if this.fused_next <= (FUSED_CAPACITY - 1080) {
+            this.cmd_trees[i] = this.fused_next
+            this.read_prefix_code?(src: args.src, alphabet_size: 704, kind: 1)
+        } else {
+            from = this.huff_next
+            this.read_prefix_code?(src: args.src, alphabet_size: 704, kind: 0)
+            this.place_fused?(workbuf: args.workbuf, from: from, which: 0)
+            this.cmd_trees[i] = this.rb_value
+            this.huff_next = from
+        }
+        i += 1
+    }
+    count = this.num_dist_trees
+    alpha = this.dist_alphabet
+    i = 0
+    while i < count,
+            inv count <= 256,
+    {
+        assert i < 256 via "a < b: a < c; c <= b"(c: count)
+        if this.fused_next <= (FUSED_CAPACITY - 896) {
+            this.dist_trees[i] = this.fused_next
+            this.read_prefix_code?(src: args.src, alphabet_size: alpha, kind: 2)
+        } else {
+            from = this.huff_next
+            this.read_prefix_code?(src: args.src, alphabet_size: alpha, kind: 0)
+            this.place_fused?(workbuf: args.workbuf, from: from, which: 1)
+            this.dist_trees[i] = this.rb_value
+            this.huff_next = from
+        }
+        i += 1
+    }
+
+    this.compute_lit_trivial!()
+    this.resolve_context_maps!()
+}
+
+// place_fused converts the insert-and-copy (args.which == 0) or distance (1)
+// code table that read_prefix_code just built at huff[args.from] (built_size
+// entries) into a fused table, in fused if it fits there and otherwise in the
+// workbuf's overflow table area, which it asks for first if need be. It sets
+// rb_value to the fused table's offset (see fused).
+pri func decoder.place_fused?(workbuf: slice base.u8, from: base.u32, which: base.u32[..= 1]) {
+    var status : base.status
+
+    if this.built_size <= (FUSED_CAPACITY - this.fused_next) {
+        this.rb_value = this.fused_next
+        status = this.fuse_table!(workbuf: args.workbuf, from: args.from, which: args.which, ovf: false)
+    } else {
+        if not this.ovf_on {
+            if this.ring_size == 0 {
+                // do_transform_io left out the ring buffer for a call that
+                // decodes the whole stream, but this "$short workbuf" lets
+                // the caller change src or dst before the meta-block's
+                // first output, after which a suspension would need the
+                // ring buffer: ask for it too (the area goes after it).
+                this.grow_workbuf?(workbuf: args.workbuf, ring: this.size_ring().min(no_more_than: 0x100_0000), ovf: true)
+            } else {
+                this.grow_workbuf?(workbuf: args.workbuf, ring: this.ring_size, ovf: true)
+            }
+        }
+        this.rb_value = FUSED_CAPACITY + this.ovf_next
+        status = this.fuse_table!(workbuf: args.workbuf, from: args.from, which: args.which, ovf: true)
+    }
+    if status.is_error() {
+        return status
+    }
+}
+
+// fuse_table converts the insert-and-copy (args.which == 0) or distance (1)
+// code table that read_prefix_code just built at huff[args.from] (built_size
+// entries) into a fused table at fused[fused_next] or, if args.ovf, at entry
+// ovf_next of the workbuf's overflow table area, and advances fused_next or
+// ovf_next past it. The two tables have the same layout; see the fused field
+// comment for the fused symbol entries. For distance codes, dist_extra must
+// be up to date for the meta-block's NPOSTFIX and NDIRECT.
+pri func decoder.fuse_table!(workbuf: slice base.u8, from: base.u32, which: base.u32[..= 1], ovf: base.bool) base.status {
+    var size : base.u32[..= 375864]
+    var out  : base.u32[..= 375864]
+    var cap  : base.u32[..= 375864]
+    var i    : base.u32
+    var idx  : base.u32
+    var e    : base.u32
+    var n    : base.u32[..= 15]
+    var v    : base.u32
+    var o    : base.u64
+
+    if this.built_size > OVERFLOW_CAPACITY {
+        return "#internal error: inconsistent huffman table"
+    }
+    size = this.built_size
+    if args.ovf {
+        out = this.ovf_next
+        cap = OVERFLOW_CAPACITY
+        if not this.ovf_on {
+            return "#internal error: inconsistent huffman table"
+        }
+    } else {
+        out = this.fused_next
+        cap = FUSED_CAPACITY
+    }
+    if (out + size) > cap {
+        return "#internal error: inconsistent huffman table"
+    }
+    i = 0
+    while i < size,
+            inv size <= 375864,
+    {
+        assert i < 375864 via "a < b: a < c; c <= b"(c: size)
+        idx = args.from ~mod+ i
+        if idx >= HUFF_CAPACITY {
+            return "#internal error: inconsistent huffman table"
+        }
+        e = this.huff[idx] as base.u32
+        n = e & 15
+        v = e >> 4
+        // Root table entries with n > 8 point to second level tables, at
+        // the same offsets in both tables. The others are symbols.
+        if (i >= 256) or (n <= 8) {
+            e = this.table_entry(kind: args.which + 1, s: v, n: n)
+            if e == 0xFFFF_FFFF {
+                return "#internal error: inconsistent huffman table"
+            }
+        } else {
+            e = this.table_pointer(kind: args.which + 1, offset: v & 0xFFF, n: n)
+        }
+        idx = out ~mod+ i
+        if not args.ovf {
+            if idx >= FUSED_CAPACITY {
+                return "#internal error: inconsistent huffman table"
+            }
+            this.fused[idx] = e
+        } else {
+            o = (this.ring_size as base.u64) + ((idx as base.u64) * 4)
+            if o > 0xFFFF_FFFF {
+                return "#internal error: inconsistent huffman table"
+            }
+            if (o + 4) > args.workbuf.length() {
+                return base."#bad workbuf length"
+            }
+            assert o <= (o + 4) via "a <= (a + b): 0 <= b"()
+            args.workbuf[o .. o + 4].poke_u32le!(a: e)
+        }
+        i += 1
+    }
+    if (out + size) > OVERFLOW_CAPACITY {
+        return "#internal error: inconsistent huffman table"
+    }
+    if args.ovf {
+        this.ovf_next = out + size
+    } else if (out + size) <= FUSED_CAPACITY {
+        this.fused_next = out + size
+    } else {
+        return "#internal error: inconsistent huffman table"
+    }
+    return ok
+}
+
+// ovf_entry returns entry (args.idx - FUSED_CAPACITY) of the workbuf's
+// overflow table area, or 0xFFFF_FFFF (which no table entry is) if there is
+// no such entry.
+pri func decoder.ovf_entry(workbuf: slice base.u8, idx: base.u32) base.u32 {
+    var o : base.u64
+
+    if not this.ovf_on {
+        return 0xFFFF_FFFF
+    }
+    if args.idx < FUSED_CAPACITY {
+        return 0xFFFF_FFFF
+    }
+    o = (this.ring_size as base.u64) + (((args.idx - FUSED_CAPACITY) as base.u64) * 4)
+    if o > 0xFFFF_FFFF {
+        return 0xFFFF_FFFF
+    }
+    if (o + 4) > args.workbuf.length() {
+        return 0xFFFF_FFFF
+    }
+    assert o <= (o + 4) via "a <= (a + b): 0 <= b"()
+    return args.workbuf[o .. o + 4].peek_u32le()
+}
+
+// resolve_context_maps fills dist_cmap_off: the distance context map with
+// each prefix code index replaced by that code's table offset, so that the
+// fast path's lookup chain has one load fewer.
+pri func decoder.resolve_context_maps!() {
+    var n : base.u32[..= 1024]
+    var i : base.u32
+
+    n = this.num_block_types[2] * 4
+    i = 0
+    while i < n,
+            inv n <= 1024,
+    {
+        assert i < 1024 via "a < b: a < c; c <= b"(c: n)
+        this.dist_cmap_off[i] = this.dist_trees[this.dist_cmap[i]]
+        i += 1
+    }
+}
+
+// compute_lit_trivial sets lit_trivial[bt] to whether all 64 literal
+// contexts of block type bt use the same prefix code, which lets the fast
+// path skip the context computation (as google/brotli does).
+pri func decoder.compute_lit_trivial!() {
+    var bt    : base.u32
+    var count : base.u32[..= 256]
+    var j     : base.u32
+    var v     : base.u8
+    var same  : base.u8
+
+    count = this.num_block_types[0]
+    bt = 0
+    while bt < count,
+            inv count <= 256,
+    {
+        assert bt < 256 via "a < b: a < c; c <= b"(c: count)
+        if this.num_lit_trees < 2 {
+            // A single literal code: every context uses it.
+            this.lit_trivial[bt] = 1
+            bt += 1
+            continue
+        }
+        v = this.lit_cmap[bt << 6]
+        same = 1
+        j = 1
+        while j < 64,
+                inv count <= 256,
+                inv bt < 256,
+        {
+            if this.lit_cmap[(bt << 6) | j] <> v {
+                same = 0
+                break
+            }
+            j += 1
+        }
+        this.lit_trivial[bt] = same
+        bt += 1
+    }
+}
+
+// prepare_literal_block sets the lit_xxx fields for the current literal
+// block type. If its contexts use more than one code, it finds them in, or
+// adds them to, lit_ctx_tree's slots, but only adds them once the block has
+// decoded enough literals to show that filling a slot will pay: until then,
+// lit_has_slot is false and the literals take the slower, two-load way to
+// their codes, through lit_row_off, and decode_literals_fast calls
+// prepare_literal_block again once lit_fill_at of them are done.
+pri func decoder.prepare_literal_block!() {
+    var bt    : base.u32[..= 255]
+    var mode  : base.u32[..= 3]
+    var cbase : base.u32[..= 1536]
+    var row   : base.u32[..= 16320]
+    var qn    : base.u32[..= 8]
+    var s     : base.u32
+    var slot  : base.u32[..= 6144]
+    var vic   : base.u32[..= 3]
+    var p     : base.u32
+    var q     : base.u32
+    var c0    : base.u32[..= 63]
+    var j     : base.u32
+
+    bt = this.block_type[0]
+    mode = this.context_modes[bt] as base.u32
+    cbase = mode << 9
+    row = bt << 6
+    this.lit_ctx_base = cbase
+    this.lit_is_trivial = this.lit_trivial[bt] <> 0
+    this.lit_tree = this.lit_trees[this.lit_cmap[row]]
+    this.lit_has_slot = false
+    if this.lit_is_trivial {
+        return nothing
+    }
+
+    s = 0
+    while s < 4 {
+        if this.lit_slot_bt[s] == bt {
+            this.lit_slot = s << 11
+            this.lit_has_slot = true
+            return nothing
+        }
+        s += 1
+    }
+
+    // Resolve the block type's row of the context map, for the two-load way
+    // and for filling a slot.
+    if this.lit_row_bt <> bt {
+        j = 0
+        while j < 64,
+                inv row <= 16320,
+        {
+            this.lit_row_off[j] = this.lit_trees[this.lit_cmap[row | j]]
+            j += 1
+        }
+        this.lit_row_bt = bt
+    }
+
+    // Filling a slot (256 * qn entries) costs about as much as it saves on
+    // 64 literals per q value: fill one once the block has decoded that many
+    // literals, rather than when it starts, which pays for long blocks too
+    // and saves the fill for the many short meta-blocks of a frequently
+    // flushed stream, few of whose bytes are literals.
+    qn = CONTEXT_P2_COUNT[mode] as base.u32
+    this.lit_fill_at = qn << 6
+    if (this.lit_block_len ~sat- this.block_count[0]) < (qn << 6) {
+        return nothing
+    }
+    vic = this.lit_slot_next
+    this.lit_slot_next = (vic + 1) & 3
+    slot = vic << 11
+    p = 0
+    while p < 256,
+            inv cbase <= 1536,
+            inv qn <= 8,
+            inv slot <= 6144,
+    {
+        c0 = CONTEXT_LUT[cbase | p] as base.u32
+        q = 0
+        while q < qn,
+                inv cbase <= 1536,
+                inv qn <= 8,
+                inv slot <= 6144,
+                inv p < 256,
+        {
+            assert q < 8 via "a < b: a < c; c <= b"(c: qn)
+            this.lit_ctx_tree[slot | (q << 8) | p] = this.lit_row_off[c0 | q]
+            q += 1
+        }
+        p += 1
+    }
+    this.lit_slot_bt[vic] = bt
+    this.lit_slot = slot
+    this.lit_has_slot = true
+}
+
+// read_block_count sets block_count[args.k] to a block count decoded with
+// block_count_trees[args.k], as per RFC 7932 section 6.
+pri func decoder.read_block_count?(src: base.io_reader, k: base.u32[..= 2]) {
+    var k   : base.u32[..= 2]
+    var sym : base.u32
+
+    k = args.k
+    this.read_symbol?(src: args.src, tree: this.block_count_trees[k])
+    sym = this.rb_value
+    if sym >= 26 {
+        return "#internal error: inconsistent huffman table"
+    }
+    this.read_bits?(src: args.src, n: BLOCK_COUNT_EXTRA[sym] as base.u32)
+    this.block_count[k] = BLOCK_COUNT_BASE[sym] + (this.rb_value & 0xFF_FFFF)
+    if k == 0 {
+        this.lit_block_len = this.block_count[0]
+    }
+}
+
+// decode_context_map decodes the literal (args.which == 0) or distance
+// (args.which == 1) context map, preceded by its NTREESL or NTREESD, as per
+// RFC 7932 sections 7.3 and 9.2.
+pri func decoder.decode_context_map?(src: base.io_reader, which: base.u32[..= 1]) {
+    var which  : base.u32[..= 1]
+    var size   : base.u32[..= 16384]
+    var ntrees : base.u32[..= 256]
+    var rlemax : base.u32[..= 16]
+    var tree   : base.u32[..= 165980]
+    var i      : base.u32
+    var code   : base.u32
+    var reps   : base.u32
+    var value  : base.u8
+    var status : base.status
+
+    which = args.which
+    if which == 0 {
+        size = this.num_block_types[0] * 64
+    } else {
+        size = this.num_block_types[2] * 4
+    }
+    this.read_varlen_u8?(src: args.src)
+    ntrees = (this.rb_value & 0xFF) + 1
+    if which == 0 {
+        this.num_lit_trees = ntrees
+    } else {
+        this.num_dist_trees = ntrees
+    }
+
+    if ntrees < 2 {
+        // Every context maps to code 0.
+        i = 0
+        if which == 0 {
+            while i < size,
+                    inv size <= 16384,
+            {
+                assert i < 16384 via "a < b: a < c; c <= b"(c: size)
+                this.lit_cmap[i] = 0
+                i += 1
+            }
+        } else {
+            while i < size,
+                    inv size <= 16384,
+            {
+                if i >= 1024 {
+                    return "#internal error: inconsistent state"
+                }
+                this.dist_cmap[i] = 0
+                i += 1
+            }
+        }
+        return ok
+    }
+
+    this.read_bits?(src: args.src, n: 1)
+    rlemax = 0
+    if this.rb_value <> 0 {
+        this.read_bits?(src: args.src, n: 4)
+        rlemax = (this.rb_value & 15) + 1
+    }
+    tree = this.huff_next
+    this.read_prefix_code?(src: args.src, alphabet_size: ntrees + rlemax, kind: 0)
+
+    i = 0
+    while i < size,
+            inv size <= 16384,
+            inv rlemax <= 16,
+    {
+        assert i < 16384 via "a < b: a < c; c <= b"(c: size)
+        this.read_symbol?(src: args.src, tree: tree)
+        code = this.rb_value
+        if (code == 0) or (code > rlemax) {
+            value = 0
+            if code > rlemax {
+                value = ((code - rlemax) & 0xFF) as base.u8
+            }
+            status = this.set_context_map!(which: which, i: i, value: value)
+            if status.is_error() {
+                return status
+            }
+            i += 1
+            continue
+        }
+        // A run of zeros, of length (1 << code) + (code extra bits).
+        assert code <= 16 via "a <= b: a <= c; c <= b"(c: rlemax)
+        this.read_bits?(src: args.src, n: code)
+        reps = ((1 as base.u32) << code) + (this.rb_value & 0xFFFF)
+        assert size > i via "a > b: b < a"()
+        if reps > (size - i) {
+            return "#bad context map"
+        }
+        while reps > 0,
+                inv size <= 16384,
+                inv rlemax <= 16,
+        {
+            status = this.set_context_map!(which: which, i: i, value: 0)
+            if status.is_error() {
+                return status
+            }
+            i ~mod+= 1
+            reps -= 1
+        }
+    }
+
+    this.read_bits?(src: args.src, n: 1)
+    if this.rb_value <> 0 {
+        this.inverse_mtf!(which: which, size: size)
+    }
+    // The context map's own prefix code is no longer needed.
+    this.huff_next = tree
+}
+
+// set_context_map sets element args.i of the literal (args.which == 0) or
+// distance context map.
+pri func decoder.set_context_map!(which: base.u32[..= 1], i: base.u32, value: base.u8) base.status {
+    if args.which == 0 {
+        if args.i >= 16384 {
+            return "#internal error: inconsistent state"
+        }
+        this.lit_cmap[args.i] = args.value
+    } else {
+        if args.i >= 1024 {
+            return "#internal error: inconsistent state"
+        }
+        this.dist_cmap[args.i] = args.value
+    }
+    return ok
+}
+
+// inverse_mtf applies the inverse move-to-front transform of RFC 7932
+// section 7.3 to the first args.size elements of a context map.
+pri func decoder.inverse_mtf!(which: base.u32[..= 1], size: base.u32[..= 16384]) {
+    var i     : base.u32
+    var j     : base.u32[..= 255]
+    var index : base.u8
+    var value : base.u8
+
+    i = 0
+    while i < 256 {
+        this.mtf[i] = (i & 0xFF) as base.u8
+        i += 1
+    }
+    i = 0
+    while i < args.size {
+        assert i < 16384 via "a < b: a < c; c <= b"(c: args.size)
+        if args.which == 0 {
+            index = this.lit_cmap[i]
+        } else if i < 1024 {
+            index = this.dist_cmap[i]
+        } else {
+            return nothing
+        }
+        value = this.mtf[index]
+        if args.which == 0 {
+            this.lit_cmap[i] = value
+        } else if i < 1024 {
+            this.dist_cmap[i] = value
+        }
+        j = index as base.u32
+        while j > 0,
+                inv i < 16384,
+        {
+            this.mtf[j] = this.mtf[j - 1]
+            j -= 1
+        }
+        this.mtf[0] = value
+        i += 1
+    }
+}
+
+// compute_dist_lut fills dist_extra and dist_base for the distance symbols
+// 16 ..= (dist_alphabet - 1), as per RFC 7932 section 4 (and google/brotli's
+// CalculateDistanceLut).
+pri func decoder.compute_dist_lut!() {
+    var i        : base.u32
+    var j        : base.u32
+    var ndirect  : base.u32[..= 120]
+    var npostfix : base.u32[..= 3]
+    var alpha    : base.u32[..= 520]
+    var bits     : base.u32[..= 24]
+    var half     : base.u32[..= 1]
+    var group    : base.u32
+    var offset   : base.u32[..= 0x300_0000]
+    var base_d   : base.u32[..= 0x2000_0000]
+
+    ndirect = this.ndirect
+    npostfix = this.npostfix
+    alpha = this.dist_alphabet
+    i = 16
+    j = 0
+    while (j < ndirect) and (i < alpha),
+            inv ndirect <= 120,
+            inv alpha <= 520,
+    {
+        assert i < 520 via "a < b: a < c; c <= b"(c: alpha)
+        assert j < 120 via "a < b: a < c; c <= b"(c: ndirect)
+        this.dist_extra[i] = 0
+        this.dist_base[i] = j + 1
+        i += 1
+        j += 1
+    }
+    bits = 1
+    half = 0
+    while i < alpha,
+            inv ndirect <= 120,
+            inv npostfix <= 3,
+            inv alpha <= 520,
+    {
+        offset = (2 + half) << bits
+        if offset < 4 {
+            // Unreachable: bits >= 1.
+            return nothing
+        }
+        base_d = ndirect + ((offset - 4) << npostfix) + 1
+        group = (1 as base.u32) << npostfix
+        j = 0
+        while (j < group) and (i < alpha),
+                inv ndirect <= 120,
+                inv npostfix <= 3,
+                inv alpha <= 520,
+                inv group <= 8,
+        {
+            assert i < 520 via "a < b: a < c; c <= b"(c: alpha)
+            assert j < 8 via "a < b: a < c; c <= b"(c: group)
+            this.dist_extra[i] = bits as base.u8
+            this.dist_base[i] = base_d + j
+            i += 1
+            j += 1
+        }
+        if (half == 1) and (bits < 24) {
+            bits += 1
+        }
+        half ^= 1
+    }
+}

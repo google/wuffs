@@ -1,0 +1,1464 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// The fast path for a compressed meta-block's commands: see the comment at
+// the top of decode_commands.wuffs.
+
+// decode_commands_fast decodes whole commands while src and dst have room,
+// without suspending. It starts and normally stops at a command boundary
+// (cmd_state 0), but when src or dst runs short mid-command it saves the
+// command's progress in cmd_state and friends, exactly as
+// decode_command_slow would have, and returns ok: decode_command_slow then
+// carries on from there.
+//
+// Error returns skip that bookkeeping (state is left mid-update and up to 7
+// prefetched src bytes are not given back): an error is terminal, as
+// transform_io then disables the decoder ("#base: disabled by previous
+// error"), so that state can never be observed.
+//
+// The bit reader works as in std/deflate's decode_huffman_fast64: bits and
+// n_bits are locals, refilled to at least 56 bits from 8-byte peeks of src
+// ("Variant 4" of Fabian Giesen's bit reading techniques), and on return
+// whole unused bytes are given back to src.
+//
+// The loop keeps little state in locals, so that the compiler can keep it in
+// registers: total_out is kk - mlen, and p1 and p2 are not tracked but read
+// back from dst where a literal needs them (see load_p1p2).
+//
+// When editing this function, consider making the equivalent change to
+// decode_command_slow.
+pri func decoder.decode_commands_fast!(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) base.status {
+    var bits      : base.u64
+    var n_bits    : base.u32
+    var mlen      : base.u32[..= 0x100_0000]
+    var kk        : base.u64
+    var maxd      : base.u64[..= 0xFF_FFF0]
+    var tot       : base.u64
+    var m0        : base.u64
+    var p1        : base.u8
+    var p2        : base.u8
+    var e         : base.u64
+    var entry     : base.u32
+    var x         : base.u64
+    var t         : base.u32[..= 63]
+    var n         : base.u32[..= 15]
+    var idx       : base.u32
+    var ctree     : base.u32
+    var tree      : base.u32
+    var c         : base.u32[..= 0x3FF]
+    var ic        : base.u32[..= 3]
+    var kl        : base.u32[..= 0x200_0000]
+    var ie        : base.u32[..= 31]
+    var ce        : base.u32[..= 31]
+    var insert    : base.u32[..= 0x200_0000]
+    var done      : base.u32
+    var copy_len  : base.u32[..= 0x200_0000]
+    var implicit  : base.bool
+    var dctx      : base.u32[..= 3]
+    var dcode     : base.u32[..= 0x3FF]
+    var dist      : base.u32
+    var base_d    : base.u32
+    var wl        : base.u32[..= 40]
+    var daddr     : base.u32
+    var dlen      : base.u32[..= 24]
+    var didx      : base.u32[..= 0x7FF]
+    var doff      : base.u32
+    var dword     : roslice base.u8
+    var status    : base.status
+    var since     : base.u64
+    var off       : base.u64
+    var rb        : base.u64
+    var n1        : base.u32
+    var nc        : base.u32
+    var ring_copy : base.bool
+    var rs        : roslice base.u8
+    var ws        : slice base.u8
+    var rq        : roslice base.u8
+    var wq        : slice base.u8
+    var rmark     : base.u64
+    var d8        : base.u32
+    var t2        : roslice base.u8
+    var dtree     : base.u32
+    var de        : base.u32[..= 31]
+    var dext      : base.u32[..= 0xFF_FFFF]
+    var cbase     : base.u32[..= 1536]
+    var ctx       : base.u32[..= 63]
+    var resume    : base.bool
+    var ca        : base.u32[..= 8]
+    var cb        : base.u32[..= 8]
+    var cc        : base.u32[..= 8]
+    var cd        : base.u32[..= 8]
+
+    // Besides command boundaries (cmd_state 0), it resumes a command whose
+    // literals were cut short (cmd_state 1): long inserts are common in
+    // streaming, where dst fills up every so often. A meta-block with tables
+    // in the workbuf's overflow area is decode_command_slow's alone (see
+    // decode_compressed).
+    if (this.cmd_state > 1) or (this.ovf_next > 0) {
+        return ok
+    }
+    resume = this.cmd_state == 1
+    if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
+        return "#internal error: inconsistent bit reader"
+    }
+    bits = this.bits
+    n_bits = this.n_bits
+    mlen = this.mlen
+    // total_out, as long as mlen only counts down by the bytes written.
+    kk = (this.total_out as base.u64) + (this.mlen as base.u64)
+    // this.p1 and this.p2 are the last two bytes written up to m0 (see
+    // load_p1p2).
+    m0 = args.dst.mark()
+    this.prepare_literal_block!()
+    ctree = this.cmd_trees[this.block_type[1]]
+
+    // The command loop runs inside a loop that does nothing else but the
+    // copies from the ring buffer (after the command loop): in the command
+    // loop, their code cost it registers in the generated C (MSVC kept mlen,
+    // m0 and the distance context on the stack), and every command its
+    // speed.
+    while.ring true {
+        while.cmd mlen > 0 {
+            // Room for one refill: each later refill checks for its 8 bytes
+            // of src and, if src is shorter, leaves the rest of the command
+            // to the slow path (a code that takes the general path, before
+            // any of the command is consumed; the distance, cmd_state 2;
+            // literals, cmd_state 1). With 256-byte input chunks, a 40-byte
+            // check here left a sixth of the input to the slow path.
+            if (args.src.length() < 8) or (args.dst.length() < 64) {
+                break.cmd
+            }
+
+            if resume {
+                // ---- A command cut short in its literals: take it over.
+                resume = false
+                this.cmd_state = 0
+                insert = this.insert_remaining.min(no_more_than: 0x200_0000)
+                copy_len = this.copy_length.min(no_more_than: 0x200_0000)
+                if (insert <> this.insert_remaining) or (copy_len <> this.copy_length) {
+                    return "#internal error: inconsistent state"
+                }
+                implicit = this.implicit_dist
+                dctx = this.dist_ctx
+                ic = 3
+            } else {
+                // ---- The insert-and-copy length.
+                if this.block_count[1] <= 0 {
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                    this.bits = bits
+                    this.n_bits = n_bits
+                    status = this.block_switch_fast!(k: 1)
+                    bits = this.bits
+                    n_bits = this.n_bits
+                    if status.is_error() {
+                        return status
+                    }
+                    ctree = this.cmd_trees[this.block_type[1]]
+                    // Re-enter at the command's start, with the switch done.
+                    continue.cmd
+                }
+                this.block_count[1] -= 1
+                // Branch-free refills: how many bits a command consumes varies too
+                // much for "refill if low" to predict well.
+                bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                n_bits |= 56
+                // The meta-block's fused tables are all in fused: a meta-block
+                // with tables in the workbuf's overflow area never gets here (see
+                // decode_compressed), so a lookup is a check that is never taken
+                // and a load, off the chain from the bit reader to the entry.
+                idx = ctree ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= FUSED_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.fused[idx]
+                if entry < 0x8000_0000 {
+                    // A symbol whose code and extra bits (t of them, at most 56)
+                    // are all in bits: drop them in one shift, and take the extra
+                    // bits from x, off the bit reader's chain.
+                    x = bits >> ((entry >> 8) & 15)
+                    t = entry & 63
+                    bits >>= t
+                    n_bits ~mod-= t
+                    c = entry >> 21
+                    insert = CMD_IBASE[c] + (((x & 0xFFFF_FFFF) as base.u32) & CMD_IMASK[c])
+                    x >>= (entry >> 16) & 31
+                    copy_len = CMD_CBASE[c] + (((x & 0xFFFF_FFFF) as base.u32) & CMD_CMASK[c])
+                } else {
+                    // A code longer than 8 bits: a second level table, then the
+                    // code and the extra bits one step at a time (the code, the
+                    // insert and the copy extra bits can take up to 7 + 24 + 24
+                    // bits after the root's 8, more than bits may hold).
+                    if args.src.length() < 8 {
+                        // Too little src for the refill that the copy
+                        // length's extra bits may need: the slow path takes
+                        // the whole command. None of it is consumed yet: the
+                        // block count goes back up, and the exit gives the
+                        // bytes that bits holds back to src.
+                        this.block_count[1] ~sat+= 1
+                        break.cmd
+                    }
+                    n = (entry >> 8) & 15
+                    if n > 8 {
+                        bits >>= 8
+                        n_bits ~mod-= 8
+                        idx = (ctree ~mod+ ((entry >> 16) & 0xFFF)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                        if idx >= FUSED_CAPACITY {
+                            return "#internal error: inconsistent huffman table"
+                        }
+                        entry = this.fused[idx]
+                        n = (entry >> 8) & 15
+                    }
+                    bits >>= n
+                    n_bits ~mod-= n
+                    c = (entry >> 21) & 0x3FF
+                    if c >= 704 {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    e = CMD_LUT[c]
+                    ie = (e & 31) as base.u32
+                    ce = ((e >> 5) & 31) as base.u32
+                    insert = (((e >> 16) & 0xFFFF) as base.u32) + (((bits & (((1 as base.u64) << ie) - 1)) as base.u32) & 0xFF_FFFF)
+                    bits >>= ie
+                    n_bits ~mod-= ie
+                    if n_bits < ce {
+                        if args.src.length() < 8 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                        args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                        n_bits |= 56
+                    }
+                    copy_len = (((e >> 32) & 0xFFFF) as base.u32) + (((bits & (((1 as base.u64) << ce) - 1)) as base.u32) & 0xFF_FFFF)
+                    bits >>= ce
+                    n_bits ~mod-= ce
+                }
+                dctx = (entry >> 14) & 3
+                implicit = c < 128
+                // insert is ic when ic <= 2 (insert codes 0 ..= 2 have no extra
+                // bits): branch on ic, which is ready before insert.
+                ic = (entry >> 12) & 3
+            }
+
+            if ic == 0 {
+                // ---- No literals (most commands). A distance takes at most 39
+                // bits, which bits still holds unless the command's code and extra
+                // bits took more than 17.
+                if n_bits < 39 {
+                    if args.src.length() < 8 {
+                        // src is short: the slow path takes the distance.
+                        this.cmd_state = 2
+                        this.copy_length = copy_len
+                        this.implicit_dist = implicit
+                        this.dist_ctx = dctx
+                        break.cmd
+                    }
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                }
+            } else {
+                if mlen < insert {
+                    return "#bad insert length"
+                }
+                // As google/brotli does, take the literals out of mlen up front.
+                mlen -= insert
+
+                // ---- The literals. Inserts of up to 8 literals (nearly all of
+                // them in text) are decoded here; longer ones go to their own
+                // function, whose call costs less than their literals then, so
+                // that the compiler can keep the literal loop's state in
+                // registers, as do inserts that need a literal block switch.
+                if (insert <= 8) and (this.block_count[0] >= insert) {
+                    this.block_count[0] -= insert
+                    if args.dst.length() < 8 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    kl = insert
+                    cbase = this.lit_ctx_base
+                    if not this.lit_is_trivial {
+                        // load_p1p2, inline.
+                        t2 = args.dst.since(mark: this.call_mark).suffix(up_to: 2)
+                        if t2.length() >= 2 {
+                            p2 = t2[0]
+                            p1 = t2[1]
+                        } else if args.dst.count_since(mark: m0) == 0 {
+                            p1 = this.p1
+                            p2 = this.p2
+                        } else if t2.length() >= 1 {
+                            p1 = t2[0]
+                            p2 = this.p1
+                        } else {
+                            return "#internal error: inconsistent I/O"
+                        }
+                    }
+                    while true {
+                        if args.dst.length() < 1 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        if args.src.length() < 8 {
+                            // src is short: give the kl literals still to do
+                            // back to mlen and the block count, and leave
+                            // them to the slow path.
+                            if kl > (0x100_0000 - mlen) {
+                                return "#internal error: inconsistent state"
+                            }
+                            assert (kl + mlen) <= 0x100_0000 via "(a + b) <= c: a <= (c - b)"()
+                            mlen = kl + mlen
+                            this.block_count[0] ~sat+= kl
+                            this.cmd_state = 1
+                            this.insert_remaining = kl
+                            this.copy_length = copy_len
+                            this.implicit_dist = implicit
+                            this.dist_ctx = dctx
+                            break.cmd
+                        }
+                        if n_bits < 15 {
+                            bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                            args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                            n_bits |= 56
+                        }
+                        if this.lit_is_trivial {
+                            tree = this.lit_tree
+                        } else if this.lit_has_slot {
+                            // See lit_ctx_tree.
+                            ctx = (CONTEXT_LUT[cbase | 256 | (p2 as base.u32)] as base.u32) & 7
+                            tree = this.lit_ctx_tree[this.lit_slot | (ctx << 8) | (p1 as base.u32)]
+                        } else {
+                            ctx = (CONTEXT_LUT[cbase | (p1 as base.u32)] |
+                                    CONTEXT_LUT[cbase | 256 | (p2 as base.u32)]) as base.u32
+                            tree = this.lit_row_off[ctx]
+                        }
+                        idx = tree ~mod+ ((bits & 0xFF) as base.u32)
+                        if idx >= HUFF_CAPACITY {
+                            return "#internal error: inconsistent huffman table"
+                        }
+                        entry = this.huff[idx] as base.u32
+                        n = entry & 15
+                        if n > 8 {
+                            bits >>= 8
+                            n_bits ~mod-= 8
+                            idx = (tree ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                            if idx >= HUFF_CAPACITY {
+                                return "#internal error: inconsistent huffman table"
+                            }
+                            entry = this.huff[idx] as base.u32
+                            n = entry & 15
+                        }
+                        bits >>= n
+                        n_bits ~mod-= n
+                        p2 = p1
+                        p1 = ((entry >> 4) & 0xFF) as base.u8
+                        args.dst.write_u8_fast!(a: p1)
+                        if kl <= 1 {
+                            break
+                        }
+                        kl -= 1
+                    }
+                } else {
+                    this.bits = bits
+                    this.n_bits = n_bits
+                    // load_p1p2.
+                    t2 = args.dst.since(mark: this.call_mark).suffix(up_to: 2)
+                    if t2.length() >= 2 {
+                        this.p2 = t2[0]
+                        this.p1 = t2[1]
+                    } else if args.dst.count_since(mark: m0) == 0 {
+                        // this.p1 and this.p2 are up to date.
+                    } else if t2.length() >= 1 {
+                        this.p2 = this.p1
+                        this.p1 = t2[0]
+                    } else {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    status = this.decode_literals_fast!(dst: args.dst, src: args.src, n: insert)
+                    if status.is_error() {
+                        return status
+                    }
+                    m0 = args.dst.mark()
+                    bits = this.bits
+                    n_bits = this.n_bits
+                    done = this.lit_done
+                    if insert < done {
+                        return "#internal error: inconsistent state"
+                    }
+                    insert -= done
+                    if insert > 0 {
+                        // Put the literals still to do back into mlen.
+                        if insert > (0x100_0000 - mlen) {
+                            return "#internal error: inconsistent state"
+                        }
+                        assert (insert + mlen) <= 0x100_0000 via "(a + b) <= c: a <= (c - b)"()
+                        mlen = insert + mlen
+                        this.cmd_state = 1
+                        this.insert_remaining = insert
+                        this.copy_length = copy_len
+                        this.implicit_dist = implicit
+                        this.dist_ctx = dctx
+                        break.cmd
+                    }
+                }
+                if mlen == 0 {
+                    // The copy length of a meta-block's last command can be unused.
+                    continue.cmd
+                }
+                // A distance symbol and its extra bits take at most 39 bits.
+                if args.src.length() < 8 {
+                    this.cmd_state = 2
+                    this.copy_length = copy_len
+                    this.implicit_dist = implicit
+                    this.dist_ctx = dctx
+                    break.cmd
+                }
+                bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                n_bits |= 56
+            }
+
+            // ---- The distance. bits holds at least 39 bits.
+            if implicit {
+                dcode = 0
+                dist = this.dist_rb[(this.dist_rb_index ~mod- 1) & 3]
+            } else {
+                if this.block_count[2] <= 0 {
+                    if args.src.length() < 16 {
+                        this.cmd_state = 2
+                        this.copy_length = copy_len
+                        this.implicit_dist = implicit
+                        this.dist_ctx = dctx
+                        break.cmd
+                    }
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                    this.bits = bits
+                    this.n_bits = n_bits
+                    status = this.block_switch_fast!(k: 2)
+                    bits = this.bits
+                    n_bits = this.n_bits
+                    if status.is_error() {
+                        return status
+                    }
+                    if this.block_count[2] <= 0 {
+                        return "#internal error: inconsistent state"
+                    }
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                }
+                this.block_count[2] -= 1
+                dtree = this.dist_cmap_off[(this.block_type[2] << 2) | dctx]
+                idx = dtree ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= FUSED_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.fused[idx]
+                if entry >= 0x8000_0000 {
+                    // A code longer than 8 bits: a second level table.
+                    n = (entry >> 8) & 15
+                    if n <= 8 {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (dtree ~mod+ ((entry >> 16) & 0xFFF)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= FUSED_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.fused[idx]
+                }
+                // The code and its extra bits in one shift, the extra bits taken
+                // from x (see fused).
+                x = bits >> ((entry >> 8) & 15)
+                t = entry & 63
+                bits >>= t
+                n_bits ~mod-= t
+                de = (entry >> 12) & 31
+                dext = ((x & 0xFFFF_FFFF) as base.u32) & MASK24[de]
+                dcode = (entry >> 21) & 0x3FF
+                if dcode >= 16 {
+                    dist = this.dist_base[dcode] ~mod+ (dext << this.npostfix)
+                } else if dcode < 4 {
+                    dist = this.dist_rb[(this.dist_rb_index ~mod- (1 + dcode)) & 3]
+                } else {
+                    if dcode < 10 {
+                        base_d = this.dist_rb[(this.dist_rb_index ~mod- 1) & 3]
+                    } else {
+                        base_d = this.dist_rb[(this.dist_rb_index ~mod- 2) & 3]
+                    }
+                    base_d = (base_d & 0x3FFF_FFFF) + DIST_SHORT_ADD[dcode]
+                    if base_d <= DIST_SHORT_SUB[dcode] {
+                        return "#bad distance"
+                    }
+                    dist = base_d - DIST_SHORT_SUB[dcode]
+                }
+            }
+
+            tot = kk ~mod- (mlen as base.u64)
+            maxd = tot.min(no_more_than: this.max_backward as base.u64)
+            if (dist as base.u64) > maxd {
+                // ---- A static dictionary reference: not pushed to dist_rb.
+                //
+                // Copy untransformed words (transform 0) straight from the
+                // dictionary; other transforms go through word_buf.
+                if (4 <= copy_len) and (copy_len <= 24) and (copy_len <= mlen) {
+                    daddr = (dist ~mod- (maxd as base.u32)) ~mod- 1
+                    dlen = copy_len
+                    if (daddr >> (DICTIONARY_NDBITS[dlen] as base.u32)) == 0 {
+                        // NDBITS is at most 11, so daddr is below 0x800 here.
+                        didx = daddr & 0x7FF
+                        doff = DICTIONARY_OFFSETS[dlen] + (didx * dlen)
+                        if doff <= (122784 - dlen) {
+                            assert (doff + dlen) <= 122784 via "(a + b) <= c: a <= (c - b)"()
+                            assert doff <= (doff + dlen) via "a <= (a + b): 0 <= b"()
+                            dword = DICTIONARY[doff .. doff + dlen]
+                            if (dlen as base.u64) <= args.dst.length() {
+                                args.dst.limited_copy_u32_from_slice!(up_to: dlen, s: dword)
+                                if mlen < dlen {
+                                    return "#internal error: inconsistent state"
+                                }
+                                mlen -= dlen
+                                continue.cmd
+                            }
+                        }
+                    }
+                }
+                this.copy_length = copy_len
+                this.mlen = mlen
+                status = this.prepare_dictionary_word!(distance: dist, max_distance: (maxd as base.u32))
+                if status.is_error() {
+                    return status
+                }
+                wl = this.word_len
+                if args.dst.length() < 40 {
+                    this.word_pos = 0
+                    this.cmd_state = 4
+                    break.cmd
+                }
+                args.dst.limited_copy_u32_from_slice!(up_to: wl, s: this.word_buf[.. wl])
+                if mlen < wl {
+                    return "#internal error: inconsistent state"
+                }
+                mlen -= wl
+                continue.cmd
+            }
+
+            // ---- A backward copy.
+            if mlen < copy_len {
+                return "#bad copy length"
+            }
+            if dcode <> 0 {
+                this.dist_rb[this.dist_rb_index & 3] = dist
+                this.dist_rb_index ~mod+= 1
+            }
+            if ((copy_len + 8) as base.u64) > args.dst.length() {
+                // dst is short.
+                this.cmd_state = 3
+                this.distance = dist
+                this.copy_remaining = copy_len
+                break.cmd
+            }
+            since = args.dst.history_length() ~mod- this.call_mark
+            if (dist as base.u64) > since {
+                // The source starts in the output of earlier transform_io
+                // calls, so in the ring buffer: common when streaming. The
+                // copy is done after the command loop, which carries on
+                // after it.
+                ring_copy = true
+                break.cmd
+            }
+            // Restate each precondition of the fast copies as its own fact.
+            if (dist as base.u64) > args.dst.history_length() {
+                return "#internal error: inconsistent I/O"
+            }
+            if ((copy_len + 8) as base.u64) > args.dst.length() {
+                return "#internal error: inconsistent I/O"
+            }
+            mlen -= copy_len
+            if dist >= 8 {
+                // Copy in 8-byte chunks. The builtin loops until the length is
+                // used up, and that loop's exit mispredicts when lengths of 5 to
+                // 16 come in no predictable order, as they do in text. So up to
+                // 32 bytes it is called two or four times, each call copying 8
+                // bytes and advancing a half or a quarter of the length (1 to 8
+                // bytes): the same calls run whatever the length. Each chunk
+                // reads at least 8 bytes behind where it writes, from bytes that
+                // are final, so the chunks may overlap. The checks restate each
+                // call's preconditions (the checker forgets what it knew about
+                // args.dst after a call); none of them can fail.
+                if copy_len <= 16 {
+                    ca = copy_len >> 1
+                    cb = (copy_len + 1) >> 1
+                    if ca < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((ca + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: ca, distance: dist)
+                    if cb < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((cb + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    if (dist as base.u64) > args.dst.history_length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: cb, distance: dist)
+                } else if copy_len <= 32 {
+                    ca = copy_len >> 2
+                    cb = (copy_len + 1) >> 2
+                    cc = (copy_len + 2) >> 2
+                    cd = (copy_len + 3) >> 2
+                    if ca < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((ca + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: ca, distance: dist)
+                    if cb < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((cb + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    if (dist as base.u64) > args.dst.history_length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: cb, distance: dist)
+                    if cc < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((cc + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    if (dist as base.u64) > args.dst.history_length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: cc, distance: dist)
+                    if cd < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    if ((cd + 8) as base.u64) > args.dst.length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    if (dist as base.u64) > args.dst.history_length() {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: cd, distance: dist)
+                } else {
+                    if copy_len < 1 {
+                        return "#internal error: inconsistent state"
+                    }
+                    args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: copy_len, distance: dist)
+                }
+            } else if dist == 1 {
+                if copy_len < 1 {
+                    return "#internal error: inconsistent state"
+                }
+                args.dst.limited_copy_u32_from_history_8_byte_chunks_distance_1_fast!(
+                        up_to: copy_len, distance: dist)
+            } else {
+                if (copy_len < 1) or (dist < 1) {
+                    return "#internal error: inconsistent state"
+                }
+                if (copy_len as base.u64) > args.dst.length() {
+                    return "#internal error: inconsistent I/O"
+                }
+                args.dst.limited_copy_u32_from_history_fast!(
+                        up_to: copy_len, distance: dist)
+            }
+        }.cmd
+        if not ring_copy {
+            break.ring
+        }
+        ring_copy = false
+
+        // ---- A backward copy whose source starts in the ring buffer (dist
+        // > since), with dst's room for it checked (copy_len + 8). The byte
+        // at call_mark is at ring_index in the ring buffer (in ring mode, at
+        // ring_wbase), so a source that does not wrap around the ring's end
+        // is copied here: its part before call_mark from the ring buffer,
+        // then the part that runs on into this call's output, if any, from
+        // dst. The written bytes are dst's since call_mark, from where p1 and
+        // p2 are read back (copies are at least 2 bytes long). copy_ring
+        // takes a source that wraps.
+        if ((dist as base.u64) <= since) or (mlen < copy_len) {
+            return "#internal error: inconsistent state"
+        }
+        off = (dist as base.u64) - since
+        if this.ring_mode {
+            rb = this.ring_wbase as base.u64
+        } else {
+            rb = this.ring_index as base.u64
+        }
+        if (off <= rb) and (rb <= args.workbuf.length()) {
+            if this.ring_mode {
+                // A back-reference the stint's priming did not reach
+                // (see decode_into_ring).
+                this.ring_rc ~sat+= 1
+            }
+            n1 = copy_len
+            if (n1 as base.u64) > off {
+                // (off < copy_len here.)
+                n1 = (off & 0x1FF_FFFF) as base.u32
+            }
+            rs = args.workbuf[.. rb].suffix(up_to: off)
+            if (4 <= n1) and (n1 <= 16) and ((n1 as base.u64) <= rs.length()) and
+                    (64 <= args.dst.history_length()) and (((n1 as base.u64) + 8) <= args.dst.length()) {
+                // 4 to 16 bytes (60-98% of the text streams' ring copies
+                // with 1 KiB input chunks) without a memmove, whose call,
+                // dispatching on the length, costs more than such a copy
+                // (Wuffs has no chunk copy from a slice): dst is advanced
+                // by n1 bytes with two history chunk copies of n1 / 2 and
+                // (n1 + 1) / 2 bytes (at most 8 each, so neither loops),
+                // whose bytes are then overwritten from the ring buffer
+                // through dst's since slice with four 4-byte pokes at 0,
+                // min(4, n1 - 4), max(0, n1 - 8) and n1 - 4, which cover
+                // [0, n1) (overlapping). The chunk copies write
+                // up to 6 bytes past n1, inside dst's room (n1 + 8), which
+                // later output overwrites: in ring mode, ring buffer bytes
+                // just ahead of the writer, the oldest history if the ring
+                // has wrapped, which distances (at most ring_size - 16) never
+                // reach, as for every chunk copy. (A source that wraps around
+                // the ring's end can lie 16 bytes ahead of the writer:
+                // copy_ring copies it with a memmove, not this way.)
+                //
+                // The chunk copies read from 64 bytes back, not 8: from 8 bytes back the second copy read 8 bytes
+                // that the first had just partly stored, which a store cannot
+                // forward to a load (a stall of more than 10 cycles, 8% of the
+                // fast path's time with 1 KiB input chunks). From 64 bytes
+                // back no load overlaps this copy's own stores; older stores
+                // that are still pending can still stall one, more rarely.
+                // The checks restate each step's preconditions; none of them
+                // can fail.
+                //
+                // Measured and not kept: two 4-byte and two 8-byte
+                // pokes for 4-7 and 8-16 bytes (one branch more), no faster;
+                // four quarter chunk copies and four 8-byte pokes for 17-32
+                // bytes, 2% slower with 1 KiB input chunks than the memmove.
+                rmark = args.dst.mark()
+                // (A variable: the checker proves the builtins' distance >= 8
+                // from a fact about their argument.)
+                d8 = 64
+                ca = n1 >> 1
+                cb = (n1 + 1) >> 1
+                if (ca < 1) or (d8 < 8) or (((ca + 8) as base.u64) > args.dst.length()) or ((d8 as base.u64) > args.dst.history_length()) {
+                    return "#internal error: inconsistent I/O"
+                }
+                args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(up_to: ca, distance: d8)
+                if (cb < 1) or (d8 < 8) or (((cb + 8) as base.u64) > args.dst.length()) or ((d8 as base.u64) > args.dst.history_length()) {
+                    return "#internal error: inconsistent I/O"
+                }
+                args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(up_to: cb, distance: d8)
+                ws = args.dst.since(mark: rmark)
+                if (ws.length() < 4) or (rs.length() < 4) {
+                    return "#internal error: inconsistent I/O"
+                }
+                ws.poke_u32le!(a: rs.peek_u32le())
+                rmark = (n1 - 4) as base.u64
+                rmark = rmark.min(no_more_than: 4)
+                if (rmark > ws.length()) or (rmark > rs.length()) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq = ws[rmark ..]
+                rq = rs[rmark ..]
+                if (wq.length() < 4) or (rq.length() < 4) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq.poke_u32le!(a: rq.peek_u32le())
+                rmark = (n1 ~sat- 8) as base.u64
+                if (rmark > ws.length()) or (rmark > rs.length()) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq = ws[rmark ..]
+                rq = rs[rmark ..]
+                if (wq.length() < 4) or (rq.length() < 4) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq.poke_u32le!(a: rq.peek_u32le())
+                rmark = (n1 - 4) as base.u64
+                if (rmark > ws.length()) or (rmark > rs.length()) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq = ws[rmark ..]
+                rq = rs[rmark ..]
+                if (wq.length() < 4) or (rq.length() < 4) {
+                    return "#internal error: inconsistent I/O"
+                }
+                wq.poke_u32le!(a: rq.peek_u32le())
+            } else {
+                nc = args.dst.limited_copy_u32_from_slice!(up_to: n1, s: rs)
+                if nc <> n1 {
+                    return "#internal error: inconsistent I/O"
+                }
+            }
+            if copy_len > n1 {
+                nc = args.dst.limited_copy_u32_from_history!(up_to: copy_len - n1, distance: dist)
+                if nc <> (copy_len - n1) {
+                    return "#internal error: inconsistent I/O"
+                }
+            }
+            mlen -= copy_len
+            continue.ring
+        }
+        // The source wraps: copy_ring copies it (and its continuation in
+        // dst, if any) without suspending, since dst has room. It needs p1
+        // and p2.
+        t2 = args.dst.since(mark: this.call_mark).suffix(up_to: 2)
+        if t2.length() >= 2 {
+            this.p2 = t2[0]
+            this.p1 = t2[1]
+        } else if args.dst.count_since(mark: m0) == 0 {
+            // this.p1 and this.p2 are up to date.
+        } else if t2.length() >= 1 {
+            this.p2 = this.p1
+            this.p1 = t2[0]
+        } else {
+            return "#internal error: inconsistent I/O"
+        }
+        this.distance = dist
+        this.copy_remaining = copy_len
+        this.mlen = mlen
+        tot = kk ~mod- (mlen as base.u64)
+        this.total_out = (tot.min(no_more_than: 0xFFFF_FFFF)) as base.u32
+        status = this.copy_ring!(dst: args.dst, workbuf: args.workbuf)
+        if status.is_error() {
+            return status
+        }
+        if this.copy_remaining <> 0 {
+            return "#internal error: inconsistent I/O"
+        }
+        m0 = args.dst.mark()
+        mlen = this.mlen
+        continue.ring
+    }.ring
+
+    // Give back to src the bytes that bits holds in full. This function
+    // never suspends, so they are all still in args.src's buffer.
+    if n_bits > 63 {
+        return "#internal error: inconsistent bit reader"
+    }
+    while n_bits >= 8,
+            post n_bits < 8,
+    {
+        n_bits -= 8
+        if args.src.can_undo_byte() {
+            args.src.undo_byte!()
+        } else {
+            return "#internal error: inconsistent I/O"
+        }
+    }
+    this.bits = bits & (((1 as base.u64) << n_bits) - 1)
+    this.n_bits = n_bits
+    this.mlen = mlen
+    tot = kk ~mod- (mlen as base.u64)
+    this.total_out = (tot.min(no_more_than: 0xFFFF_FFFF)) as base.u32
+    // load_p1p2.
+    t2 = args.dst.since(mark: this.call_mark).suffix(up_to: 2)
+    if t2.length() >= 2 {
+        this.p2 = t2[0]
+        this.p1 = t2[1]
+    } else if args.dst.count_since(mark: m0) == 0 {
+        // this.p1 and this.p2 are up to date.
+    } else if t2.length() >= 1 {
+        this.p2 = this.p1
+        this.p1 = t2[0]
+    } else {
+        return "#internal error: inconsistent I/O"
+    }
+    return ok
+}
+
+// decode_literals_fast decodes up to args.n literals for
+// decode_commands_fast, stopping early if src or dst runs short. It takes
+// and returns the bit reader (in the fast path's form), p1, p2 and the literal
+// block count via this, and sets lit_done to the number of literals written.
+pri func decoder.decode_literals_fast!(dst: base.io_writer, src: base.io_reader, n: base.u32[..= 0x200_0000]) base.status {
+    var bits       : base.u64
+    var n_bits     : base.u32
+    var count      : base.u32
+    var triv       : base.bool
+    var slotted    : base.bool
+    var slot       : base.u32[..= 6144]
+    var tree0      : base.u32
+    var cbase      : base.u32[..= 1536]
+    var fill_below : base.u32
+    var p1         : base.u8
+    var p2         : base.u8
+    var done       : base.u32[..= 0x200_0000]
+    var done3      : base.u32[..= 0x200_0003]
+    var done0      : base.u32[..= 0x200_0000]
+    var stop       : base.u32[..= 0x200_0000]
+    var dlim       : base.u32[..= 0x200_0800]
+    var tree       : base.u32
+    var ctx        : base.u32[..= 63]
+    var entry      : base.u32
+    var n          : base.u32[..= 15]
+    var idx        : base.u32
+    var lit        : base.u8
+    var status     : base.status
+    var mark       : base.u64
+    var t2         : roslice base.u8
+
+    bits = this.bits
+    n_bits = this.n_bits
+    count = this.block_count[0]
+    p1 = this.p1
+    p2 = this.p2
+    triv = this.lit_is_trivial
+    slotted = this.lit_has_slot
+    slot = this.lit_slot
+    tree0 = this.lit_tree
+    cbase = this.lit_ctx_base
+    // Once count is down to fill_below, the block has decoded enough literals
+    // the two-load way to fill a slot for it (see prepare_literal_block).
+    fill_below = 0
+    if (not triv) and (not slotted) {
+        fill_below = this.lit_block_len ~sat- this.lit_fill_at
+    }
+    done = 0
+    while done < args.n,
+            inv args.n <= 0x200_0000,
+    {
+        if (args.src.length() < 8) or (args.dst.length() < 1) {
+            break
+        }
+        if count <= 0 {
+            // A literal block switch (at most 54 bits): rare, so it
+            // re-enters the loop to redo the checks above.
+            bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+            args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+            n_bits |= 56
+            this.bits = bits
+            this.n_bits = n_bits
+            this.block_count[0] = 0
+            status = this.block_switch_fast!(k: 0)
+            bits = this.bits
+            n_bits = this.n_bits
+            if status.is_error() {
+                return status
+            }
+            this.prepare_literal_block!()
+            count = this.block_count[0]
+            triv = this.lit_is_trivial
+            slotted = this.lit_has_slot
+            slot = this.lit_slot
+            tree0 = this.lit_tree
+            cbase = this.lit_ctx_base
+            fill_below = 0
+            if (not triv) and (not slotted) {
+                fill_below = this.lit_block_len ~sat- this.lit_fill_at
+            }
+            continue
+        }
+        if count <= fill_below {
+            // Fill a slot now (prepare_literal_block decides from the block
+            // count, so it has to be up to date).
+            this.block_count[0] = count
+            this.prepare_literal_block!()
+            slotted = this.lit_has_slot
+            slot = this.lit_slot
+            fill_below = 0
+            continue
+        }
+
+        if triv {
+            // All of this block type's contexts share one prefix code: a
+            // tight loop that needs neither p1 nor p2 until it stops. Three
+            // literals per round, after one branch-free refill (56 bits hold
+            // three codes of at most 15 bits), then one at a time.
+            mark = args.dst.mark()
+            // Once the narrow loops below have decoded LIT_WIDE_MIN literals
+            // since the last build, a run of at least 64 literals gets an
+            // 11-bit root table (see build_lit_wide), which leaves only the
+            // rare codes longer than 11 bits to a second, mispredicted,
+            // lookup.
+            if (this.lit_wide_tree <> tree0) and (this.lit_narrow >= LIT_WIDE_MIN) and ((done + 64) <= args.n) {
+                this.build_lit_wide!(tree: tree0)
+                this.lit_narrow = 0
+            }
+            if this.lit_wide_tree == tree0 {
+                while ((done + 3) <= args.n) and (count >= 3),
+                        inv args.n <= 0x200_0000,
+                {
+                    if (args.src.length() < 8) or (args.dst.length() < 3) {
+                        break
+                    }
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                    entry = this.lit_wide[(bits & 0x7FF) as base.u32] as base.u32
+                    if (entry & 15) == 15 {
+                        // A code longer than 11 bits: through huff.
+                        idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                        if idx >= HUFF_CAPACITY {
+                            return "#internal error: inconsistent huffman table"
+                        }
+                        entry = this.huff[idx] as base.u32
+                        n = entry & 15
+                        if n > 8 {
+                            bits >>= 8
+                            n_bits ~mod-= 8
+                            idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                            if idx >= HUFF_CAPACITY {
+                                return "#internal error: inconsistent huffman table"
+                            }
+                            entry = this.huff[idx] as base.u32
+                        }
+                    }
+                    n = entry & 15
+                    bits >>= n
+                    n_bits ~mod-= n
+                    args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                    entry = this.lit_wide[(bits & 0x7FF) as base.u32] as base.u32
+                    if (entry & 15) == 15 {
+                        // A code longer than 11 bits: through huff.
+                        idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                        if idx >= HUFF_CAPACITY {
+                            return "#internal error: inconsistent huffman table"
+                        }
+                        entry = this.huff[idx] as base.u32
+                        n = entry & 15
+                        if n > 8 {
+                            bits >>= 8
+                            n_bits ~mod-= 8
+                            idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                            if idx >= HUFF_CAPACITY {
+                                return "#internal error: inconsistent huffman table"
+                            }
+                            entry = this.huff[idx] as base.u32
+                        }
+                    }
+                    n = entry & 15
+                    bits >>= n
+                    n_bits ~mod-= n
+                    args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                    entry = this.lit_wide[(bits & 0x7FF) as base.u32] as base.u32
+                    if (entry & 15) == 15 {
+                        // A code longer than 11 bits: through huff.
+                        idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                        if idx >= HUFF_CAPACITY {
+                            return "#internal error: inconsistent huffman table"
+                        }
+                        entry = this.huff[idx] as base.u32
+                        n = entry & 15
+                        if n > 8 {
+                            bits >>= 8
+                            n_bits ~mod-= 8
+                            idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                            if idx >= HUFF_CAPACITY {
+                                return "#internal error: inconsistent huffman table"
+                            }
+                            entry = this.huff[idx] as base.u32
+                        }
+                    }
+                    n = entry & 15
+                    bits >>= n
+                    n_bits ~mod-= n
+                    args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                    count -= 3
+                    done3 = done + 3
+                    done = done3.min(no_more_than: 0x200_0000)
+                }
+            }
+            // The narrow loops decode at most LIT_WIDE_MIN literals before
+            // the decision above is taken again.
+            done0 = done
+            stop = args.n
+            dlim = done + LIT_WIDE_MIN
+            if dlim < args.n {
+                stop = dlim.min(no_more_than: 0x200_0000)
+            }
+            while ((done + 3) <= stop) and (count >= 3),
+                    inv args.n <= 0x200_0000,
+            {
+                if (args.src.length() < 8) or (args.dst.length() < 3) {
+                    break
+                }
+                bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                n_bits |= 56
+                idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= HUFF_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.huff[idx] as base.u32
+                n = entry & 15
+                if n > 8 {
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.huff[idx] as base.u32
+                    n = entry & 15
+                }
+                bits >>= n
+                n_bits ~mod-= n
+                args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= HUFF_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.huff[idx] as base.u32
+                n = entry & 15
+                if n > 8 {
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.huff[idx] as base.u32
+                    n = entry & 15
+                }
+                bits >>= n
+                n_bits ~mod-= n
+                args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= HUFF_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.huff[idx] as base.u32
+                n = entry & 15
+                if n > 8 {
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.huff[idx] as base.u32
+                    n = entry & 15
+                }
+                bits >>= n
+                n_bits ~mod-= n
+                args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+
+                count -= 3
+                done3 = done + 3
+                done = done3.min(no_more_than: 0x200_0000)
+            }
+            while (done < stop) and (count > 0),
+                    inv args.n <= 0x200_0000,
+            {
+                if (args.src.length() < 8) or (args.dst.length() < 1) {
+                    break
+                }
+                if n_bits < 15 {
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                }
+                idx = tree0 ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= HUFF_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.huff[idx] as base.u32
+                n = entry & 15
+                if n > 8 {
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (tree0 ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.huff[idx] as base.u32
+                    n = entry & 15
+                }
+                bits >>= n
+                n_bits ~mod-= n
+                args.dst.write_u8_fast!(a: ((entry >> 4) & 0xFF) as base.u8)
+                count -= 1
+                assert done < 0x200_0000 via "a < b: a < c; c <= b"(c: stop)
+                done += 1
+            }
+            this.lit_narrow ~sat+= done ~mod- done0
+            // Recover p1 and p2 from what this run wrote (with 1-byte loads:
+            // see the backward copy in decode_commands_fast).
+            t2 = args.dst.since(mark: mark).suffix(up_to: 2)
+            if t2.length() >= 2 {
+                p2 = t2[0]
+                p1 = t2[1]
+            } else if t2.length() >= 1 {
+                p2 = p1
+                p1 = t2.peek_u8()
+            }
+            continue
+        }
+
+        if slotted {
+            // This block type's contexts are in a lit_ctx_tree slot: p2's
+            // part of the context is ready a literal early, so only one load
+            // depends on p1.
+            while (done < args.n) and (count > 0),
+                    inv args.n <= 0x200_0000,
+            {
+                if (args.src.length() < 8) or (args.dst.length() < 1) {
+                    break
+                }
+                if n_bits < 15 {
+                    bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+                    args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+                    n_bits |= 56
+                }
+                ctx = (CONTEXT_LUT[cbase | 256 | (p2 as base.u32)] as base.u32) & 7
+                tree = this.lit_ctx_tree[slot | (ctx << 8) | (p1 as base.u32)]
+                idx = tree ~mod+ ((bits & 0xFF) as base.u32)
+                if idx >= HUFF_CAPACITY {
+                    return "#internal error: inconsistent huffman table"
+                }
+                entry = this.huff[idx] as base.u32
+                n = entry & 15
+                if n > 8 {
+                    bits >>= 8
+                    n_bits ~mod-= 8
+                    idx = (tree ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+                    if idx >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    entry = this.huff[idx] as base.u32
+                    n = entry & 15
+                }
+                bits >>= n
+                n_bits ~mod-= n
+                lit = ((entry >> 4) & 0xFF) as base.u8
+                args.dst.write_u8_fast!(a: lit)
+                p2 = p1
+                p1 = lit
+                count -= 1
+                assert done < 0x200_0000 via "a < b: a < c; c <= b"(c: args.n)
+                done += 1
+            }
+            continue
+        }
+
+        // Otherwise (a block too short to fill a slot for), one literal at a
+        // time, its code two loads away from the previous literal.
+        if n_bits < 15 {
+            bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+            args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+            n_bits |= 56
+        }
+        count -= 1
+        ctx = (CONTEXT_LUT[cbase | (p1 as base.u32)] |
+                CONTEXT_LUT[cbase | 256 | (p2 as base.u32)]) as base.u32
+        tree = this.lit_row_off[ctx]
+        idx = tree ~mod+ ((bits & 0xFF) as base.u32)
+        if idx >= HUFF_CAPACITY {
+            return "#internal error: inconsistent huffman table"
+        }
+        entry = this.huff[idx] as base.u32
+        n = entry & 15
+        if n > 8 {
+            bits >>= 8
+            n_bits ~mod-= 8
+            idx = (tree ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+            if idx >= HUFF_CAPACITY {
+                return "#internal error: inconsistent huffman table"
+            }
+            entry = this.huff[idx] as base.u32
+            n = entry & 15
+        }
+        bits >>= n
+        n_bits ~mod-= n
+        lit = ((entry >> 4) & 0xFF) as base.u8
+        args.dst.write_u8_fast!(a: lit)
+        p2 = p1
+        p1 = lit
+        assert done < 0x200_0000 via "a < b: a < c; c <= b"(c: args.n)
+        done += 1
+    }
+    this.bits = bits
+    this.n_bits = n_bits
+    this.block_count[0] = count
+    this.p1 = p1
+    this.p2 = p2
+    this.lit_done = done
+    return ok
+}
+
+// fast_symbol returns the next symbol of this.bits, decoded with the prefix
+// code table at huff[args.tree], or 0xFFFF_FFFF if this.bits holds too few
+// bits (which decode_commands_fast's refills prevent) or the table is not in
+// huff (which cannot happen).
+pri func decoder.fast_symbol!(tree: base.u32) base.u32 {
+    var bits   : base.u64
+    var n_bits : base.u32
+    var entry  : base.u32
+    var n      : base.u32[..= 15]
+    var idx    : base.u32
+
+    bits = this.bits
+    n_bits = this.n_bits
+    idx = args.tree ~mod+ ((bits & 0xFF) as base.u32)
+    if idx >= HUFF_CAPACITY {
+        return 0xFFFF_FFFF
+    }
+    entry = this.huff[idx] as base.u32
+    n = entry & 15
+    if n > 8 {
+        if n_bits < 8 {
+            return 0xFFFF_FFFF
+        }
+        bits >>= 8
+        n_bits -= 8
+        idx = (args.tree ~mod+ (entry >> 4)) ~mod+ ((bits & (((1 as base.u64) << (n - 8)) - 1)) as base.u32)
+        if idx >= HUFF_CAPACITY {
+            return 0xFFFF_FFFF
+        }
+        entry = this.huff[idx] as base.u32
+        n = entry & 15
+    }
+    if n_bits < n {
+        return 0xFFFF_FFFF
+    }
+    this.bits = bits >> n
+    this.n_bits = n_bits - n
+    return entry >> 4
+}
+
+// block_switch_fast is block_switch for decode_commands_fast: it reads the
+// block switch command from this.bits, which must hold at least 54 bits.
+pri func decoder.block_switch_fast!(k: base.u32[..= 2]) base.status {
+    var n_types : base.u32[..= 256]
+    var sym     : base.u32
+    var csym    : base.u32
+    var nb      : base.u32[..= 24]
+    var t       : base.u32
+
+    n_types = this.num_block_types[args.k]
+    if n_types < 2 {
+        return "#bad block switch"
+    }
+    sym = this.fast_symbol!(tree: this.block_type_trees[args.k])
+    csym = this.fast_symbol!(tree: this.block_count_trees[args.k])
+    if (sym == 0xFFFF_FFFF) or (csym >= 26) {
+        return "#internal error: inconsistent bit reader"
+    }
+    nb = BLOCK_COUNT_EXTRA[csym] as base.u32
+    if this.n_bits < nb {
+        return "#internal error: inconsistent bit reader"
+    }
+    this.block_count[args.k] = BLOCK_COUNT_BASE[csym] + ((this.bits & (((1 as base.u64) << nb) - 1)) as base.u32)
+    if args.k == 0 {
+        this.lit_block_len = this.block_count[0]
+    }
+    this.bits >>= nb
+    this.n_bits -= nb
+
+    if sym == 0 {
+        t = this.prev_block_type[args.k]
+    } else if sym == 1 {
+        t = this.block_type[args.k] + 1
+    } else {
+        t = sym - 2
+    }
+    if t >= n_types {
+        t -= n_types
+    }
+    if t >= n_types {
+        return "#internal error: inconsistent huffman table"
+    }
+    assert t < 256 via "a < b: a < c; c <= b"(c: n_types)
+    this.prev_block_type[args.k] = this.block_type[args.k]
+    this.block_type[args.k] = t
+    return ok
+}
+
+// build_lit_wide fills lit_wide with an 11-bit root table for the literal
+// prefix code whose table is at huff[args.tree]: entry i is (symbol << 4) |
+// length for the code that the 11 bits i (least significant first) start
+// with, if it is at most 11 bits long, and 0x000F (length 15) otherwise. It
+// then sets lit_wide_tree to args.tree.
+//
+// A root entry for a code of at most 8 bits goes to the eight wide entries
+// that share its 8 index bits; only the root entries that point to a second
+// level table need a lookup per wide entry.
+pri func decoder.build_lit_wide!(tree: base.u32) {
+    var j   : base.u32
+    var h   : base.u32
+    var e   : base.u32
+    var v   : base.u16
+    var n   : base.u32[..= 15]
+    var k   : base.u32[..= 3]
+    var idx : base.u32
+    var e2  : base.u32
+    var n2  : base.u32[..= 15]
+
+    if args.tree > (HUFF_CAPACITY - 256) {
+        return nothing
+    }
+    j = 0
+    while j < 256,
+            inv args.tree <= (HUFF_CAPACITY - 256),
+    {
+        e = this.huff[args.tree + j] as base.u32
+        n = e & 15
+        if n <= 8 {
+            v = (e & 0xFFFF) as base.u16
+            this.lit_wide[j] = v
+            this.lit_wide[0x100 | j] = v
+            this.lit_wide[0x200 | j] = v
+            this.lit_wide[0x300 | j] = v
+            this.lit_wide[0x400 | j] = v
+            this.lit_wide[0x500 | j] = v
+            this.lit_wide[0x600 | j] = v
+            this.lit_wide[0x700 | j] = v
+        } else {
+            // A second level table of (n - 8) index bits, of which the wide
+            // index holds 3 (h). The entry at h (and zeros above it) is the
+            // code if that code needs at most 3 more bits: such an entry is
+            // repeated at every index that shares its low bits.
+            k = 3
+            if n < 11 {
+                k = n - 8
+            }
+            h = 0
+            while h < 8,
+                    inv args.tree <= (HUFF_CAPACITY - 256),
+                    inv j < 256,
+            {
+                idx = (args.tree ~mod+ (e >> 4)) ~mod+ (h & (((1 as base.u32) << k) - 1))
+                if idx >= HUFF_CAPACITY {
+                    return nothing
+                }
+                e2 = this.huff[idx] as base.u32
+                n2 = e2 & 15
+                if n2 <= 3 {
+                    this.lit_wide[(h << 8) | j] = (((e2 & 0xFFF0) | (8 + n2)) & 0xFFFF) as base.u16
+                } else {
+                    this.lit_wide[(h << 8) | j] = 0x000F
+                }
+                h += 1
+            }
+        }
+        j += 1
+    }
+    this.lit_wide_tree = args.tree
+}
