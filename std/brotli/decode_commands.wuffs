@@ -1,0 +1,556 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// A compressed meta-block's commands (RFC 7932 section 9.3) are decoded on
+// two paths, the Wuffs idiom that std/deflate (decode_huffman_fast64 and
+// decode_huffman_slow) and std/lzma (decode_bitstream_fast and
+// decode_bitstream_slow) also use: a coroutine can suspend whenever src runs
+// dry or dst fills up, which costs a check, and a possible suspension, at
+// every byte, so a second function does most of the work without suspending
+// while both have room to spare.
+//
+//  - decode_commands_fast (decode_commands_fast.wuffs) never suspends. It
+//    keeps the bit reader in local variables and decodes commands while src
+//    and dst have room to spare. When either runs short, it returns, leaving
+//    the command it is in the middle of, if any, to the slow path.
+//  - decode_command_slow (decode_commands_slow.wuffs) is a coroutine that
+//    decodes one command, or the rest of one, and can suspend at any byte of
+//    input or output, so it handles any buffer sizes.
+//
+// decode_compressed (below) alternates the two. The fast path leaves its
+// state exactly as the slow path would have, and the slow path hands a long
+// insert back to the fast path once src and dst have room again.
+//
+// The fast path writes either straight to dst ("direct mode") or, when the
+// call is likely to stop before the end of the meta-block, into the ring
+// buffer ("ring mode", decode_into_ring), from where flush_pending copies the
+// bytes to dst. In direct mode a back-reference to output from before this
+// call is a copy from the ring buffer (a memmove, or for 4 to 16 bytes chunk
+// copies and pokes; in copy_ring if its source wraps around the ring's end),
+// which costs several times a copy within dst's history; when dst or src is
+// small, that is most of them. In ring mode the fast path's writer is bound
+// to the ring buffer with up to ring_k bytes of earlier output as its
+// history, so such back-references stay copies within the history, at the
+// price of one more copy of each output byte (google/brotli always pays it).
+// The slow path always writes to dst, once ring mode's output has reached
+// it.
+//
+// The rest of this file is what both paths use: copy_ring, and the static
+// dictionary words (prepare_dictionary_word and build_word).
+
+// decode_compressed decodes a compressed meta-block: the rest of its header
+// and then commands, until MLEN bytes have been produced and have reached dst.
+pri func decoder.decode_compressed?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var status : base.status
+
+    this.decode_compressed_header?(src: args.src, workbuf: args.workbuf)
+    this.cmd_state = 0
+    while this.mlen > 0 {
+        // Bytes that ring mode decoded ahead go to dst first.
+        if this.pend_len > 0 {
+            this.flush_pending?(dst: args.dst, workbuf: args.workbuf)
+        }
+        // The fast path does what it can without suspending; the slow path
+        // carries on from where it stops (or does the next command, if it
+        // stopped at a command boundary), suspending if it must, and hands
+        // back as soon as it can (see cmd_state 1). A meta-block with tables
+        // in the workbuf's overflow area (ovf_next > 0; no encoder output seen
+        // so far has one) is the slow path's alone, in direct mode: only
+        // read_fused reads that area, which keeps it out of the fast path's
+        // table lookups. decode_into_ring needs at least 64 bytes of src and
+        // decode_commands_fast 8 of src and 64 of dst: checking here spares
+        // two calls that would return at once for each slow-path command,
+        // frequent when src comes in small chunks.
+        if (this.cmd_state <= 1) and (this.ovf_next == 0) {
+            if args.src.length() >= 64 {
+                status = this.decode_into_ring!(dst: args.dst, src: args.src, workbuf: args.workbuf)
+                if status.is_error() {
+                    return status
+                }
+                if this.pend_len > 0 {
+                    continue
+                }
+            }
+            if (args.src.length() >= 8) and (args.dst.length() >= 64) {
+                status = this.decode_commands_fast!(dst: args.dst, src: args.src, workbuf: args.workbuf)
+                if status.is_error() {
+                    return status
+                }
+                if this.mlen == 0 {
+                    break
+                }
+            }
+        }
+        this.decode_command_slow?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+    }
+    if this.pend_len > 0 {
+        this.flush_pending?(dst: args.dst, workbuf: args.workbuf)
+    }
+}
+
+// decode_into_ring runs the fast path in ring mode, if the call is likely to
+// stop before the end of the meta-block (see RING_DST_MAX) and the fast path
+// can make progress: it decodes into the ring buffer, at ring_index, and
+// leaves the bytes it decoded pending (pend_pos and pend_len) for
+// flush_pending. Otherwise it does nothing.
+//
+// Wuffs binds a writer to a slice with no history (its write index starts at
+// 0), so the writer is bound K bytes before ring_index and given those K
+// bytes of earlier output as history by copying them onto themselves: a
+// memmove of K bytes per stint, against a copy from the ring buffer for each
+// back-reference that misses the history (see decode_commands_fast), which
+// costs several times a copy within it. So K can be large, but not for
+// nothing when a stint is short: K adapts per stint, from the stint's misses
+// (ring_rc). If ring_rc * 768 > K, K doubles (to at least RING_K_MIN); if
+// ring_rc * 3072 < K, K halves, to 0 below RING_K_MIN. The two constants are
+// empirical: with the current ring copies,
+// halving them cost 1.2% with 4 KiB input chunks and doubling them changed
+// nothing.
+pri func decoder.decode_into_ring!(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) base.status {
+    var status : base.status
+    var w      : base.io_writer
+    var rs     : base.u64
+    var ri     : base.u64
+    var room   : base.u64
+    var k      : base.u64
+    var wbase  : base.u64
+    var wend   : base.u64
+    var hl     : base.u64
+    var n      : base.u64
+    var saved  : base.u64
+    var kk     : base.u32
+
+    // While src is not closed, a stint ends where src runs short, so it
+    // needs RING_SRC_MIN bytes of src to decode enough to repay its setup
+    // (the priming, and the copy to dst); a closed src, 64.
+    if (args.src.length() < 64) or
+            ((not args.src.is_closed()) and (args.src.length() < RING_SRC_MIN)) {
+        return ok
+    }
+    // Once this call has written more to dst than a stint would prime, dst
+    // mostly holds the longer history (a stint primes ring_k bytes at most,
+    // and fewer just after the ring has wrapped).
+    kk = this.ring_k.max(no_less_than: RING_K_MIN)
+    if args.dst.since(mark: this.call_mark).length() >= (kk as base.u64) {
+        return ok
+    }
+    if not (((args.dst.length() < (this.mlen as base.u64)) and (args.dst.length() <= RING_DST_MAX)) or
+            ((not args.src.is_closed()) and (args.src.length() < RING_SRC_MAX))) {
+        return ok
+    }
+
+    // Bring the ring buffer up to date with this call's direct output.
+    status = this.add_history!(hist: args.dst.since(mark: this.call_mark), workbuf: args.workbuf)
+    if status.is_error() {
+        return status
+    }
+    this.call_mark = args.dst.mark()
+
+    rs = this.ring_size as base.u64
+    ri = this.ring_index as base.u64
+    if (rs > args.workbuf.length()) or (ri > rs) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    assert rs >= ri via "a >= b: b <= a"()
+    room = rs - ri
+    if room < RING_ROOM_MIN {
+        // Too close to the ring's end: direct mode until add_history wraps it.
+        return ok
+    }
+
+    // The writer covers K bytes of history (no further back than the ring's
+    // start: history that wrapped is left to copy_ring) and at most
+    // RING_STINT_MAX bytes up to the ring's end.
+    k = ri.min(no_more_than: (this.ring_k as base.u64))
+    wbase = ri ~mod- k
+    wend = ri + room.min(no_more_than: RING_STINT_MAX)
+    if (wbase > ri) or (ri > wend) or (wend > args.workbuf.length()) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    assert wbase <= wend via "a <= b: a <= c; c <= b"(c: ri)
+    assert ri <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: wend)
+    saved = this.call_mark
+    this.ring_rc = 0
+    n = 0
+    hl = 0
+    io_bind (io: w, data: args.workbuf[wbase .. wend], history_position: 0) {
+        // The priming: a memmove of the K bytes onto themselves.
+        n = w.copy_from_slice!(s: args.workbuf[wbase .. ri])
+        this.call_mark = 0
+        this.ring_mode = true
+        this.ring_wbase = (wbase & 0xFF_FFFF) as base.u32
+        status = this.decode_commands_fast!(dst: w, src: args.src, workbuf: args.workbuf)
+        hl = w.history_length()
+        this.ring_mode = false
+        this.call_mark = saved
+    }
+    if status.is_error() {
+        return status
+    }
+    if (n <> k) or (hl < k) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    // n is now the stint's output: at most RING_STINT_MAX bytes, up to the
+    // ring's end.
+    n = hl - k
+    if (n > RING_STINT_MAX) or (n > room) {
+        return "#internal error: inconsistent ring buffer"
+    }
+
+    kk = this.ring_k
+    if ((this.ring_rc as base.u64) * 768) > k {
+        // (Not when the ring's start capped K: a larger K would not have
+        // primed more.)
+        if k >= (kk as base.u64) {
+            kk = kk ~sat+ kk
+            kk = kk.max(no_less_than: RING_K_MIN)
+        }
+    } else if ((this.ring_rc as base.u64) * 3072) < k {
+        kk = kk >> 1
+        if kk < RING_K_MIN {
+            kk = 0
+        }
+    }
+    this.ring_k = kk.min(no_more_than: RING_K_MAX)
+
+    if n > 0 {
+        // (The masks do nothing: ri < ring_size, and ri + n <= ring_size.)
+        this.pend_pos = (ri & 0xFF_FFFF) as base.u32
+        this.pend_len = n as base.u32
+        if n >= room {
+            this.ring_index = 0
+            this.ring_full = true
+        } else {
+            this.ring_index = ((ri ~mod+ n) & 0xFF_FFFF) as base.u32
+        }
+    }
+    return ok
+}
+
+// flush_pending copies the bytes that ring mode decoded into the ring buffer
+// to dst, suspending until dst has taken them all.
+pri func decoder.flush_pending?(dst: base.io_writer, workbuf: slice base.u8) {
+    var pos : base.u64
+    var len : base.u64
+    var n   : base.u64
+
+    while this.pend_len > 0 {
+        pos = this.pend_pos as base.u64
+        len = this.pend_len as base.u64
+        if (pos + len) > args.workbuf.length() {
+            return "#internal error: inconsistent ring buffer"
+        }
+        assert pos <= (pos + len) via "a <= (a + b): 0 <= b"()
+        n = args.dst.copy_from_slice!(s: args.workbuf[pos .. pos + len])
+        // These bytes are in the ring already: add_history must skip them.
+        this.call_mark = args.dst.mark()
+        if n >= len {
+            this.pend_pos = 0
+            this.pend_len = 0
+            break
+        }
+        // (The mask does nothing: pos + n < pos + len <= ring_size.)
+        assert len > n via "a > b: b < a"()
+        this.pend_pos = ((pos ~mod+ n) & 0xFF_FFFF) as base.u32
+        this.pend_len = (len - n) as base.u32
+        yield? base."$short write"
+    }
+}
+
+// copy_ring copies up to copy_remaining bytes from distance bytes back to
+// dst, without suspending: bytes in dst's history since call_mark are read
+// back from dst, older ones from the ring buffer in args.workbuf, whose
+// position for the byte at call_mark is ring_index (or, in ring mode,
+// ring_wbase). It updates copy_remaining, mlen, total_out, p1 and p2, and
+// stops early only when dst is full. decode_command_slow (cmd_state 3) uses
+// it, and decode_commands_fast for a source in the ring buffer that wraps
+// around the ring's end (it copies the others itself).
+pri func decoder.copy_ring!(dst: base.io_writer, workbuf: slice base.u8) base.status {
+    var hl    : base.u64
+    var since : base.u64
+    var mark  : base.u64
+    var off   : base.u64
+    var avail : base.u64
+    var start : base.u64[..= 0x100_0000]
+    var ri    : base.u64
+    var back  : base.u64
+    var rs    : base.u64
+    var seg   : slice base.u8
+    var n     : base.u32
+    var lim   : base.u32
+    var room  : base.u64
+    var lim8  : base.u32[..= 0x100_0000]
+
+    while this.copy_remaining > 0 {
+        hl = args.dst.history_length()
+        if hl < this.call_mark {
+            return "#internal error: inconsistent I/O"
+        }
+        since = hl - this.call_mark
+        mark = args.dst.mark()
+        if (this.distance as base.u64) <= since {
+            // From this call's output. With 8 bytes of slack in dst, copy as
+            // the fast path does (in 8-byte chunks unless the distance is 2
+            // to 7): this is the only copy when the input is too short for
+            // the fast path (a long run in a tiny stream) or dst is short.
+            room = args.dst.length()
+            lim8 = 0
+            if room > 8 {
+                lim8 = this.copy_remaining.min(no_more_than: 0x100_0000)
+                if (lim8 as base.u64) > (room - 8) {
+                    lim8 = ((room - 8) & 0xFF_FFFF) as base.u32
+                }
+            }
+            if (lim8 >= 1) and (this.distance >= 1) and
+                    ((this.distance as base.u64) <= args.dst.history_length()) and
+                    (((lim8 + 8) as base.u64) <= args.dst.length()) {
+                if this.distance >= 8 {
+                    n = args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+                            up_to: lim8, distance: this.distance)
+                } else if this.distance == 1 {
+                    n = args.dst.limited_copy_u32_from_history_8_byte_chunks_distance_1_fast!(
+                            up_to: lim8, distance: this.distance)
+                } else if (lim8 as base.u64) <= args.dst.length() {
+                    n = args.dst.limited_copy_u32_from_history_fast!(
+                            up_to: lim8, distance: this.distance)
+                } else {
+                    return "#internal error: inconsistent I/O"
+                }
+            } else {
+                n = args.dst.limited_copy_u32_from_history!(
+                        up_to: this.copy_remaining, distance: this.distance)
+            }
+        } else {
+            off = (this.distance as base.u64) - since
+            if this.ring_mode {
+                ri = this.ring_wbase as base.u64
+                // A back-reference the stint's priming did not reach.
+                this.ring_rc ~sat+= 1
+            } else {
+                ri = this.ring_index as base.u64
+            }
+            if this.ring_full {
+                avail = this.ring_size as base.u64
+            } else {
+                avail = ri
+            }
+            if off > avail {
+                return "#internal error: inconsistent ring buffer"
+            }
+            if (this.ring_size as base.u64) > args.workbuf.length() {
+                return base."#bad workbuf length"
+            }
+            if ri >= off {
+                start = ri - off
+            } else {
+                assert off > ri via "a > b: b < a"()
+                back = off - ri
+                rs = this.ring_size as base.u64
+                if rs < back {
+                    return "#internal error: inconsistent ring buffer"
+                }
+                start = rs - back
+            }
+            if (this.ring_size as base.u64) <= start {
+                return "#internal error: inconsistent ring buffer"
+            }
+            assert start < (this.ring_size as base.u64) via "a < b: b > a"()
+            // Copy at most off bytes: up to ri, or to the end of the ring
+            // (the next iteration continues from its start). In ring mode a
+            // source that wrapped lies ahead of where dst writes, in the
+            // same ring buffer: at least 16 bytes ahead (only a full-size
+            // ring wraps, and its distances are at most ring_size - 16),
+            // and the copy is a memmove, which reads them as they were.
+            seg = args.workbuf[start .. (this.ring_size as base.u64)]
+            lim = this.copy_remaining
+            if off < (lim as base.u64) {
+                lim = (off & 0xFFFF_FFFF) as base.u32
+            }
+            n = args.dst.limited_copy_u32_from_slice!(up_to: lim, s: seg)
+        }
+        this.update_context!(written: args.dst.since(mark: mark))
+        if this.copy_remaining < n {
+            return "#internal error: inconsistent state"
+        }
+        if this.mlen < n {
+            return "#internal error: inconsistent state"
+        }
+        this.copy_remaining -= n
+        this.mlen -= n
+        if n == 0 {
+            return ok
+        }
+    }
+    return ok
+}
+
+// prepare_dictionary_word builds the static dictionary word for a copy of
+// copy_length bytes from args.distance (> args.max_distance) into word_buf,
+// as per RFC 7932 section 8.
+pri func decoder.prepare_dictionary_word!(distance: base.u32, max_distance: base.u32) base.status {
+    var length    : base.u32[..= 24]
+    var address   : base.u32
+    var ndbits    : base.u32[..= 11]
+    var word_idx  : base.u32[..= 0x7FF]
+    var transform : base.u32
+    var status    : base.status
+
+    if (this.copy_length < 4) or (24 < this.copy_length) {
+        return "#bad dictionary reference"
+    }
+    length = this.copy_length
+    if args.distance <= args.max_distance {
+        return "#internal error: inconsistent state"
+    }
+    address = (args.distance - args.max_distance) - 1
+    ndbits = DICTIONARY_NDBITS[length] as base.u32
+    word_idx = address & (((1 as base.u32) << ndbits) - 1) & 0x7FF
+    transform = address >> ndbits
+    if transform > 120 {
+        return "#bad dictionary reference"
+    }
+    status = this.build_word!(length: length, word_idx: word_idx, transform: transform)
+    if status.is_error() {
+        return status
+    }
+    if this.word_len > this.mlen {
+        return "#bad copy length"
+    }
+    return ok
+}
+
+// build_word sets word_buf[.. word_len] to transform args.transform (RFC 7932
+// section 8 and Appendix B) of the static dictionary word of length
+// args.length and index args.word_idx.
+pri func decoder.build_word!(length: base.u32[..= 24], word_idx: base.u32[..= 0x7FF], transform: base.u32[..= 120]) base.status {
+    var t     : base.u32[..= 120]
+    var off   : base.u32
+    var w     : base.u32[..= 40]
+    var n     : base.u32[..= 8]
+    var ws    : base.u32[..= 8]
+    var ty    : base.u32[..= 20]
+    var start : base.u32[..= 122784]
+    var wlen  : base.u32[..= 24]
+    var k     : base.u32[..= 20]
+    var p     : base.u32
+    var cb    : base.u8
+    var step  : base.u32[..= 3]
+
+    if args.length < 4 {
+        return "#internal error: inconsistent state"
+    }
+    t = args.transform
+    off = DICTIONARY_OFFSETS[args.length] + (args.word_idx * args.length)
+    if off > (122784 - args.length) {
+        return "#internal error: inconsistent state"
+    }
+
+    // The prefix. TRANSFORM_PREFIX holds 8 bytes per transform, of which the
+    // first n count: one fixed 8-byte copy (a constant-size memcpy, which the
+    // C compiler inlines) beats a loop whose trip count varies from word to
+    // word.
+    n = TRANSFORM_PREFIX_LEN[t] as base.u32
+    assert (t * 8) <= ((t * 8) + 8) via "a <= (a + b): 0 <= b"()
+    this.word_buf[.. 8].copy_from_slice!(s: TRANSFORM_PREFIX[t * 8 .. (t * 8) + 8])
+    ws = n
+
+    // The (possibly shortened) word.
+    ty = TRANSFORM_TYPE[t] as base.u32
+    if off > (122784 - args.length) {
+        return "#internal error: inconsistent state"
+    }
+    assert off <= 122784 via "a <= b: a <= c; c <= b"(c: 122784 - args.length)
+    start = off
+    wlen = args.length
+    if (3 <= ty) and (ty <= 11) {
+        k = ty - 2
+        if wlen <= k {
+            wlen = 0
+        } else if start <= (122784 - k) {
+            assert (start + k) <= 122784 via "(a + b) <= c: a <= (c - b)"()
+            start = start + k
+            wlen -= k
+        } else {
+            return "#internal error: inconsistent state"
+        }
+    } else if (12 <= ty) and (ty <= 20) {
+        k = ty - 11
+        if wlen <= k {
+            wlen = 0
+        } else {
+            wlen -= k
+        }
+    }
+    if start > (122784 - wlen) {
+        return "#internal error: inconsistent state"
+    }
+    assert (start + wlen) <= 122784 via "(a + b) <= c: a <= (c - b)"()
+    assert start <= (start + wlen) via "a <= (a + b): 0 <= b"()
+    assert ws <= (ws + wlen) via "a <= (a + b): 0 <= b"()
+    if start <= (122784 - 24) {
+        // Copy 24 bytes, whatever wlen is, as three fixed 8-byte copies
+        // (which cgen inlines) rather than one variable-length memmove: the
+        // bytes past the word are overwritten by the suffix or lie past
+        // word_len.
+        assert ws <= (ws + 8) via "a <= (a + b): 0 <= b"()
+        assert (ws + 8) <= ((ws + 8) + 8) via "a <= (a + b): 0 <= b"()
+        assert (ws + 16) <= ((ws + 16) + 8) via "a <= (a + b): 0 <= b"()
+        assert start <= (start + 8) via "a <= (a + b): 0 <= b"()
+        assert (start + 8) <= ((start + 8) + 8) via "a <= (a + b): 0 <= b"()
+        assert (start + 16) <= ((start + 16) + 8) via "a <= (a + b): 0 <= b"()
+        this.word_buf[ws .. ws + 8].copy_from_slice!(s: DICTIONARY[start .. start + 8])
+        this.word_buf[ws + 8 .. (ws + 8) + 8].copy_from_slice!(s: DICTIONARY[start + 8 .. (start + 8) + 8])
+        this.word_buf[ws + 16 .. (ws + 16) + 8].copy_from_slice!(s: DICTIONARY[start + 16 .. (start + 16) + 8])
+    } else {
+        this.word_buf[ws .. ws + wlen].copy_from_slice!(s: DICTIONARY[start .. start + wlen])
+    }
+
+    // FermentFirst (ty == 1) and FermentAll (ty == 2).
+    if (ty == 1) or (ty == 2) {
+        p = 0
+        while p < wlen,
+                inv ws <= 8,
+                inv wlen <= 24,
+        {
+            assert p < 24 via "a < b: a < c; c <= b"(c: wlen)
+            cb = this.word_buf[ws + p]
+            if cb < 192 {
+                if (97 <= cb) and (cb <= 122) {
+                    this.word_buf[ws + p] = cb ^ 32
+                }
+                step = 1
+            } else if cb < 224 {
+                if (p + 1) < wlen {
+                    this.word_buf[ws + p + 1] ^= 32
+                }
+                step = 2
+            } else {
+                if (p + 2) < wlen {
+                    this.word_buf[ws + p + 2] ^= 5
+                }
+                step = 3
+            }
+            if ty == 1 {
+                break
+            }
+            p += step
+        }
+    }
+    w = ws + wlen
+
+    // The suffix, likewise 8 bytes of which the first n count (w <= 32, so
+    // they fit in word_buf).
+    n = TRANSFORM_SUFFIX_LEN[t] as base.u32
+    assert w <= (w + 8) via "a <= (a + b): 0 <= b"()
+    assert (t * 8) <= ((t * 8) + 8) via "a <= (a + b): 0 <= b"()
+    this.word_buf[w .. w + 8].copy_from_slice!(s: TRANSFORM_SUFFIX[t * 8 .. (t * 8) + 8])
+    this.word_len = w + n
+    return ok
+}
