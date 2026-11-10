@@ -296,7 +296,7 @@ test_wuffs_pixel_buffer_fill_rect() {
 }
 
 const char*  //
-test_wuffs_pixel_swizzler_swizzle() {
+test_wuffs_pixel_swizzler_swizzle_interleaved() {
   CHECK_FOCUS(__func__);
 
   const uint32_t width = 22;
@@ -533,6 +533,130 @@ test_wuffs_pixel_swizzler_swizzle() {
           RETURN_FAIL("s=%zu, d=%zu, b=%zu: dst_pixel: have 0x%08" PRIX32
                       ", want 0x%08" PRIX32 ", per-channel tolerance=%" PRId32,
                       s, d, b, have_dst_pixel, want_dst_pixel, tolerance);
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_pixel_swizzler_swizzle_ycck() {
+  CHECK_FOCUS(__func__);
+
+  // Flat 0x80 values except for Chroma-blue: 2 × 0x80 then 2 × 0xBF.
+  uint8_t src_array0[8] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+  uint8_t src_array1[4] = {0x80, 0x80, 0xBF, 0xBF};  // Cb = Chroma-blue.
+  uint8_t src_array2[4] = {0x80, 0x80, 0x80, 0x80};  // Cr = Chroma-red.
+
+  wuffs_base__pixel_swizzler swizzler = {0};
+  static uint8_t scratch_buffer_2k[2048];
+
+  for (int q = 0; q < 8; q++) {
+    for (uint32_t dst_width = 4; dst_width <= 8; dst_width += 4) {
+      for (uint32_t src_width = 4; src_width <= 8; src_width += 4) {
+        uint8_t dst_array[8 * 4] = {0};
+        uint32_t src_chroma_len = (q & 1) ? 4u : 2u;
+        uint32_t src_chroma_width = (q & 2) ? 4u : 2u;
+        uint32_t src_luma_width = (q & 4) ? 8u : 4u;
+
+        wuffs_base__pixel_config dst_pixcfg = wuffs_base__null_pixel_config();
+        wuffs_base__pixel_config__set(
+            &dst_pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRX,
+            WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, dst_width, 1);
+
+        wuffs_base__pixel_buffer dst_pixbuf;
+        CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                           &dst_pixbuf, &dst_pixcfg,
+                                           wuffs_base__make_slice_u8(
+                                               dst_array, sizeof dst_array)));
+
+        wuffs_base__status status = wuffs_base__pixel_swizzler__swizzle_ycck(
+            &swizzler, &dst_pixbuf, wuffs_base__empty_slice_u8(),   //
+            0, src_width, 0, 1,                                     //
+            wuffs_base__make_slice_u8(src_array0, src_luma_width),  //
+            wuffs_base__make_slice_u8(src_array1, src_chroma_len),  //
+            wuffs_base__make_slice_u8(src_array2, src_chroma_len),  //
+            wuffs_base__empty_slice_u8(),                           //
+            src_luma_width, src_chroma_width, src_chroma_width, 0,  //
+            1, 1, 1, 0,                                             //
+            src_luma_width, src_chroma_width, src_chroma_width, 0,  //
+            // 4:2:2 chroma subsampling, so (h0, h1, h2) is (2, 1, 1)...
+            2, 1, 1, 0,  //
+            // ...and (v0, v1, v2) is (1, 1, 1).
+            1, 1, 1, 0,  //
+            WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE,
+            1,  // YCC_UPSAMPLING__FANCY_LIKE_LIBJPEG.
+            wuffs_base__make_slice_u8(scratch_buffer_2k,
+                                      sizeof scratch_buffer_2k));
+
+        // have is the dst_array BGRA blue values (8 × u8), packed in a u64.
+        uint64_t have = 0;
+        for (int x = 0; x < 8; x++) {
+          uint8_t blue = dst_array[(x * 4) + 0];
+          have = (have << 8) | ((uint64_t)(blue));
+        }
+
+        // wants[q] is the expected value of have. A source Cb (Chroma-blue)
+        // value of 0xBF does not mean that the destination BGRA blue is 0xBF.
+        static const uint64_t wants[8] = {
+            // Cb is always 0x80.
+            0x8080808000000000,  // src_chroma_len == src_chroma_width is good.
+            0x8080808000000000,  // src_chroma_len >  src_chroma_width is good.
+
+            // (width0 / h0 = 4 / 2) differs from (width1 / h1 = 4 / 1).
+            0, 0,
+
+            // (width0 / h0 = 8 / 2) differs from (width1 / h1 = 2 / 1).
+            0, 0,
+
+            // Cb interpolated from 0x80 to 0xBF.
+            0,                   // src_chroma_len <  src_chroma_width is bad.
+            0x8080809CD3F0F0F0,  // src_chroma_len == src_chroma_width is good.
+        };
+
+        uint64_t want = wants[q];
+        if (want == 0) {
+          // No-op.
+        } else if (src_width > src_luma_width) {
+          // src_width cannot be longer than the luma or chroma widths.
+          want = 0;
+        } else if (src_width < src_luma_width) {
+          // src_width can be shorter, which case it doesn't just truncate. It
+          // changes the right edge pixel's triangle interpolation's two source
+          // pixels, resulting in 0x80808080_00000000, not 0x8080809C_00000000.
+          want = 0x8080808000000000;
+        } else if (dst_width == 4) {
+          // Truncate.
+          want &= 0xFFFFFFFF00000000;
+        }
+
+        // These overrides should be removed.
+        //
+        // They exercise wuffs_base__pixel_swizzler__swizzle_ycck code paths
+        // (where things like src_chroma_len and src_chroma_width disagree)
+        // that aren't covered normally, by std/jpeg or std/webp. They are
+        // arguably bugs, whether that the swizzle_ycck implementation isn't
+        // sufficiently careful or the swizzle_ycck API is too loose.
+        if (((q == 0) || (q == 1)) && (src_width == 8)) {
+          want = 0x8080808000000000;
+        } else if (((q == 2) || (q == 3)) && (src_width == 4)) {
+          want = 0x8080808000000000;
+        } else if (((q == 2) || (q == 3)) && (src_width == 8)) {
+          want = 0x8080809C00000000;
+        } else if ((q == 4) || (q == 5)) {
+          want = 0x8080808000000000;
+        } else if (((q == 6) || (q == 7)) && (src_width == 4)) {
+          want = 0x8080808000000000;
+        } else if ((q == 6) && (dst_width == 4) && (src_width == 8)) {
+          want = 0x8080809C00000000;
+        }
+
+        if (have != want) {
+          RETURN_FAIL("q=%d, dst_width=%" PRIu32 ", src_width=%" PRIu32
+                      ": have 0x%016" PRIX64 ", want 0x%016" PRIX64
+                      ", status=%s",
+                      q, dst_width, src_width, have, want, status.repr);
         }
       }
     }
@@ -832,7 +956,8 @@ proc g_tests[] = {
     // them here is as good as any other place.
     test_wuffs_color_ycc_as_color_u32,
     test_wuffs_pixel_buffer_fill_rect,
-    test_wuffs_pixel_swizzler_swizzle,
+    test_wuffs_pixel_swizzler_swizzle_interleaved,
+    test_wuffs_pixel_swizzler_swizzle_ycck,
     test_wuffs_upsample_inv_h2v1,
 
     test_wuffs_wbmp_decode_frame_config,
