@@ -142,6 +142,10 @@ test_wuffs_cbor_decode_invalid() {
       "\xBF\xD0\xFF",
       // Unused opcode.
       "\xFE",
+      // Two-byte simple values less than 32 are not well-formed. See RFC 8949
+      // section 3.3 and appendix F.1.
+      "\xF8\x18",
+      "\xF8\x1F",
   };
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
@@ -183,6 +187,8 @@ test_wuffs_cbor_decode_valid() {
       "\xD0\x9F\xFF",
       // Tag immediately before an empty map.
       "\xD0\xBF\xFF",
+      // Two-byte simple value 32 (the smallest valid two-byte simple value).
+      "\xF8\x20",
   };
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
