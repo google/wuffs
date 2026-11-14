@@ -600,3 +600,55 @@ func TestNextSkipsImplicitChunks(tt *testing.T) {
 		tt.Fatalf("sHeader.Name: got %q, want %q", sHeader.Name, "b.dat")
 	}
 }
+
+func TestReaderRejectsOutOfRangeIntegers(tt *testing.T) {
+	const maxExcl = 1 << 53
+
+	// appendBlocks appends a "a.dat" entry whose (first) chunk has the given
+	// header fields, followed by any further blocks.
+	appendBlocks := func(buf *bytes.Buffer, typeflag byte, size int64, modTime int64, more ...block) {
+		b := block{}
+		initBlock(&b, typeGNULongName, 6, Mode644, 0)
+		buf.Write(b[:])
+		b = block{}
+		copy(b[:], "a.dat")
+		buf.Write(b[:])
+		initBlock(&b, typeflag, size, Mode644, modTime)
+		buf.Write(b[:])
+		for _, m := range more {
+			buf.Write(m[:])
+		}
+	}
+
+	testCases := []struct {
+		typeflag byte
+		size     int64
+		modTime  int64
+	}{
+		{TypeReg, maxExcl, 0},
+		{TypeReg, 0, maxExcl},
+		{TypeGNUSparse, maxExcl, 0},
+		{typeRegA, maxExcl, 0},
+	}
+	for i, tc := range testCases {
+		buf := bytes.Buffer{}
+		appendBlocks(&buf, tc.typeflag, tc.size, tc.modTime, block{}, block{})
+		if sHeader, err := NewReader(&buf).Next(); err != errBadHeader {
+			tt.Fatalf("i=%d: Next: got (%v, %v), want (_, %v)", i, sHeader, err, errBadHeader)
+		}
+	}
+
+	// A non-final chunk of 1 byte followed by a final chunk of ((1<<63) - 1)
+	// bytes, whose total size does not fit in an int64.
+	payload := block{'x'}
+	finalChunk := block{}
+	initBlock(&finalChunk, TypeReg, (1<<63)-1, Mode644, 0)
+	buf := bytes.Buffer{}
+	appendBlocks(&buf, typeRegA, 1, 0, payload, finalChunk, block{}, block{})
+	sReader := NewReader(&buf)
+	if _, err := sReader.Next(); err != nil {
+		tt.Fatalf("Next: %v", err)
+	} else if _, err := io.ReadAll(sReader); err != errBadHeader {
+		tt.Fatalf("ReadAll: got %v, want %v", err, errBadHeader)
+	}
+}
