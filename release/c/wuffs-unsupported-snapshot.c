@@ -97782,6 +97782,15 @@ do_dict:
 
 do_list:
   do {
+    // RFC 6901 array indexes are decimal digits only. Filter out the "0x" and
+    // "0d" prefixes that wuffs_base__parse_number_u64 would otherwise accept.
+    // That function also rejects leading zeroes, e.g. "00", "07".
+    for (size_t i = 0; i < json_pointer_fragment.size(); i++) {
+      char c = json_pointer_fragment[i];
+      if ((c < '0') || ('9' < c)) {
+        return DecodeJson_NoMatch;
+      }
+    }
     wuffs_base__result_u64 result_u64 = wuffs_base__parse_number_u64(
         wuffs_base__make_slice_u8(
             static_cast<uint8_t*>(static_cast<void*>(
