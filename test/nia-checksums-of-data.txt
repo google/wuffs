@@ -165,7 +165,8 @@ OK. d42a13cd test/data/peacock.default.jpeg
 OK. c8a50351 test/data/peacock.default.truncated.decoded-by-djpeg.png
 OK. 91b6bebb test/data/peacock.default.truncated.decoded-by-wuffs.png
 BAD 91b6bebb test/data/peacock.default.truncated.jpeg
-OK. d49bab2d test/data/peacock.grayscale.jpeg
+OK. d49bab2d test/data/peacock.grayscale.progressive.jpeg
+OK. d49bab2d test/data/peacock.grayscale.sequential.jpeg
 OK. d42a13cd test/data/peacock.optimize.jpeg
 OK. bdf8cc70 test/data/peacock.png
 OK. bdf8cc70 test/data/peacock.ppm

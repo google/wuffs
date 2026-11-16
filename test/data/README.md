@@ -144,7 +144,8 @@ Dedication":
   - `rm 1024px-Pavo_Real_Venezolano.jpg`
   - `cjpeg peacock.ppm > peacock.default.jpeg`
   - `cjpeg -optimize peacock.ppm > peacock.optimize.jpeg`
-  - `cjpeg -grayscale peacock.ppm > peacock.grayscale.jpeg`
+  - `cjpeg -grayscale peacock.ppm > peacock.grayscale.sequential.jpeg`
+  - `cjpeg -grayscale -progressive peacock.ppm > peacock.grayscale.progressive.jpeg`
   - `cjpeg -progressive peacock.ppm > peacock.progressive.jpeg`
   - `cjpeg -quality 30 peacock.ppm > peacock.q30.jpeg`
   - `cjpeg -quality 99 peacock.ppm > peacock.q99.jpeg`
