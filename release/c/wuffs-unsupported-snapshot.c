@@ -33071,19 +33071,6 @@ wuffs_private_impl__u32__max_of_4(uint32_t a,
       wuffs_base__u32__max(c, d));
 }
 
-static inline uint32_t  //
-wuffs_private_impl__u32__min_of_5(uint32_t a,
-                                  uint32_t b,
-                                  uint32_t c,
-                                  uint32_t d,
-                                  uint32_t e) {
-  return wuffs_base__u32__min(          //
-      wuffs_base__u32__min(             //
-          wuffs_base__u32__min(a, b),   //
-          wuffs_base__u32__min(c, d)),  //
-      e);
-}
-
 // --------
 
 typedef void (*wuffs_private_impl__swizzle_ycc__convert_4_func)(
@@ -34374,20 +34361,18 @@ wuffs_private_impl__swizzle_ycck__general__box_filter(
 // --------
 
 // wuffs_private_impl__swizzle_flattened_length is like
-// wuffs_base__table__flattened_length but returns uint64_t (not size_t) and
-// also accounts for subsampling.
-static uint64_t  //
+// wuffs_base__table__flattened_length but returns uint64_t (not size_t).
+static inline uint64_t  //
 wuffs_private_impl__swizzle_flattened_length(uint32_t width,
                                              uint32_t height,
-                                             uint32_t stride,
-                                             uint32_t inv_h,
-                                             uint32_t inv_v) {
-  uint64_t scaled_width = (((uint64_t)width) + (inv_h - 1u)) / inv_h;
-  uint64_t scaled_height = (((uint64_t)height) + (inv_v - 1u)) / inv_v;
-  if (scaled_height <= 0u) {
-    return 0u;
+                                             uint32_t stride) {
+  if (height == 0) {
+    return 0;
   }
-  return ((scaled_height - 1u) * stride) + scaled_width;
+  uint64_t w = width;
+  uint64_t h = height;
+  uint64_t s = stride;
+  return ((h - 1) * s) + w;
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -34428,24 +34413,39 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     wuffs_base__slice_u8 scratch_buffer_2k) {
   if (!p) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  } else if (!dst ||                             //
-             (x_min_incl > x_max_excl) ||        //
-             (x_max_excl > 0xFFFFu) ||           //
-             (y_min_incl > y_max_excl) ||        //
-             (y_max_excl > 0xFFFFu) ||           //
-             (4u <= ((unsigned int)h0 - 1u)) ||  //
-             (4u <= ((unsigned int)h1 - 1u)) ||  //
-             (4u <= ((unsigned int)h2 - 1u)) ||  //
-             (4u <= ((unsigned int)v0 - 1u)) ||  //
-             (4u <= ((unsigned int)v1 - 1u)) ||  //
-             (4u <= ((unsigned int)v2 - 1u)) ||  //
+  } else if (!dst ||                                                    //
+             (x_max_excl > 0xFFFFu) ||                                  //
+             (y_max_excl > 0xFFFFu) ||                                  //
+             (width0 > 0x10000u) ||                                     //
+             (width1 > 0x10000u) ||                                     //
+             (width2 > 0x10000u) ||                                     //
+             (width3 > 0x10000u) ||                                     //
+             (height0 > 0x10000u) ||                                    //
+             (height1 > 0x10000u) ||                                    //
+             (height2 > 0x10000u) ||                                    //
+             (height3 > 0x10000u) ||                                    //
+             (src0.len < wuffs_private_impl__swizzle_flattened_length(  //
+                             width0, height0, stride0)) ||              //
+             (src1.len < wuffs_private_impl__swizzle_flattened_length(  //
+                             width1, height1, stride1)) ||              //
+             (src2.len < wuffs_private_impl__swizzle_flattened_length(  //
+                             width2, height2, stride2)) ||              //
+             (src3.len < wuffs_private_impl__swizzle_flattened_length(  //
+                             width3, height3, stride3)) ||              //
+             (4u <= ((unsigned int)h0 - 1u)) ||                         //
+             (4u <= ((unsigned int)h1 - 1u)) ||                         //
+             (4u <= ((unsigned int)h2 - 1u)) ||                         //
+             (4u <= ((unsigned int)v0 - 1u)) ||                         //
+             (4u <= ((unsigned int)v1 - 1u)) ||                         //
+             (4u <= ((unsigned int)v2 - 1u)) ||                         //
              ((ycc_upsampling != 0) && ((x_min_incl | y_min_incl) > 0u)) ||
              (scratch_buffer_2k.len < 2048u)) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   if ((h3 != 0u) || (v3 != 0u)) {
     if ((4u <= ((unsigned int)h3 - 1u)) ||  //
-        (4u <= ((unsigned int)v3 - 1u))) {
+        (4u <= ((unsigned int)v3 - 1u)) ||  //
+        ((h3 * v3) == 0u)) {
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   }
@@ -34465,6 +34465,41 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   uint32_t inv_v1 = max_incl_v / v1;
   uint32_t inv_v2 = max_incl_v / v2;
   uint32_t inv_v3 = v3 ? (max_incl_v / v3) : 0u;
+
+  if (((h0 * inv_h0) != max_incl_h) ||                  //
+      ((h1 * inv_h1) != max_incl_h) ||                  //
+      ((h2 * inv_h2) != max_incl_h) ||                  //
+      ((v0 * inv_v0) != max_incl_v) ||                  //
+      ((v1 * inv_v1) != max_incl_v) ||                  //
+      ((v2 * inv_v2) != max_incl_v) ||                  //
+      ((h3 != 0u) && ((h3 * inv_h3) != max_incl_h)) ||  //
+      ((v3 != 0u) && ((v3 * inv_v3) != max_incl_v))) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+  if ((x_min_incl >= x_max_excl) || (y_min_incl >= y_max_excl)) {
+    return wuffs_base__make_status(NULL);
+  }
+  uint32_t dx = x_max_excl - x_min_incl;
+  uint32_t dy = y_max_excl - y_min_incl;
+
+  uint32_t expanded_width = width0 * inv_h0;
+  uint32_t expanded_height = height0 * inv_v0;
+  if ((expanded_width < dx) || (expanded_height < dy) ||  //
+      (expanded_width != (width1 * inv_h1)) ||            //
+      (expanded_width != (width2 * inv_h2)) ||            //
+      (expanded_height != (height1 * inv_v1)) ||          //
+      (expanded_height != (height2 * inv_v2))) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  } else if ((inv_h3 * inv_v3) == 0u) {
+    // No-op. The fourth channel is optional.
+  } else if (((inv_h3 * inv_v3) == 1u) && (dx == width3) && (dy == height3)) {
+    // No-op. Lossy WebP's alpha channel can have a smaller width and height
+    // than expanded_width and expanded_height.
+  } else if (((width3 * inv_h3) != expanded_width) ||
+             ((height3 * inv_v3) != expanded_height)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
 
   if (x_min_incl != 0) {
     if ((x_min_incl % inv_h0) || (x_min_incl % inv_h1) ||
@@ -34507,50 +34542,12 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     half_height_for_2to1 = wuffs_base__u32__min(half_height_for_2to1, height3);
   }
 
-  x_max_excl = wuffs_base__u32__min(                   //
-      wuffs_base__pixel_config__width(&dst->pixcfg),   //
-      x_min_incl + wuffs_private_impl__u32__min_of_5(  //
-                       x_max_excl - x_min_incl,        //
-                       width0 * inv_h0,                //
-                       width1 * inv_h1,                //
-                       width2 * inv_h2,                //
-                       inv_h3 ? (width3 * inv_h3) : 0xFFFFFFFF));
-  y_max_excl = wuffs_base__u32__min(                   //
-      wuffs_base__pixel_config__height(&dst->pixcfg),  //
-      y_min_incl + wuffs_private_impl__u32__min_of_5(  //
-                       y_max_excl - y_min_incl,        //
-                       height0 * inv_v0,               //
-                       height1 * inv_v1,               //
-                       height2 * inv_v2,               //
-                       inv_v3 ? (height3 * inv_v3) : 0xFFFFFFFF));
-
+  x_max_excl = wuffs_base__u32__min(
+      x_max_excl, wuffs_base__pixel_config__width(&dst->pixcfg));
+  y_max_excl = wuffs_base__u32__min(
+      y_max_excl, wuffs_base__pixel_config__height(&dst->pixcfg));
   if ((x_min_incl >= x_max_excl) || (y_min_incl >= y_max_excl)) {
     return wuffs_base__make_status(NULL);
-  }
-  uint32_t width = x_max_excl - x_min_incl;
-  uint32_t height = y_max_excl - y_min_incl;
-
-  if (((h0 * inv_h0) != max_incl_h) ||  //
-      ((h1 * inv_h1) != max_incl_h) ||  //
-      ((h2 * inv_h2) != max_incl_h) ||  //
-      ((v0 * inv_v0) != max_incl_v) ||  //
-      ((v1 * inv_v1) != max_incl_v) ||  //
-      ((v2 * inv_v2) != max_incl_v) ||  //
-      (src0.len < wuffs_private_impl__swizzle_flattened_length(
-                      width, height, stride0, inv_h0, inv_v0)) ||
-      (src1.len < wuffs_private_impl__swizzle_flattened_length(
-                      width, height, stride1, inv_h1, inv_v1)) ||
-      (src2.len < wuffs_private_impl__swizzle_flattened_length(
-                      width, height, stride2, inv_h2, inv_v2))) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-  if ((h3 != 0u) || (v3 != 0u)) {
-    if (((h3 * inv_h3) != max_incl_h) ||  //
-        ((v3 * inv_v3) != max_incl_v) ||  //
-        (src3.len < wuffs_private_impl__swizzle_flattened_length(
-                        width, height, stride3, inv_h3, inv_v3))) {
-      return wuffs_base__make_status(wuffs_base__error__bad_argument);
-    }
   }
 
   if (wuffs_base__pixel_format__is_planar(&dst->pixcfg.private_impl.pixfmt)) {

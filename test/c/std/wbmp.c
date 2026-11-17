@@ -631,27 +631,6 @@ test_wuffs_pixel_swizzler_swizzle_ycck() {
           want &= 0xFFFFFFFF00000000;
         }
 
-        // These overrides should be removed.
-        //
-        // They exercise wuffs_base__pixel_swizzler__swizzle_ycck code paths
-        // (where things like src_chroma_len and src_chroma_width disagree)
-        // that aren't covered normally, by std/jpeg or std/webp. They are
-        // arguably bugs, whether that the swizzle_ycck implementation isn't
-        // sufficiently careful or the swizzle_ycck API is too loose.
-        if (((q == 0) || (q == 1)) && (src_width == 8)) {
-          want = 0x8080808000000000;
-        } else if (((q == 2) || (q == 3)) && (src_width == 4)) {
-          want = 0x8080808000000000;
-        } else if (((q == 2) || (q == 3)) && (src_width == 8)) {
-          want = 0x8080809C00000000;
-        } else if ((q == 4) || (q == 5)) {
-          want = 0x8080808000000000;
-        } else if (((q == 6) || (q == 7)) && (src_width == 4)) {
-          want = 0x8080808000000000;
-        } else if ((q == 6) && (dst_width == 4) && (src_width == 8)) {
-          want = 0x8080809C00000000;
-        }
-
         if (have != want) {
           RETURN_FAIL("q=%d, dst_width=%" PRIu32 ", src_width=%" PRIu32
                       ": have 0x%016" PRIX64 ", want 0x%016" PRIX64
