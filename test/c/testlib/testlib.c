@@ -1218,6 +1218,7 @@ do_test__wuffs_base__hasher_bitvec256(wuffs_base__hasher_bitvec256* b,
 typedef struct {
   wuffs_base__optional_u63 src_ri_min_incl;
   wuffs_base__optional_u63 src_wi_max_incl;
+  bool use_the_minimum_workbuf_len;
 } do_test__wuffs_base__image_decoder__options;
 
 const char*  //
@@ -1266,7 +1267,9 @@ do_test__wuffs_base__image_decoder(
   if (workbuf_len.max_incl > workbuf.len) {
     return "workbuf_len is too large";
   }
-  workbuf.len = workbuf_len.max_incl;
+  workbuf.len = (options && options->use_the_minimum_workbuf_len)
+                    ? workbuf_len.min_incl
+                    : workbuf_len.max_incl;
 
   uint32_t have_width = wuffs_base__pixel_config__width(&ic.pixcfg);
   if (have_width != want_width) {

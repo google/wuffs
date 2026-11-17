@@ -98,43 +98,87 @@ test_wuffs_jpeg_decode_interface() {
 const char*  //
 test_wuffs_jpeg_decode_lower_quality() {
   CHECK_FOCUS(__func__);
+
   wuffs_jpeg__decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_jpeg__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  wuffs_jpeg__decoder__set_quirk(
-      &dec, WUFFS_BASE__QUIRK_QUALITY,
-      WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
-  CHECK_STRING(do_test__wuffs_base__image_decoder(
-      wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.jpeg", 160, 120, 0xFF012466, NULL));
 
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = g_src_slice_u8,
-  });
-  CHECK_STRING(read_file(&src, "test/data/bricks-color.jpeg"));
-  CHECK_STATUS("initialize", wuffs_jpeg__decoder__initialize(
-                                 &dec, sizeof dec, WUFFS_VERSION,
-                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-  CHECK_STATUS("decode_image_config",
-               wuffs_jpeg__decoder__decode_image_config(&dec, NULL, &src));
+  struct {
+    const char* filename;
+    bool progressive;
+    wuffs_base__color_u32_argb_premul want_final_pixel;
+  } test_cases[] = {
+      {
+          .filename = "test/data/peacock.default.jpeg",
+          .progressive = false,
+          .want_final_pixel = 0xFFD08E5E,
+      },
+      {
+          .filename = "test/data/peacock.progressive.jpeg",
+          .progressive = true,
+          .want_final_pixel = 0xFFD08E5E,
+      },
+      {
+          .filename = "test/data/peacock.grayscale.sequential.jpeg",
+          .progressive = false,
+          .want_final_pixel = 0xFF9C9C9C,
+      },
+      {
+          .filename = "test/data/peacock.grayscale.progressive.jpeg",
+          .progressive = true,
+          .want_final_pixel = 0xFF9C9C9C,
+      },
+  };
 
-  for (int q = 0; q < 2; q++) {
-    if (q) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 2; q++) {
+      if ((q != 0) && test_cases[tc].progressive) {
+        continue;
+      }
+
+      CHECK_STATUS("initialize",
+                   wuffs_jpeg__decoder__initialize(
+                       &dec, sizeof dec, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
       wuffs_jpeg__decoder__set_quirk(
           &dec, WUFFS_BASE__QUIRK_QUALITY,
           WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
+
+      do_test__wuffs_base__image_decoder__options options = {0};
+      options.use_the_minimum_workbuf_len = (q != 0);
+
+      CHECK_STRING(do_test__wuffs_base__image_decoder(
+          wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+          test_cases[tc].filename, 100, 75, test_cases[tc].want_final_pixel,
+          &options));
     }
-    wuffs_base__range_ii_u64 r = wuffs_jpeg__decoder__workbuf_len(&dec);
-    if (wuffs_base__range_ii_u64__is_empty(&r)) {
-      RETURN_FAIL("q=%d: indeterminate workbuf length", q);
-    }
-    uint64_t m = r.min_incl;
-    if ((q == 0) && (m == 0)) {
-      RETURN_FAIL("q=%d: have %" PRIu64 ", want non-zero", q, m);
-    } else if ((q != 0) && (m != 0)) {
-      RETURN_FAIL("q=%d: have %" PRIu64 ", want zero", q, m);
+  }
+
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = g_src_slice_u8,
+    });
+    CHECK_STRING(read_file(&src, test_cases[tc].filename));
+    CHECK_STATUS("initialize", wuffs_jpeg__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+    CHECK_STATUS("decode_image_config",
+                 wuffs_jpeg__decoder__decode_image_config(&dec, NULL, &src));
+
+    for (int q = 0; q < 2; q++) {
+      wuffs_jpeg__decoder__set_quirk(
+          &dec, WUFFS_BASE__QUIRK_QUALITY,
+          q ? WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY : 0);
+      wuffs_base__range_ii_u64 r = wuffs_jpeg__decoder__workbuf_len(&dec);
+      if (wuffs_base__range_ii_u64__is_empty(&r)) {
+        RETURN_FAIL("tc=%zu, q=%d: indeterminate workbuf length", tc, q);
+      }
+      uint64_t m = r.min_incl;
+      bool want_zero = (q != 0) && !test_cases[tc].progressive;
+      if ((m == 0) && !want_zero) {
+        RETURN_FAIL("tc=%zu, q=%d: have %" PRIu64 ", want non-zero", tc, q, m);
+      } else if ((m != 0) && want_zero) {
+        RETURN_FAIL("tc=%zu, q=%d: have %" PRIu64 ", want zero", tc, q, m);
+      }
     }
   }
 

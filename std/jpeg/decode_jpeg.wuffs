@@ -286,6 +286,9 @@ pub struct decoder? implements base.image_decoder(
         use_lower_quality        : base.bool,
         reject_progressive_jpegs : base.bool,
 
+        // swizzle_immediately will be true if use_lower_quality is true and,
+        // for a sequential (not progressive) JPEG, we're given a workbuf.len
+        // that's less than workbuf_len.max_incl (but at least its min_incl).
         swizzle_immediately           : base.bool,
         swizzle_immediately_status    : base.status,
         swizzle_immediately_b_offsets : array[10] base.u32[..= 576],
