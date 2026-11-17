@@ -75,8 +75,8 @@ test_wuffs_thumbhash_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_thumbhash__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/artificial-thumbhash/3OcRJYB4d3h_iIeHeEh3eIhw-j3A.th", 0,
-      SIZE_MAX, 32, 23, 0xFF56632E);
+      "test/data/artificial-thumbhash/3OcRJYB4d3h_iIeHeEh3eIhw-j3A.th", 32, 23,
+      0xFF56632E, NULL);
 }
 
 const char*  //

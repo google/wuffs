@@ -94,7 +94,7 @@ test_wuffs_bmp_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/hippopotamus.bmp", 0, SIZE_MAX, 36, 28, 0xFFF5F5F5);
+      "test/data/hippopotamus.bmp", 36, 28, 0xFFF5F5F5, NULL);
 }
 
 const char*  //

@@ -155,7 +155,7 @@ test_wuffs_gif_decode_interface_image_decoder() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-nodither.gif", 0, SIZE_MAX, 160, 120, 0xFF012463);
+      "test/data/bricks-nodither.gif", 160, 120, 0xFF012463, NULL);
 }
 
 const char*  //

@@ -1215,25 +1215,45 @@ do_test__wuffs_base__hasher_bitvec256(wuffs_base__hasher_bitvec256* b,
   return NULL;
 }
 
+typedef struct {
+  wuffs_base__optional_u63 src_ri_min_incl;
+  wuffs_base__optional_u63 src_wi_max_incl;
+} do_test__wuffs_base__image_decoder__options;
+
 const char*  //
 do_test__wuffs_base__image_decoder(
     wuffs_base__image_decoder* b,
     const char* src_filename,
-    size_t src_ri,
-    size_t src_wi,
     uint32_t want_width,
     uint32_t want_height,
-    wuffs_base__color_u32_argb_premul want_final_pixel) {
+    wuffs_base__color_u32_argb_premul want_final_pixel,
+    do_test__wuffs_base__image_decoder__options* options) {
   if ((want_width > 16384) || (want_height > 16384) ||
       ((want_width * want_height * 4) > PIXEL_BUFFER_ARRAY_SIZE)) {
     return "want dimensions are too large";
+  }
+
+  size_t src_ri_min_incl = 0;
+  size_t src_wi_max_incl = SIZE_MAX;
+  if (options != NULL) {
+    if (wuffs_base__optional_u63__has_value(&options->src_ri_min_incl)) {
+      src_ri_min_incl = ((size_t)(wuffs_base__u64__min(
+          ((uint64_t)(SIZE_MAX)),
+          wuffs_base__optional_u63__value(&options->src_ri_min_incl))));
+    }
+    if (wuffs_base__optional_u63__has_value(&options->src_wi_max_incl)) {
+      src_wi_max_incl = ((size_t)(wuffs_base__u64__min(
+          ((uint64_t)(SIZE_MAX)),
+          wuffs_base__optional_u63__value(&options->src_wi_max_incl))));
+    }
   }
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
-  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  CHECK_STRING(
+      read_file_fragment(&src, src_filename, src_ri_min_incl, src_wi_max_incl));
   CHECK_STATUS("decode_image_config",
                wuffs_base__image_decoder__decode_image_config(b, &ic, &src));
 

@@ -75,7 +75,7 @@ test_wuffs_handsum_decode_interface_c1q1() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-gray.c1q1.handsum", 0, SIZE_MAX, 16, 12, 0xFF040404);
+      "test/data/bricks-gray.c1q1.handsum", 16, 12, 0xFF040404, NULL);
 }
 
 const char*  //
@@ -88,7 +88,7 @@ test_wuffs_handsum_decode_interface_c1q3() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-gray.c1q3.handsum", 0, SIZE_MAX, 16, 12, 0xFF101010);
+      "test/data/bricks-gray.c1q3.handsum", 16, 12, 0xFF101010, NULL);
 }
 
 const char*  //
@@ -101,7 +101,7 @@ test_wuffs_handsum_decode_interface_c3q2() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.c3q2.handsum", 0, SIZE_MAX, 16, 12, 0xFF313D58);
+      "test/data/bricks-color.c3q2.handsum", 16, 12, 0xFF313D58, NULL);
 }
 
 const char*  //
@@ -114,7 +114,7 @@ test_wuffs_handsum_decode_interface_c3q4() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_handsum__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.c3q4.handsum", 0, SIZE_MAX, 16, 12, 0xFF0B337D);
+      "test/data/bricks-color.c3q4.handsum", 16, 12, 0xFF0B337D, NULL);
 }
 
 const char*  //

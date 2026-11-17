@@ -75,7 +75,7 @@ test_wuffs_nie_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/hippopotamus.nie", 0, SIZE_MAX, 36, 28, 0xFFF5F5F5);
+      "test/data/hippopotamus.nie", 36, 28, 0xFFF5F5F5, NULL);
 }
 
 const char*  //

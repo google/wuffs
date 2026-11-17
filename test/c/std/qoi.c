@@ -75,7 +75,7 @@ test_wuffs_qoi_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_qoi__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.qoi", 0, SIZE_MAX, 160, 120, 0xFF022460);
+      "test/data/bricks-color.qoi", 160, 120, 0xFF022460, NULL);
 }
 
 const char*  //

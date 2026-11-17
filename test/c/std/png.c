@@ -187,7 +187,7 @@ test_wuffs_png_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0xFF060606);
+      "test/data/bricks-gray.png", 160, 120, 0xFF060606, NULL);
 }
 
 const char*  //
@@ -228,7 +228,7 @@ test_wuffs_png_decode_multiple_idats() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.png", 0, SIZE_MAX, 160, 120, 0xFF022460);
+      "test/data/bricks-color.png", 160, 120, 0xFF022460, NULL);
 }
 
 const char*  //
@@ -650,8 +650,9 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
                     q, have_fourcc, want_fourcc);
       } else if (have_fourcc == WUFFS_BASE__FOURCC__CHRM) {
         for (int i = 0; i < 8; i++) {
-          have[i] = ((uint32_t)(
-              wuffs_base__more_information__metadata_parsed__chrm(&minfo, i)));
+          have[i] =
+              ((uint32_t)(wuffs_base__more_information__metadata_parsed__chrm(
+                  &minfo, i)));
         }
       } else if (have_fourcc == WUFFS_BASE__FOURCC__GAMA) {
         have[0] = wuffs_base__more_information__metadata_parsed__gama(&minfo);

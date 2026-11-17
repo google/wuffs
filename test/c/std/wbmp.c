@@ -712,7 +712,7 @@ test_wuffs_wbmp_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/muybridge-frame-000.wbmp", 0, SIZE_MAX, 30, 20, 0xFFFFFFFF);
+      "test/data/muybridge-frame-000.wbmp", 30, 20, 0xFFFFFFFF, NULL);
 }
 
 const char*  //

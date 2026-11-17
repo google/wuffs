@@ -92,7 +92,7 @@ test_wuffs_jpeg_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.jpeg", 0, SIZE_MAX, 160, 120, 0xFF012466);
+      "test/data/bricks-color.jpeg", 160, 120, 0xFF012466, NULL);
 }
 
 const char*  //
@@ -108,7 +108,7 @@ test_wuffs_jpeg_decode_lower_quality() {
       WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
   CHECK_STRING(do_test__wuffs_base__image_decoder(
       wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.jpeg", 0, SIZE_MAX, 160, 120, 0xFF012466));
+      "test/data/bricks-color.jpeg", 160, 120, 0xFF012466, NULL));
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
