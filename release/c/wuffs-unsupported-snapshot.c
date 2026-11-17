@@ -22531,10 +22531,12 @@ wuffs_private_impl__parse_number_f64_special(wuffs_base__slice_u8 s,
       goto fail;
     }
 
+    bool allow_underscores =
+        options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES;
     uint8_t* p = s.ptr;
     uint8_t* q = s.ptr + s.len;
 
-    for (; (p < q) && (*p == '_'); p++) {
+    for (; allow_underscores && (p < q) && (*p == '_'); p++) {
     }
     if (p >= q) {
       goto fail;
@@ -22551,7 +22553,7 @@ wuffs_private_impl__parse_number_f64_special(wuffs_base__slice_u8 s,
       } else {
         break;
       }
-      for (; (p < q) && (*p == '_'); p++) {
+      for (; allow_underscores && (p < q) && (*p == '_'); p++) {
       }
     } while (0);
     if (p >= q) {
@@ -22606,7 +22608,7 @@ wuffs_private_impl__parse_number_f64_special(wuffs_base__slice_u8 s,
     }
 
     // Finish.
-    for (; (p < q) && (*p == '_'); p++) {
+    for (; allow_underscores && (p < q) && (*p == '_'); p++) {
     }
     if (p != q) {
       goto fail;

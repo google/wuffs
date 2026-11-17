@@ -1098,6 +1098,21 @@ test_wuffs_strconv_parse_number_f64_regular() {
     }
   }
 
+  // Underscores around "inf" and "nan" must also be rejected unless
+  // ALLOW_UNDERSCORES is set.
+  {
+    const char* strs[] = {"_inf", "inf_", "-_nan", "_+_NaN_", "__InFinity__"};
+    for (size_t i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(strs); i++) {
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((uint8_t*)(void*)strs[i], strlen(strs[i])),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+      if (r.status.repr != wuffs_base__error__bad_argument) {
+        RETURN_FAIL("\"%s\": have \"%s\", want \"%s\"", strs[i], r.status.repr,
+                    wuffs_base__error__bad_argument);
+      }
+    }
+  }
+
   // Test the integer part being more than 800 digits.
   {
     // Initialize buf to "1222...222e-805" with 805 twos.
