@@ -723,16 +723,17 @@ func parseBlock1(b *block) (byte, int64, int64, int64, error) {
 		return 0, 0, 0, 0, errBadHeader
 	}
 
+	const maxExcl = 1 << 53
 	mode := Mode644
 	if b[0x068] == '7' {
 		mode = Mode755
 	}
 	size := int64(u64le(b[0x080:]))
-	if size < 0 {
+	if (size < 0) || (size >= maxExcl) {
 		return 0, 0, 0, 0, errBadHeader
 	}
 	modTime := int64(u64le(b[0x08C:]))
-	if modTime < 0 {
+	if (modTime < 0) || (modTime >= maxExcl) {
 		return 0, 0, 0, 0, errBadHeader
 	}
 
@@ -746,7 +747,7 @@ func parseBlock1(b *block) (byte, int64, int64, int64, error) {
 		}
 		size0 := int64(u64le(b[0x186:]))
 		size1 := int64(u64le(b[0x1E7:]))
-		if (size0 != size1) || (size1 < 0) {
+		if (size0 != size1) || (size1 < 0) || (size1 >= maxExcl) {
 			return 0, 0, 0, 0, errBadHeader
 		}
 		size = size1
