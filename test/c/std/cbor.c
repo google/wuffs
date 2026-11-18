@@ -140,12 +140,14 @@ test_wuffs_cbor_decode_invalid() {
       // Tag in map, immediately before an 0xFF stop code. Some discussion is
       // at https://github.com/cbor/cbor.github.io/issues/65
       "\xBF\xD0\xFF",
-      // Unused opcode.
-      "\xFE",
       // Two-byte simple values less than 32 are not well-formed. See RFC 8949
       // section 3.3 and appendix F.1.
+      "\xF8\x01",
+      "\xF8\x17",
       "\xF8\x18",
       "\xF8\x1F",
+      // Unused opcode.
+      "\xFE",
   };
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {

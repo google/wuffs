@@ -55,6 +55,11 @@ pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x100_0000
 // the low 18 bits) of the token's value_minor is a CBOR simple value either in
 // the range 0 ..= 19 or in the range 32 ..= 255.
 //
+// Per RFC 8949 Table 4, the semantics of such values are "(unassigned)".
+//
+// Simple values in the range 24 ..= 31 are "(reserved)", but per Table 3, they
+// are also not representable in the wire format.
+//
 // Simple values in the range 20 ..= 23 (which correspond to: false, true, null
 // and undefined) are represented by WUFFS_BASE__TOKEN__VBC__LITERAL tokens.
 pub const TOKEN_VALUE_MINOR__SIMPLE_VALUE : base.u32 = 0x080_0000
