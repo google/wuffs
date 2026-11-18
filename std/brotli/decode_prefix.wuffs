@@ -1,0 +1,1075 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// read_symbol sets rb_value to the next symbol of src, decoded with the
+// prefix code table at huff[args.tree]. See the huff field comment for the
+// table format.
+pri func decoder.read_symbol?(src: base.io_reader, tree: base.u32) {
+    var tree   : base.u32
+    var bits   : base.u64
+    var n_bits : base.u32
+    var entry  : base.u32
+    var n      : base.u32[..= 15]
+    var sub    : base.u32[..= 7]
+    var idx    : base.u32
+    var c      : base.u64[..= 255]
+
+    tree = args.tree
+    bits = this.bits
+    n_bits = this.n_bits
+    while true {
+        idx = tree ~mod+ ((bits & 0xFF) as base.u32)
+        if idx >= HUFF_CAPACITY {
+            return "#internal error: inconsistent huffman table"
+        }
+        entry = this.huff[idx] as base.u32
+        n = entry & 15
+        if n <= 8 {
+            if n_bits >= n {
+                this.rb_value = entry >> 4
+                this.bits = bits >> n
+                this.n_bits = n_bits - n
+                return ok
+            }
+        } else if n_bits >= 8 {
+            sub = n - 8
+            idx = (tree ~mod+ (entry >> 4)) ~mod+ (((bits >> 8) & (((1 as base.u64) << sub) - 1)) as base.u32)
+            if idx >= HUFF_CAPACITY {
+                return "#internal error: inconsistent huffman table"
+            }
+            entry = this.huff[idx] as base.u32
+            n = entry & 15
+            if n_bits >= (8 + n) {
+                this.rb_value = entry >> 4
+                this.bits = bits >> (8 + n)
+                this.n_bits = n_bits - (8 + n)
+                return ok
+            }
+        }
+        // Codes are at most 15 bits long.
+        if n_bits >= 16 {
+            return "#internal error: inconsistent huffman table"
+        }
+        c = args.src.read_u8_as_u64?()
+        bits |= c << n_bits
+        n_bits += 8
+    }
+}
+
+// read_fused sets rb_value to the next symbol entry of src (the whole
+// entry), decoded with the fused prefix code table at offset args.tree (see
+// the fused field comment for the offset and the entry's layout).
+pri func decoder.read_fused?(src: base.io_reader, workbuf: slice base.u8, tree: base.u32) {
+    var tree   : base.u32
+    var bits   : base.u64
+    var n_bits : base.u32
+    var entry  : base.u32
+    var n      : base.u32[..= 15]
+    var sub    : base.u32[..= 7]
+    var idx    : base.u32
+    var c      : base.u64[..= 255]
+
+    tree = args.tree
+    bits = this.bits
+    n_bits = this.n_bits
+    while true {
+        idx = tree ~mod+ ((bits & 0xFF) as base.u32)
+        if idx < FUSED_CAPACITY {
+            entry = this.fused[idx]
+        } else {
+            entry = this.ovf_entry(workbuf: args.workbuf, idx: idx)
+            if entry == 0xFFFF_FFFF {
+                return "#internal error: inconsistent huffman table"
+            }
+        }
+        n = (entry >> 8) & 15
+        if n <= 8 {
+            if n_bits >= n {
+                this.rb_value = entry
+                this.bits = bits >> n
+                this.n_bits = n_bits - n
+                return ok
+            }
+        } else if n_bits >= 8 {
+            sub = n - 8
+            idx = (tree ~mod+ ((entry >> 16) & 0xFFF)) ~mod+ (((bits >> 8) & (((1 as base.u64) << sub) - 1)) as base.u32)
+            if idx < FUSED_CAPACITY {
+                entry = this.fused[idx]
+            } else {
+                entry = this.ovf_entry(workbuf: args.workbuf, idx: idx)
+                if entry == 0xFFFF_FFFF {
+                    return "#internal error: inconsistent huffman table"
+                }
+            }
+            n = (entry >> 8) & 15
+            if n_bits >= (8 + n) {
+                this.rb_value = entry
+                this.bits = bits >> (8 + n)
+                this.n_bits = n_bits - (8 + n)
+                return ok
+            }
+        }
+        // Codes are at most 15 bits long.
+        if n_bits >= 16 {
+            return "#internal error: inconsistent huffman table"
+        }
+        c = args.src.read_u8_as_u64?()
+        bits |= c << n_bits
+        n_bits += 8
+    }
+}
+
+// read_varlen_u8 sets rb_value to a value in [0, 255] encoded with the
+// variable-length code of RFC 7932 section 9.2 (as for NBLTYPESL).
+pri func decoder.read_varlen_u8?(src: base.io_reader) {
+    var n : base.u32[..= 7]
+
+    this.read_bits?(src: args.src, n: 1)
+    if this.rb_value == 0 {
+        return ok
+    }
+    this.read_bits?(src: args.src, n: 3)
+    n = this.rb_value & 7
+    if n == 0 {
+        this.rb_value = 1
+        return ok
+    }
+    this.read_bits?(src: args.src, n: n)
+    this.rb_value = ((1 as base.u32) << n) + (this.rb_value & 0x7F)
+}
+
+// read_prefix_code reads a prefix code over an alphabet of args.alphabet_size
+// symbols, as per RFC 7932 sections 3.4 and 3.5, and builds its table at
+// huff[huff_next] (args.kind 0) or, fused, at fused[fused_next] (1 and 2),
+// advancing huff_next or fused_next past it: see build_code.
+pri func decoder.read_prefix_code?(src: base.io_reader, alphabet_size: base.u32[..= 704], kind: base.u32[..= 2]) {
+    var alphabet_size : base.u32[..= 704]
+    var status        : base.status
+    var hskip         : base.u32[..= 3]
+    var n_syms        : base.u32[..= 4]
+    var sym_bits      : base.u32[..= 10]
+    var i             : base.u32
+    var j             : base.u32
+    var v             : base.u32
+    var tree_select   : base.bool
+    var space         : base.u32
+    var num_codes     : base.u32[..= 18]
+    var symbol        : base.u32
+    var prev_len      : base.u32[..= 15]
+    var repeat        : base.u32
+    var repeat_len    : base.u32[..= 15]
+    var old_repeat    : base.u32
+    var delta         : base.u32[..= 704]
+    var extra         : base.u32[..= 3]
+    var new_len       : base.u32[..= 15]
+    var end           : base.u32[..= 704]
+    var cost          : base.u32
+    var tail          : base.u32[..= 719]
+    var bits          : base.u64
+    var n_bits        : base.u32
+    var entry         : base.u32
+    var n             : base.u32[..= 15]
+    var c             : base.u64[..= 255]
+    var xv            : base.u32[..= 7]
+
+    alphabet_size = args.alphabet_size
+    if alphabet_size < 1 {
+        return "#internal error: inconsistent state"
+    }
+
+    this.read_bits?(src: args.src, n: 2)
+    hskip = this.rb_value & 3
+
+    if hskip == 1 {
+        // A simple prefix code (section 3.4).
+        this.read_bits?(src: args.src, n: 2)
+        n_syms = (this.rb_value & 3) + 1
+        // ALPHABET_BITS: the number of bits needed for (alphabet_size - 1).
+        sym_bits = 0
+        while (sym_bits < 10) and (((1 as base.u32) << sym_bits) < alphabet_size),
+                inv n_syms <= 4,
+        {
+            sym_bits += 1
+        }
+        i = 0
+        while i < n_syms,
+                inv n_syms <= 4,
+        {
+            assert i < 4 via "a < b: a < c; c <= b"(c: n_syms)
+            this.read_bits?(src: args.src, n: sym_bits)
+            v = this.rb_value
+            if v >= alphabet_size {
+                return "#bad simple prefix code"
+            }
+            this.simple_symbols[i] = (v & 0x3FF) as base.u16
+            i += 1
+        }
+        i = 0
+        while i < n_syms,
+                inv n_syms <= 4,
+        {
+            assert i < 4 via "a < b: a < c; c <= b"(c: n_syms)
+            j = i + 1
+            while j < n_syms,
+                    inv n_syms <= 4,
+                    inv i < 4,
+            {
+                assert j < 4 via "a < b: a < c; c <= b"(c: n_syms)
+                if this.simple_symbols[i] == this.simple_symbols[j] {
+                    return "#bad simple prefix code"
+                }
+                j += 1
+            }
+            i += 1
+        }
+        tree_select = false
+        if n_syms == 4 {
+            this.read_bits?(src: args.src, n: 1)
+            tree_select = this.rb_value <> 0
+        }
+        status = this.build_simple!(n_syms: n_syms, tree_select: tree_select, kind: args.kind)
+        if status.is_error() {
+            return status
+        }
+        return ok
+    }
+
+    // A complex prefix code (section 3.5). First, the code length code
+    // lengths, in CL_ORDER, ending early once their space is used up.
+    i = 0
+    while i < 18 {
+        this.cl_lens[i] = 0
+        i += 1
+    }
+    space = 32
+    num_codes = 0
+    i = hskip as base.u32
+    while i < 18 {
+        this.read_clcl?(src: args.src)
+        v = this.rb_value & 7
+        if v > 5 {
+            return "#internal error: inconsistent state"
+        }
+        this.cl_lens[CL_ORDER[i]] = v as base.u8
+        if v <> 0 {
+            if space < ((32 as base.u32) >> v) {
+                return "#bad code length code"
+            }
+            space -= (32 as base.u32) >> v
+            if num_codes >= 18 {
+                return "#internal error: inconsistent state"
+            }
+            num_codes += 1
+            if space == 0 {
+                break
+            }
+        }
+        i += 1
+    }
+    if (num_codes <> 1) and (space <> 0) {
+        return "#bad code length code"
+    }
+    status = this.build_cl_table!(single: num_codes == 1)
+    if status.is_error() {
+        return status
+    }
+
+    // Then the symbol code lengths, with repeat codes 16 and 17. Rather than
+    // storing each symbol's code length, count them and thread the symbols
+    // into per-length lists for build_code (see len_counts).
+    i = 0
+    while i < 16 {
+        this.len_counts[i] = 0
+        this.len_tail[i] = i
+        i += 1
+    }
+    symbol = 0
+    prev_len = 8
+    repeat = 0
+    repeat_len = 0
+    space = 32768
+    // The bit reader is in locals here, and symbols are decoded inline with
+    // cl_table: a coroutine call per symbol (the C compiler does not inline
+    // coroutines) cost more than the decoding. As read_bits does, read a byte
+    // only when the next code needs more bits than are held, so that n_bits
+    // < 8 after each code.
+    bits = this.bits
+    n_bits = this.n_bits
+    while (symbol < alphabet_size) and (space > 0),
+            inv alphabet_size <= 704,
+    {
+        assert symbol < 704 via "a < b: a < c; c <= b"(c: alphabet_size)
+        while true,
+                inv alphabet_size <= 704,
+                inv symbol < alphabet_size,
+                inv symbol < 704,
+                post n_bits >= n,
+        {
+            entry = this.cl_table[bits & 31] as base.u32
+            n = entry & 15
+            if n_bits >= n {
+                break
+            }
+            if n_bits >= 8 {
+                return "#internal error: inconsistent huffman table"
+            }
+            c = args.src.read_u8_as_u64?()
+            bits |= c << n_bits
+            n_bits += 8
+        }
+        bits >>= n
+        n_bits -= n
+        v = entry >> 4
+        if v < 16 {
+            repeat = 0
+            if v <> 0 {
+                tail = this.len_tail[v]
+                this.sym_list[tail] = symbol as base.u16
+                this.len_tail[v] = symbol + 16
+                this.len_counts[v] ~mod+= 1
+                prev_len = v
+                if space < ((32768 as base.u32) >> v) {
+                    return "#bad prefix code"
+                }
+                space -= (32768 as base.u32) >> v
+            }
+            symbol += 1
+            continue
+        } else if v == 16 {
+            extra = 2
+            new_len = prev_len
+        } else if v == 17 {
+            extra = 3
+            new_len = 0
+        } else {
+            return "#internal error: inconsistent huffman table"
+        }
+        while n_bits < extra,
+                inv alphabet_size <= 704,
+                inv symbol < alphabet_size,
+                inv symbol < 704,
+                post n_bits >= extra,
+        {
+            if n_bits >= 8 {
+                return "#internal error: inconsistent bit reader"
+            }
+            c = args.src.read_u8_as_u64?()
+            bits |= c << n_bits
+            n_bits += 8
+        }
+        xv = ((bits & (((1 as base.u64) << extra) - 1)) & 7) as base.u32
+        bits >>= extra
+        n_bits -= extra
+        if repeat_len <> new_len {
+            repeat = 0
+            repeat_len = new_len
+        }
+        old_repeat = repeat
+        if repeat > 0 {
+            if (repeat < 2) or (repeat > 0x1_0000) {
+                return "#bad prefix code"
+            }
+            repeat = (repeat - 2) << extra
+        }
+        if repeat > 0x10_0000 {
+            return "#internal error: inconsistent state"
+        }
+        repeat = repeat + xv + 3
+        if repeat < old_repeat {
+            return "#internal error: inconsistent state"
+        }
+        v = repeat - old_repeat
+        assert alphabet_size > symbol via "a > b: b < a"()
+        if v > (alphabet_size - symbol) {
+            return "#bad prefix code"
+        }
+        assert v <= 704 via "a <= b: a <= c; c <= b"(c: alphabet_size - symbol)
+        delta = v
+        // Restate the bound in terms of delta for the proof engine.
+        if delta > (alphabet_size - symbol) {
+            return "#internal error: inconsistent state"
+        }
+        assert (delta + symbol) <= alphabet_size via "(a + b) <= c: a <= (c - b)"()
+        assert (delta + symbol) <= 704 via "a <= b: a <= c; c <= b"(c: alphabet_size)
+        end = delta + symbol
+        if repeat_len <> 0 {
+            cost = delta << (15 - repeat_len)
+            if space < cost {
+                return "#bad prefix code"
+            }
+            space -= cost
+            this.len_counts[repeat_len] ~mod+= delta
+            tail = this.len_tail[repeat_len]
+            while symbol < end,
+                    inv alphabet_size <= 704,
+            {
+                assert symbol < 704 via "a < b: a < c; c <= b"(c: end)
+                this.sym_list[tail] = symbol as base.u16
+                tail = symbol + 16
+                symbol += 1
+            }
+            this.len_tail[repeat_len] = tail
+        } else {
+            symbol = end
+        }
+    }
+    this.bits = bits
+    this.n_bits = n_bits
+    if space <> 0 {
+        return "#bad prefix code"
+    }
+    status = this.build_code!(kind: args.kind)
+    if status.is_error() {
+        return status
+    }
+}
+
+// read_clcl sets rb_value to a code length code length, decoded with the
+// static code of RFC 7932 section 3.5 (2 ..= 4 bits).
+pri func decoder.read_clcl?(src: base.io_reader) {
+    var bits   : base.u64
+    var n_bits : base.u32
+    var x      : base.u32[..= 15]
+    var n      : base.u32[..= 4]
+    var c      : base.u64[..= 255]
+
+    bits = this.bits
+    n_bits = this.n_bits
+    while true {
+        x = (bits & 15) as base.u32
+        n = CLCL_LENGTH[x] as base.u32
+        if n_bits >= n {
+            this.rb_value = CLCL_SYMBOL[x] as base.u32
+            this.bits = bits >> n
+            this.n_bits = n_bits - n
+            return ok
+        }
+        if n_bits >= 8 {
+            return "#internal error: inconsistent bit reader"
+        }
+        c = args.src.read_u8_as_u64?()
+        bits |= c << n_bits
+        n_bits += 8
+    }
+}
+
+// table_entry returns the table entry for symbol args.s with a code of
+// args.n bits (in a root table) or args.n further bits (in a second level
+// table): for args.kind 0 (a table in huff), (args.s << 4) | args.n; for 1
+// (an insert-and-copy code) and 2 (a distance code), a fused entry (see
+// fused), for which dist_extra must be up to date. It returns 0xFFFF_FFFF for
+// a symbol beyond the alphabet.
+pri func decoder.table_entry(kind: base.u32[..= 2], s: base.u32, n: base.u32[..= 15]) base.u32 {
+    var lut : base.u64
+    var ie  : base.u32[..= 31]
+    var ce  : base.u32[..= 31]
+    var ib  : base.u32
+    var ic  : base.u32[..= 3]
+    var ex  : base.u32[..= 24]
+
+    if args.kind == 0 {
+        if args.s >= 1024 {
+            return 0xFFFF_FFFF
+        }
+        return (args.s << 4) | args.n
+    } else if args.kind == 1 {
+        if args.s >= 704 {
+            return 0xFFFF_FFFF
+        }
+        lut = CMD_LUT[args.s]
+        ie = (lut & 31) as base.u32
+        ce = ((lut >> 5) & 31) as base.u32
+        ib = ((lut >> 16) & 0xFFFF) as base.u32
+        // Insert codes 0, 1 and 2 have no extra bits: the insert length is
+        // the code.
+        ic = 3
+        if (ie == 0) and (ib < 3) {
+            ic = ib
+        }
+        // A root table entry has n <= 8, so n + ie + ce <= 56; a second level
+        // one, at most 7 + 24 + 24.
+        return (args.s << 21) | (ie << 16) | ((((lut >> 10) & 3) as base.u32) << 14) |
+                (ic << 12) | (args.n << 8) | ((args.n + ie + ce) & 63)
+    }
+    if args.s >= 520 {
+        return 0xFFFF_FFFF
+    }
+    // Symbols 0 ..= 15 (the last distances) have no extra bits.
+    ex = 0
+    if args.s >= 16 {
+        ex = this.dist_extra[args.s] as base.u32
+    }
+    return (args.s << 21) | (ex << 12) | (args.n << 8) | (args.n + ex)
+}
+
+// table_pointer returns the root table entry that points to a second level
+// table at args.offset entries after the root table, indexed by (args.n - 8)
+// further bits, for a table of args.kind (see table_entry).
+pri func decoder.table_pointer(kind: base.u32[..= 2], offset: base.u32[..= 4095], n: base.u32[..= 15]) base.u32 {
+    if args.kind == 0 {
+        return (args.offset << 4) | args.n
+    }
+    return 0x8000_0000 | (args.offset << 16) | (args.n << 8)
+}
+
+// build_simple builds the table for the simple prefix code whose symbols are
+// simple_symbols[.. args.n_syms], as per RFC 7932 section 3.4: code lengths
+// (0), (1, 1), (1, 2, 2), (2, 2, 2, 2) or, with tree_select, (1, 2, 3, 3),
+// where symbols of equal length get codes in increasing symbol order. As
+// build_code does, it builds it at huff[huff_next] for args.kind 0, and as a
+// fused table at fused[fused_next] for 1 and 2 (see table_entry).
+pri func decoder.build_simple!(n_syms: base.u32[..= 4], tree_select: base.bool, kind: base.u32[..= 2]) base.status {
+    var root  : base.u32[..= 165724]
+    var froot : base.u32[..= 130816]
+    var s0    : base.u32[..= 1023]
+    var s1    : base.u32[..= 1023]
+    var s2    : base.u32[..= 1023]
+    var s3    : base.u32[..= 1023]
+    var t     : base.u32[..= 1023]
+    var l0    : base.u32[..= 3]
+    var l1    : base.u32[..= 3]
+    var l2    : base.u32[..= 3]
+    var l3    : base.u32[..= 3]
+    var e0    : base.u32
+    var e1    : base.u32
+    var e2    : base.u32
+    var e3    : base.u32
+    var k     : base.u32
+    var e     : base.u32
+    var pat   : array[8] base.u32
+
+    if args.kind == 0 {
+        if this.huff_next > (HUFF_CAPACITY - 256) {
+            return "#internal error: inconsistent huffman table"
+        }
+        root = this.huff_next
+    } else {
+        if this.fused_next > (FUSED_CAPACITY - 256) {
+            return "#internal error: inconsistent huffman table"
+        }
+        froot = this.fused_next
+    }
+    s0 = (this.simple_symbols[0] & 0x3FF) as base.u32
+    s1 = (this.simple_symbols[1] & 0x3FF) as base.u32
+    s2 = (this.simple_symbols[2] & 0x3FF) as base.u32
+    s3 = (this.simple_symbols[3] & 0x3FF) as base.u32
+
+    if args.n_syms == 2 {
+        if s1 < s0 {
+            t = s0
+            s0 = s1
+            s1 = t
+        }
+    } else if args.n_syms == 3 {
+        if s2 < s1 {
+            t = s1
+            s1 = s2
+            s2 = t
+        }
+    } else if args.n_syms == 4 {
+        if args.tree_select {
+            if s3 < s2 {
+                t = s2
+                s2 = s3
+                s3 = t
+            }
+        } else {
+            // Sort all four.
+            if s1 < s0 {
+                t = s0
+                s0 = s1
+                s1 = t
+            }
+            if s3 < s2 {
+                t = s2
+                s2 = s3
+                s3 = t
+            }
+            if s2 < s0 {
+                t = s0
+                s0 = s2
+                s2 = t
+            }
+            if s3 < s1 {
+                t = s1
+                s1 = s3
+                s3 = t
+            }
+            if s2 < s1 {
+                t = s1
+                s1 = s2
+                s2 = t
+            }
+        }
+    }
+
+    // The code lengths: (0), (1, 1), (1, 2, 2), (2, 2, 2, 2) or, with
+    // tree_select, (1, 2, 3, 3).
+    l0 = 0
+    l1 = 0
+    l2 = 0
+    l3 = 0
+    if args.n_syms == 2 {
+        l0 = 1
+        l1 = 1
+    } else if args.n_syms == 3 {
+        l0 = 1
+        l1 = 2
+        l2 = 2
+    } else if args.n_syms == 4 {
+        if args.tree_select {
+            l0 = 1
+            l1 = 2
+            l2 = 3
+            l3 = 3
+        } else {
+            l0 = 2
+            l1 = 2
+            l2 = 2
+            l3 = 2
+        }
+    }
+    // The symbols' entries (only those of the code's symbols: the others are
+    // left over from earlier codes).
+    e0 = this.table_entry(kind: args.kind, s: s0, n: l0)
+    if e0 == 0xFFFF_FFFF {
+        return "#internal error: inconsistent huffman table"
+    }
+    e1 = 0
+    e2 = 0
+    e3 = 0
+    if args.n_syms >= 2 {
+        e1 = this.table_entry(kind: args.kind, s: s1, n: l1)
+        if e1 == 0xFFFF_FFFF {
+            return "#internal error: inconsistent huffman table"
+        }
+    }
+    if args.n_syms >= 3 {
+        e2 = this.table_entry(kind: args.kind, s: s2, n: l2)
+        if e2 == 0xFFFF_FFFF {
+            return "#internal error: inconsistent huffman table"
+        }
+    }
+    if args.n_syms >= 4 {
+        e3 = this.table_entry(kind: args.kind, s: s3, n: l3)
+        if e3 == 0xFFFF_FFFF {
+            return "#internal error: inconsistent huffman table"
+        }
+    }
+
+    // The table is indexed by the next 8 bits of input, LSB first: the
+    // first bit of a code is its index's least significant bit. Codes are
+    // at most 3 bits long, so the table repeats every 8 entries: work those
+    // out, then replicate them.
+    k = 0
+    while k < 8 {
+        if args.n_syms <= 1 {
+            e = e0
+        } else if args.n_syms == 2 {
+            if (k & 1) == 0 {
+                e = e0
+            } else {
+                e = e1
+            }
+        } else if args.n_syms == 3 {
+            if (k & 1) == 0 {
+                e = e0
+            } else if (k & 3) == 1 {
+                e = e1
+            } else {
+                e = e2
+            }
+        } else if not args.tree_select {
+            if (k & 3) == 0 {
+                e = e0
+            } else if (k & 3) == 2 {
+                e = e1
+            } else if (k & 3) == 1 {
+                e = e2
+            } else {
+                e = e3
+            }
+        } else {
+            if (k & 1) == 0 {
+                e = e0
+            } else if (k & 3) == 1 {
+                e = e1
+            } else if (k & 7) == 3 {
+                e = e2
+            } else {
+                e = e3
+            }
+        }
+        pat[k] = e
+        k += 1
+    }
+    k = 0
+    if args.kind == 0 {
+        while k < 32 {
+            this.huff[root + (k * 8)] = (pat[0] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 1] = (pat[1] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 2] = (pat[2] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 3] = (pat[3] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 4] = (pat[4] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 5] = (pat[5] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 6] = (pat[6] & 0xFFFF) as base.u16
+            this.huff[root + (k * 8) + 7] = (pat[7] & 0xFFFF) as base.u16
+            k += 1
+        }
+        this.huff_next = root + 256
+    } else {
+        while k < 32 {
+            this.fused[froot + (k * 8)] = pat[0]
+            this.fused[froot + (k * 8) + 1] = pat[1]
+            this.fused[froot + (k * 8) + 2] = pat[2]
+            this.fused[froot + (k * 8) + 3] = pat[3]
+            this.fused[froot + (k * 8) + 4] = pat[4]
+            this.fused[froot + (k * 8) + 5] = pat[5]
+            this.fused[froot + (k * 8) + 6] = pat[6]
+            this.fused[froot + (k * 8) + 7] = pat[7]
+            k += 1
+        }
+        this.fused_next = froot + 256
+    }
+    this.built_size = 256
+    return ok
+}
+
+// build_cl_table builds cl_table, the 5-bit table for the code length code
+// whose code lengths (0 ..= 5) are in cl_lens. If args.single, exactly one
+// code length is non-zero and that symbol has a zero-length code.
+pri func decoder.build_cl_table!(single: base.bool) base.status {
+    var sym  : base.u32[..= 18]
+    var len  : base.u32[..= 5]
+    var code : base.u32
+    var rev  : base.u32
+    var k    : base.u32
+    var cnt  : array[6] base.u32
+    var nxt  : array[6] base.u32
+
+    if args.single {
+        sym = 0
+        while sym < 18 {
+            if this.cl_lens[sym] <> 0 {
+                break
+            }
+            sym += 1
+        }
+        if sym >= 18 {
+            return "#internal error: inconsistent huffman table"
+        }
+        k = 0
+        while k < 32,
+                inv sym < 18,
+        {
+            this.cl_table[k] = ((sym << 4) & 0xFFFF) as base.u16
+            k += 1
+        }
+        return ok
+    }
+
+    // Assign canonical codes in (length, symbol) order, as RFC 7932 section
+    // 3.2 does: count the codes of each length, work out the first code of
+    // each length, then give each symbol, in increasing order, the next code
+    // of its length. (read_prefix_code accepted only complete codes.)
+    sym = 0
+    while sym < 18 {
+        len = this.cl_lens[sym] as base.u32
+        cnt[len] ~mod+= 1
+        sym += 1
+    }
+    code = 0
+    k = 1
+    while k <= 5 {
+        nxt[k] = code
+        code = (code ~mod+ cnt[k]) ~mod<< 1
+        k += 1
+    }
+    sym = 0
+    while sym < 18 {
+        len = this.cl_lens[sym] as base.u32
+        if len > 0 {
+            code = nxt[len]
+            if code >= ((1 as base.u32) << len) {
+                return "#internal error: inconsistent huffman table"
+            }
+            nxt[len] = code ~mod+ 1
+            // Reverse the len-bit code: the first code bit is read first.
+            rev = (REVERSE8[(code ~mod<< (8 - len)) & 0xFF] as base.u32)
+            k = rev
+            while k < 32,
+                    inv len > 0,
+                    inv sym < 18,
+            {
+                this.cl_table[k] = (((sym << 4) | len) & 0xFFFF) as base.u16
+                k += (1 as base.u32) << len
+            }
+        }
+        sym += 1
+    }
+    return ok
+}
+
+// build_code builds the table for the complete canonical prefix code whose
+// symbols, by code length, are in len_counts and sym_list: at huff[huff_next]
+// for args.kind 0, advancing huff_next past it, and for 1 (an insert-and-copy
+// code) or 2 (a distance code) as a fused table (see table_entry) at
+// fused[fused_next], advancing fused_next. Building fused tables in place
+// saves converting them afterwards, entry by entry: each symbol's value is
+// worked out once. It follows google/brotli's BrotliBuildHuffmanTable: an
+// 8-bit root table and second level tables sized to fit the codes under each
+// root prefix.
+pri func decoder.build_code!(kind: base.u32[..= 2]) base.status {
+    var counts     : array[16] base.u32[..= 704]
+    var c          : base.u32
+    var count      : base.u32[..= 704]
+    var n_used     : base.u32[..= 704]
+    var len        : base.u32[..= 15]
+    var shift      : base.u32[..= 8]
+    var idx        : base.u32[..= 719]
+    var s          : base.u32
+    var root       : base.u32[..= 165724]
+    var hroot      : base.u32[..= 165724]
+    var froot      : base.u32[..= 130816]
+    var cap        : base.u32[..= 165980]
+    var next_free  : base.u32[..= 165980]
+    var code       : base.u32
+    var rev        : base.u32[..= 255]
+    var k          : base.u32
+    var step       : base.u32
+    var v          : base.u32
+    var sv         : base.u32[..= 0x7F_FFFF]
+    var entry      : base.u32
+    var prefix     : base.u32
+    var cur_prefix : base.u32
+    var sub_table  : base.u32[..= 165980]
+    var sub_bits   : base.u32[..= 7]
+    var sub_size   : base.u32[..= 128]
+    var left       : base.u32
+    var l          : base.u32[..= 15]
+    var low        : base.u32
+    var hi         : base.u32
+
+    if args.kind == 0 {
+        if this.huff_next > (HUFF_CAPACITY - 256) {
+            return "#internal error: inconsistent huffman table"
+        }
+        hroot = this.huff_next
+        root = hroot
+        cap = HUFF_CAPACITY
+    } else {
+        if this.fused_next > (FUSED_CAPACITY - 256) {
+            return "#internal error: inconsistent huffman table"
+        }
+        froot = this.fused_next
+        root = froot
+        cap = FUSED_CAPACITY
+    }
+
+    // read_prefix_code accepted a complete code: 2 ..= 704 codes in all.
+    n_used = 0
+    len = 1
+    while true {
+        c = this.len_counts[len]
+        if c > 704 {
+            return "#internal error: inconsistent huffman table"
+        }
+        count = c
+        counts[len] = count
+        if n_used > (704 - count) {
+            return "#internal error: inconsistent huffman table"
+        }
+        assert (n_used + count) <= 704 via "(a + b) <= c: a <= (c - b)"()
+        n_used = n_used + count
+        if len >= 15 {
+            break
+        }
+        len += 1
+    }
+    if n_used < 2 {
+        return "#internal error: inconsistent huffman table"
+    }
+
+    // Codes are assigned in (length, symbol) order; code is the next code of
+    // length len, most significant bit first. First, fill the root table
+    // with the codes of up to 8 bits, replicating each over the (8 - len)
+    // index bits that it does not determine.
+    code = 0
+    len = 1
+    while true {
+        if len > 8 {
+            return "#internal error: inconsistent huffman table"
+        }
+        shift = 8 - len
+        step = (1 as base.u32) << len
+        idx = len
+        c = counts[len]
+        while c > 0 {
+            c -= 1
+            s = this.sym_list[idx] as base.u32
+            if s >= 704 {
+                return "#internal error: inconsistent huffman table"
+            }
+            idx = s + 16
+            if code >= ((1 as base.u32) << len) {
+                return "#internal error: inconsistent huffman table"
+            }
+            entry = this.table_entry(kind: args.kind, s: s, n: len)
+            if entry == 0xFFFF_FFFF {
+                return "#internal error: inconsistent huffman table"
+            }
+            // Reverse the len-bit code: the first code bit is read first.
+            rev = REVERSE8[(code ~mod<< shift) & 0xFF] as base.u32
+            code ~mod+= 1
+            k = rev
+            if args.kind == 0 {
+                while k < 256 {
+                    this.huff[hroot + k] = (entry & 0xFFFF) as base.u16
+                    k ~mod+= step
+                }
+            } else {
+                while k < 256 {
+                    this.fused[froot + k] = entry
+                    k ~mod+= step
+                }
+            }
+        }
+        if len >= 8 {
+            break
+        }
+        code = code ~mod<< 1
+        len += 1
+    }
+
+    // Then the codes of 9 ..= 15 bits: their first 8 bits select a second
+    // level table, their remaining (len - 8) bits an entry there.
+    next_free = root + 256
+    cur_prefix = 0xFFFF_FFFF
+    sub_table = 0
+    sub_bits = 0
+    len = 9
+    while true {
+        if len <= 8 {
+            return "#internal error: inconsistent huffman table"
+        }
+        code = code ~mod<< 1
+        idx = len
+        while counts[len] > 0,
+                inv len > 8,
+        {
+            s = this.sym_list[idx] as base.u32
+            if s >= 704 {
+                return "#internal error: inconsistent huffman table"
+            }
+            idx = s + 16
+            entry = this.table_entry(kind: args.kind, s: s, n: len - 8)
+            if entry == 0xFFFF_FFFF {
+                return "#internal error: inconsistent huffman table"
+            }
+            if code >= ((1 as base.u32) << len) {
+                return "#internal error: inconsistent huffman table"
+            }
+            prefix = code >> (len - 8)
+            if prefix <> cur_prefix {
+                // Start a new second level table, big enough for the codes
+                // under this prefix: google/brotli's NextTableBitSize.
+                cur_prefix = prefix
+                left = (1 as base.u32) << (len - 8)
+                l = len
+                while true,
+                        inv len > 8,
+                {
+                    if left <= counts[l] {
+                        break
+                    }
+                    left -= counts[l]
+                    if l >= 15 {
+                        break
+                    }
+                    l += 1
+                    left = left ~mod<< 1
+                }
+                if l < 9 {
+                    return "#internal error: inconsistent huffman table"
+                }
+                sub_bits = l - 8
+                sub_size = (1 as base.u32) << sub_bits
+                sub_table = next_free
+                if ((sub_table + sub_size) > cap) or ((sub_table + sub_size) > HUFF_CAPACITY) {
+                    return "#internal error: inconsistent huffman table"
+                }
+                next_free = sub_table + sub_size
+                // Entry values are 12 bits, enough for any one code's table.
+                if sub_table < root {
+                    return "#internal error: inconsistent huffman table"
+                }
+                if (sub_table - root) >= 4096 {
+                    return "#internal error: inconsistent huffman table"
+                }
+                rev = REVERSE8[prefix & 0xFF] as base.u32
+                if args.kind == 0 {
+                    this.huff[hroot + rev] =
+                            ((((sub_table - root) << 4) | (8 + sub_bits)) & 0xFFFF) as base.u16
+                } else {
+                    this.fused[froot + rev] = this.table_pointer(kind: args.kind, offset: sub_table - root, n: 8 + sub_bits)
+                }
+            }
+            if (len - 8) > sub_bits {
+                return "#internal error: inconsistent huffman table"
+            }
+            low = code & (((1 as base.u32) << (len - 8)) - 1)
+            rev = REVERSE8[(low ~mod<< (16 - len)) & 0xFF] as base.u32
+            code ~mod+= 1
+            step = (1 as base.u32) << (len - 8)
+            sub_size = (1 as base.u32) << sub_bits
+            k = rev
+            while k < sub_size,
+                    inv len > 8,
+            {
+                hi = sub_table ~mod+ k
+                if args.kind == 0 {
+                    if hi >= HUFF_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    this.huff[hi] = (entry & 0xFFFF) as base.u16
+                } else {
+                    if hi >= FUSED_CAPACITY {
+                        return "#internal error: inconsistent huffman table"
+                    }
+                    this.fused[hi] = entry
+                }
+                k ~mod+= step
+            }
+
+            // counts[len] counts the codes of this length still to place.
+            if counts[len] <= 0 {
+                return "#internal error: inconsistent huffman table"
+            }
+            counts[len] -= 1
+        }
+        if len >= 15 {
+            break
+        }
+        len += 1
+    }
+
+    if (next_free < root) or (next_free > cap) {
+        return "#internal error: inconsistent huffman table"
+    }
+    this.built_size = next_free - root
+    if args.kind == 0 {
+        this.huff_next = next_free
+    } else if next_free <= FUSED_CAPACITY {
+        this.fused_next = next_free
+    } else {
+        return "#internal error: inconsistent huffman table"
+    }
+    return ok
+}

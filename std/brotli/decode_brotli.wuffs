@@ -1,0 +1,1020 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// A Brotli (RFC 7932) decoder.
+//
+// Output is written directly to dst. Back-references are resolved from the
+// bytes written to dst during the current transform_io call or, for older
+// bytes, from a ring buffer of the last (1 << WBITS) output bytes that lives
+// in the caller-supplied workbuf, to which a call's output is appended when
+// transform_io suspends: decoding a whole stream (src closed) into a large
+// enough dst in one call never copies output twice, but for a "$short workbuf"
+// with which the workbuf grows mid-stream (see below), which saves the output
+// so far into the ring buffer. When a call is likely to stop before the end of
+// a meta-block because dst or src is short, most back-references would reach
+// before the call's output, so commands are then decoded into the ring buffer
+// and copied to dst from there ("ring mode", see decode_compressed), as
+// google/brotli always does. As it also does, this decoder sizes the ring buffer by
+// the output so far: at each meta-block with output, the ring buffer (and so
+// the workbuf_len, without the overflow table area below) is the smallest
+// power of two (at least 16 bytes, at most 1 << WBITS) that holds the output
+// so far and that meta-block's, growing by as many powers of two at once as
+// that takes (see size_ring): so, once the output reaches 8 bytes, at most
+// twice the output at the end of the current meta-block, until it reaches
+// the window. One exception: when it must grow after output and src holds
+// all of the remaining input (closed), it grows to what the stream is likely
+// to output in all, from its ratio of output to input so far (see
+// estimate_ring), so that a decode with all of its input grows about once:
+// that can be more than twice the output, and more than google/brotli's
+// ring buffer reaches. A stream without output needs no workbuf: small
+// streams need small workbufs. Nor does
+// one whose first meta-block with output is the last (ISLAST) and needs no
+// overflow table area (below), decoded whole by one call (src closed, dst
+// with room for all of its output): that call never suspends once it has
+// output. (A meta-block that needs the area asks for it before any output,
+// and for the ring buffer with it.) Metadata meta-blocks have no output, so
+// they do not count.
+//
+// The decoder holds a meta-block's prefix code tables itself (in under
+// 1000 KiB, which C heaps recycle rather than map afresh), except for a
+// meta-block whose insert-and-copy and distance codes need larger tables than
+// any encoder output seen so far: those that do not fit go to an overflow
+// table area in the workbuf, after the ring buffer, which makes workbuf_len
+// grow by about 1.4 MiB, once per stream.
+//
+// As with std/lzma, the workbuf holds decoder state between calls. The
+// contract:
+//  - workbuf_len() reports a workbuf length that is enough: until the
+//    stream's first compressed or uncompressed meta-block, the worst case,
+//    DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE (0x116_F0E0 bytes: a 16 MiB ring
+//    buffer and the overflow table area), and from then on what the stream
+//    needs so far, which can grow. (A stream decoded whole by one call that
+//    needs no workbuf, as above, asks for none, and workbuf_len() stays the
+//    worst case.)
+//  - When decoding needs more workbuf than it was given, transform_io
+//    returns "$short workbuf": call it again with a workbuf of
+//    workbuf_len() bytes.
+//    Before the first meta-block with output, any new workbuf will do. After
+//    it, the workbuf holds the decoder's history, so the new one must start
+//    with the previous workbuf's contents, at least as many bytes as the
+//    previous workbuf_len() reported, as realloc keeps them. A decoder given
+//    a workbuf without them would produce wrong output (memory-safe, but
+//    wrong); "#bad workbuf contents" reports most such workbufs.
+//  - Otherwise every call of a stream must pass the same workbuf contents:
+//    the same buffer, or a copy of at least its first workbuf_len() bytes. A
+//    shorter workbuf is rejected with "#bad workbuf length".
+//  - A workbuf of the worst case, allocated before the first call, never
+//    needs to grow: transform_io then never returns "$short workbuf".
+//  - To decode another stream with the same decoder, initialize it again.
+//
+// Where RFC 7932 leaves behavior to the implementation, this decoder matches
+// google/brotli v1.2.1 (c/dec/decode.c): for example, a block category with a
+// single block type has an implicit block count of (1 << 24) and running it
+// down is an error ("#bad block switch"), and a stream that ends with unused
+// input is not this package's concern (the caller can check src).
+
+pub status "#bad window size"
+pub status "#bad metablock length"
+pub status "#bad metadata length"
+pub status "#bad reserved bit"
+pub status "#bad padding"
+pub status "#bad simple prefix code"
+pub status "#bad code length code"
+pub status "#bad prefix code"
+pub status "#bad context map"
+pub status "#bad block switch"
+pub status "#bad insert length"
+pub status "#bad copy length"
+pub status "#bad distance"
+pub status "#bad dictionary reference"
+pub status "#truncated input"
+pub status "#bad workbuf contents"
+
+pri status "#internal error: inconsistent bit reader"
+pri status "#internal error: inconsistent huffman table"
+pri status "#internal error: inconsistent I/O"
+pri status "#internal error: inconsistent ring buffer"
+pri status "#internal error: inconsistent state"
+
+pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+
+// The workbuf holds the ring buffer, (1 << WBITS) bytes at most with WBITS at
+// most 24, and the overflow table area after it (OVERFLOW_BYTES).
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x116_F0E0
+
+// Ring mode (see decode_compressed) is used when a call is likely to stop
+// before the end of the meta-block, early enough that most back-references
+// would reach before the call's own output: when dst has room for less than
+// the rest of the meta-block and for at most RING_DST_MAX bytes, or when src
+// is not closed and holds less than RING_SRC_MAX bytes. A call with more room
+// or more src writes enough to dst to serve as its own history. So, mostly,
+// has a call that has already written more than ring_k bytes to dst (a stint
+// primes at most that many), and it stays in direct mode. While src is not
+// closed, ring mode also needs RING_SRC_MIN bytes of it: a stint ends where
+// src runs short, and a shorter one does not repay its setup. It needs
+// RING_ROOM_MIN bytes of ring buffer before the ring's end. A stint decodes
+// at most RING_STINT_MAX bytes ahead of dst, and primes its writer with up to
+// ring_k bytes of history, which adapts between RING_K_MIN (or 0) and
+// RING_K_MAX, starting at RING_K_INIT.
+pri const RING_DST_MAX   : base.u64 = 0x4_0000
+pri const RING_SRC_MIN   : base.u64 = 0x400
+pri const RING_SRC_MAX   : base.u64 = 0x2_0000
+pri const RING_ROOM_MIN  : base.u64 = 0x1000
+pri const RING_STINT_MAX : base.u64 = 0x4_0000
+pri const RING_K_MIN     : base.u32 = 0x4000
+pri const RING_K_MAX     : base.u32 = 0x10_0000
+pri const RING_K_INIT    : base.u32 = 0x1_0000
+
+// A trivial-context literal block's run of at least 64 literals gets an
+// 11-bit root table (see build_lit_wide) once LIT_WIDE_MIN literals have been
+// decoded without one since the last one was built.
+pri const LIT_WIDE_MIN : base.u32 = 2048
+
+// The prefix code tables of the current meta-block live in decoder.huff
+// (HUFF_CAPACITY entries) and decoder.fused (FUSED_CAPACITY entries) and, for
+// a meta-block whose fused tables do not all fit in fused, in the workbuf's
+// overflow table area (OVERFLOW_CAPACITY entries of 4 bytes, OVERFLOW_BYTES).
+// See the huff and fused field comments for why they are enough. Lookups
+// check indexes against the capacities: in the fast path, a branch that is
+// never taken stays off the chain of dependent instructions from the bit
+// reader to the table entry, where a mask would add a step. (So would a
+// fallback to the overflow area that rejoins the lookup: MSVC then merges the
+// two loads into one through a computed address. Only the slow path reads
+// that area.)
+//
+// HUFF_CAPACITY is google/brotli's bound on a table's size for an alphabet of
+// A symbols, A + 376 entries, summed over a meta-block's worst case: 3 block
+// type (A <= 258) and 3 block count (A = 26) codes, 256 literal codes
+// (A = 256), and room to build one more table (at most 1080 entries, for
+// A = 704) before it is fused or, for a context map's code (A <= 272), used
+// and dropped: 3 * 634 + 3 * 402 + 256 * 632 + 1080.
+pri const HUFF_CAPACITY : base.u32 = 165980
+// FUSED_CAPACITY is 4.8 times the most fused entries that google/brotli's
+// encoder output was seen to use (26,970, over 3,121 test streams), and twice
+// what a meta-block with 256 one-symbol insert-and-copy codes uses (65,792),
+// while the decoder struct stays under 1000 KiB, a size that the Windows C
+// heap recycles rather than maps afresh for every allocation.
+pri const FUSED_CAPACITY : base.u32 = 0x2_0000
+// A meta-block's fused tables take at most 256 * 1080 (insert-and-copy codes,
+// A = 704) + 256 * 896 (distance codes, A <= 520) = 505,856 entries. A table
+// goes to the overflow area only when it does not fit in what is left of
+// fused, which is then less than its size, at most 1080: so fused holds at
+// least FUSED_CAPACITY - 1079 of them, and the overflow area the rest.
+pri const OVERFLOW_CAPACITY : base.u32 = 375864
+pri const OVERFLOW_BYTES    : base.u32 = 1_503456
+
+pub struct decoder? implements base.io_transformer(
+        // bits and n_bits hold src's bits in Least Significant Bits order.
+        // Outside of decode_commands_fast, n_bits < 8 and (bits >> n_bits) is
+        // zero: no whole byte is ever held back from src.
+        bits   : base.u64,
+        n_bits : base.u32,
+
+        // rb_value is the result of read_bits, read_symbol and friends, as
+        // coroutines cannot return values.
+        rb_value : base.u32,
+
+        // wbits is zero until the stream header has been decoded.
+        wbits : base.u32[..= 24],
+        // ring_size is the size of the history ring buffer: (1 << wbits), or
+        // less while the stream's output is known to be shorter (see
+        // size_ring). It is zero until the first meta-block with output, and
+        // stays zero for a stream decoded whole by one call without one (see
+        // do_transform_io).
+        ring_size : base.u32[..= 0x100_0000],
+        // ring_index is where add_history will next write, in [0, ring_size).
+        ring_index : base.u32[..= 0xFF_FFFF],
+        // ring_full is whether the ring buffer holds ring_size valid bytes.
+        // Otherwise, it holds ring_index valid bytes.
+        ring_full : base.bool,
+        // wb_len is how much of the workbuf decoding uses, and so how long it
+        // must stay: the ring buffer, workbuf[.. ring_size], and once ovf_on,
+        // the overflow table area, workbuf[ring_size .. ring_size +
+        // OVERFLOW_BYTES]. It is zero until the first meta-block with output
+        // (or for good, as ring_size).
+        // wb_want is what workbuf_len reports, once known: wb_len, or more
+        // while grow_workbuf waits for a longer workbuf.
+        wb_len  : base.u32[..= 0x116_F0E0],
+        wb_want : base.u32[..= 0x116_F0E0],
+        ovf_on  : base.bool,
+        // max_backward is the window size, (1 << wbits) - 16.
+        max_backward : base.u32[..= 0xFF_FFF0],
+        // total_out is the number of bytes output so far, saturating at
+        // 0xFFFF_FFFF. Where back-references may reach, only (total_out <
+        // max_backward) matters; size_ring uses its exact value at a
+        // meta-block header while the ring buffer is smaller than the window
+        // (when it is below 1 << 24: no saturation).
+        total_out : base.u32,
+        // call_mark is where the dst bytes that the ring buffer does not hold
+        // yet begin: args.dst.mark() at the start of each transform_io call,
+        // and again whenever ring mode brings the ring up to date or copies
+        // decoded bytes to dst. When transform_io suspends, add_history
+        // appends dst's bytes since call_mark to the ring. During a ring mode
+        // stint it is 0, the start of the bound writer's history.
+        call_mark : base.u64,
+        // in_count is how many bytes of src the stream has consumed in
+        // earlier transform_io calls (saturating), and src_mark is
+        // args.src.mark() at the start of this one: with
+        // args.src.count_since(mark: src_mark) they give the input so far,
+        // for estimate_ring.
+        in_count : base.u64,
+        src_mark : base.u64,
+
+        // Ring mode (see decode_compressed): while ring_mode,
+        // decode_commands_fast writes into the ring buffer through a writer
+        // whose history starts at ring position ring_wbase. pend_pos and
+        // pend_len are the bytes it decoded there that dst has yet to receive.
+        // ring_k is how many bytes of history the next stint primes that
+        // writer with, adapted from ring_rc, the number of the stint's
+        // back-references that the priming did not reach (copied from the
+        // ring buffer by decode_commands_fast or copy_ring).
+        ring_mode  : base.bool,
+        ring_wbase : base.u32[..= 0xFF_FFFF],
+        pend_pos   : base.u32[..= 0xFF_FFFF],
+        pend_len   : base.u32[..= 0x4_0000],
+        ring_k     : base.u32[..= 0x10_0000],
+        ring_rc    : base.u32,
+
+        // p1 and p2 are the last and second-to-last output bytes.
+        p1 : base.u8,
+        p2 : base.u8,
+
+        // dist_rb is the ring buffer of the last four backward distances. The
+        // last distance is dist_rb[(dist_rb_index - 1) & 3].
+        dist_rb       : array[4] base.u32,
+        dist_rb_index : base.u32,
+
+        // Meta-block header state.
+        is_last       : base.bool,
+        mlen          : base.u32[..= 0x100_0000],
+        npostfix      : base.u32[..= 3],
+        ndirect       : base.u32[..= 120],
+        dist_alphabet : base.u32[..= 520],
+
+        // Per block category (0 = literal, 1 = insert-and-copy, 2 = distance):
+        // the number of block types, the current and previous block types and
+        // the remaining block count.
+        num_block_types : array[3] base.u32[..= 256],
+        block_type      : array[3] base.u32[..= 255],
+        prev_block_type : array[3] base.u32[..= 255],
+        block_count     : array[3] base.u32,
+        // block_type_trees[i] and block_count_trees[i] are offsets into huff.
+        block_type_trees  : array[3] base.u32,
+        block_count_trees : array[3] base.u32,
+
+        num_lit_trees  : base.u32[..= 256],
+        num_dist_trees : base.u32[..= 256],
+
+        // huff_next is the offset in huff of the next table to build;
+        // built_size is the size of the table that build_xxx just built.
+        // fused_next and ovf_next are where the next fused table goes in fused
+        // and in the overflow table area (in entries).
+        huff_next  : base.u32[..= 165980],
+        built_size : base.u32,
+        fused_next : base.u32[..= 0x2_0000],
+        ovf_next   : base.u32[..= 375864],
+
+        // Command decoding state, see decode_commands_slow.
+        cmd_state        : base.u32,
+        insert_remaining : base.u32,
+        copy_length      : base.u32,
+        copy_remaining   : base.u32,
+        distance         : base.u32,
+        dist_code        : base.u32,
+        implicit_dist    : base.bool,
+        dist_ctx         : base.u32[..= 3],
+        word_pos         : base.u32[..= 40],
+        word_len         : base.u32[..= 40],
+
+        context_modes : array[256] base.u8[..= 3],
+
+        // The current literal block type's context: lit_ctx_base is its
+        // context mode << 9 (for CONTEXT_LUT). If lit_is_trivial, every
+        // context uses the table lit_tree. Otherwise, if lit_has_slot,
+        // lit_ctx_tree[lit_slot .. lit_slot + 2048] holds its contexts'
+        // tables, and if not, lit_row_off does.
+        lit_ctx_base   : base.u32[..= 1536],
+        lit_is_trivial : base.bool,
+        lit_tree       : base.u32,
+        lit_has_slot   : base.bool,
+        lit_slot       : base.u32[..= 6144],
+        // lit_slot_bt[s] is the literal block type whose contexts slot s of
+        // lit_ctx_tree holds, or 0xFFFF_FFFF for none; lit_slot_next is the
+        // next slot to refill. lit_row_bt is the literal block type whose
+        // contexts lit_row_off holds, or 0xFFFF_FFFF for none.
+        lit_slot_bt   : array[4] base.u32,
+        lit_slot_next : base.u32[..= 3],
+        lit_row_bt    : base.u32,
+        // lit_block_len is the current literal block's count when it began
+        // (so (lit_block_len - block_count[0]) literals of it are done), and
+        // lit_fill_at how many of them make filling a slot worth it (see
+        // prepare_literal_block).
+        lit_block_len : base.u32,
+        lit_fill_at   : base.u32,
+        // lit_done is decode_literals_fast's output: how many it decoded.
+        lit_done : base.u32,
+        // lit_wide_tree is the offset in huff of the literal prefix code whose
+        // 11-bit root table is in lit_wide, or 0xFFFF_FFFF for none, and
+        // lit_narrow the number of literals that decode_literals_fast has
+        // decoded without it since it was last built (see build_lit_wide).
+        lit_wide_tree : base.u32,
+        lit_narrow    : base.u32,
+
+        // dist_extra and dist_base (below) map a distance symbol (at least 16)
+        // to its number of extra bits and its base distance, for the current
+        // NPOSTFIX and NDIRECT. dist_lut_key is (0x100 | the 6 header bits
+        // that give those) once they are filled in, and zero before.
+        dist_extra   : array[520] base.u8[..= 24],
+        dist_lut_key : base.u32,
+
+        // While read_prefix_code reads a complex prefix code's code lengths,
+        // len_counts[n] counts the symbols with an n-bit code (1 ..= 15) and
+        // sym_list (below) threads them, in increasing symbol order, into one
+        // list per code length: the list for length n starts at sym_list[n],
+        // and sym_list[16 + s] links symbol s to the next symbol with the
+        // same code length. len_tail[n] is the index in sym_list of the
+        // list's last link. build_code consumes them, as google/brotli's
+        // BrotliBuildHuffmanTable consumes its code_length_histo and
+        // symbol_lists.
+        len_counts : array[16] base.u32,
+        len_tail   : array[16] base.u32[..= 719],
+        // cl_lens holds the code length code's code lengths.
+        cl_lens : array[18] base.u8[..= 5],
+
+        util : base.utility,
+) + (
+        // huff holds the prefix code tables of the current meta-block's block
+        // type, block count, context map and literal codes, packed back to
+        // back from huff[0]. Each table is a 256-entry root table, indexed by
+        // the next 8 bits of input, followed by its second level tables.
+        //
+        // Each entry is ((value << 4) | n). In a root table, n <= 8 means a
+        // symbol (value) whose code is n bits long, and n > 8 means that the
+        // code is longer: drop 8 bits and look up the next (n - 8) bits in the
+        // second level table at (table + value). In a second level table, n
+        // is the number of further bits to drop for the symbol value.
+        //
+        // Insert-and-copy and distance code tables are built directly in fused
+        // (see fused, below), whose entries are wider, while it has room for
+        // the largest one; otherwise they are built in huff, converted by
+        // fuse_table into fused or the workbuf's overflow table area, and
+        // their space in huff reused.
+        //
+        // See HUFF_CAPACITY for why huff holds any meta-block's tables.
+        huff : array[165980] base.u16,
+
+        // fused holds the meta-block's fused insert-and-copy and distance
+        // code tables: huff's arrangement of root and second level tables,
+        // but wider entries (see table_entry) that hold what the fast path
+        // needs next, so that it drops a code and its extra bits in one shift
+        // and branches on the insert length without waiting for another load.
+        // An insert-and-copy code's symbol entry has, from bit 0: t, the bits
+        // that the code and the insert and copy extra bits take together (6
+        // bits); n, the code's length (bits 8 ..= 11; in a second level table,
+        // its length less 8); the insert code if it is 0, 1 or 2 (which have
+        // no extra bits, so the insert length is the code), else 3 (12 ..=
+        // 13); the distance context (14 ..= 15); the insert extra bit count
+        // (16 ..= 20); and the symbol (21 ..= 30). A distance code's has t
+        // (the code and its extra bits, 0 ..= 5), n (8 ..= 11), the number of
+        // extra bits for the meta-block's NPOSTFIX and NDIRECT (12 ..= 16)
+        // and the symbol (21 ..= 30). A root entry for codes longer than 8
+        // bits has bit 31 set, n (9 ..= 15) at 8 ..= 11 and its second level
+        // table's offset from the root table at 16 ..= 27 (see
+        // table_pointer). No entry is 0xFFFF_FFFF.
+        //
+        // A fused table is at an offset below FUSED_CAPACITY in fused or, if it
+        // did not fit there, at an offset of at least FUSED_CAPACITY, which
+        // stands for entry (offset - FUSED_CAPACITY) of the workbuf's overflow
+        // table area (see ovf_entry). No encoder output seen so far needs the
+        // overflow area, but a valid stream can: such a meta-block is decoded
+        // by the slow path alone, whose read_fused reads the area, so that
+        // the fast path's lookups need not (see decode_compressed).
+        fused : array[0x2_0000] base.u32,
+
+        // lit_trees, cmd_trees and dist_trees hold the offsets of the
+        // meta-block's tables in huff (literal) and fused (the others).
+        lit_trees  : array[256] base.u32,
+        cmd_trees  : array[256] base.u32,
+        dist_trees : array[256] base.u32,
+
+        // lit_trivial[bt] is 1 if all of literal block type bt's contexts
+        // map to the same prefix code, else 0.
+        lit_trivial : array[256] base.u8,
+
+        lit_cmap  : array[256 * 64] base.u8,
+        dist_cmap : array[256 * 4] base.u8,
+
+        // lit_row_off is lit_cmap's row for literal block type lit_row_bt with
+        // each prefix code index resolved to its table's offset in huff, and
+        // dist_cmap_off is dist_cmap with each one resolved to its table's
+        // offset in fused: the fast path's lookup chain from a context to its
+        // prefix code table is then one load shorter.
+        lit_row_off   : array[64] base.u32,
+        dist_cmap_off : array[256 * 4] base.u32,
+
+        // lit_ctx_tree has 4 slots of 2048 entries, each for one literal
+        // block type (see lit_slot_bt): in slot s, entry ((s << 11) | (q <<
+        // 8) | p1) is the offset in huff of the literal prefix code for p1 and
+        // q = CONTEXT_LUT[(mode << 9) | 256 | p2]. That folds CONTEXT_LUT and
+        // lit_row_off into one lookup, so that a literal's code is one load
+        // away from the previous literal rather than two, and p1 indexes it
+        // without a shift.
+        lit_ctx_tree : array[4 * 2048] base.u32,
+
+        // lit_wide: see build_lit_wide.
+        lit_wide : array[2048] base.u16,
+
+        // dist_base has 1024 entries, not 520, so that a 10-bit symbol field
+        // indexes it without a check (entries past dist_alphabet are
+        // unused).
+        dist_base : array[1024] base.u32,
+
+        // cl_table is the code length code's table: (symbol << 4) | length,
+        // indexed by 5 bits.
+        cl_table : array[32] base.u16,
+        // simple_symbols holds a simple prefix code's 1 ..= 4 symbols.
+        simple_symbols : array[4] base.u16,
+        // sym_list: see len_counts.
+        sym_list : array[16 + 704] base.u16,
+
+        // mtf is the move-to-front list for decoding a context map.
+        mtf : array[256] base.u8,
+
+        // word_buf holds a transformed static dictionary word: at most 24
+        // bytes of word plus 13 bytes of prefix and suffix.
+        word_buf : array[40] base.u8,
+)
+
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    return base."#unsupported option"
+}
+
+pub func decoder.dst_history_retain_length() base.optional_u63 {
+    return this.util.make_optional_u63(has_value: true, value: 0)
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+    if this.wb_want > 0 {
+        return this.util.make_range_ii_u64(
+                min_incl: this.wb_want as base.u64,
+                max_incl: this.wb_want as base.u64)
+    }
+    return this.util.make_range_ii_u64(
+            min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
+            max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
+}
+
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var dti_status : base.status
+    var ah_status  : base.status
+
+    while true {
+        // Once decoding has started using the workbuf, it must keep at least
+        // wb_len bytes (see the package comment).
+        if (this.wb_len as base.u64) > args.workbuf.length() {
+            return base."#bad workbuf length"
+        }
+        this.call_mark = args.dst.mark()
+        this.src_mark = args.src.mark()
+        dti_status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        if not dti_status.is_suspension() {
+            return dti_status
+        } else if (dti_status == base."$short read") and args.src.is_closed() {
+            return "#truncated input"
+        }
+        this.in_count ~sat+= args.src.count_since(mark: this.src_mark)
+        ah_status = this.add_history!(hist: args.dst.since(mark: this.call_mark), workbuf: args.workbuf)
+        if ah_status.is_error() {
+            return ah_status
+        }
+        yield? dti_status
+    }
+}
+
+// add_history appends hist to the ring buffer: the output of a transform_io
+// call that is about to suspend, or, before a ring mode stint, the output
+// that the call has written to dst so far.
+pri func decoder.add_history!(hist: roslice base.u8, workbuf: slice base.u8) base.status {
+    var ring     : slice base.u8
+    var s        : roslice base.u8
+    var n_copied : base.u64
+    var n        : base.u64
+
+    if args.hist.length() == 0 {
+        return ok
+    }
+    if this.ring_size == 0 {
+        return "#internal error: inconsistent ring buffer"
+    }
+    if (this.ring_size as base.u64) > args.workbuf.length() {
+        return base."#bad workbuf length"
+    }
+    ring = args.workbuf[.. this.ring_size as base.u64]
+
+    s = args.hist
+    if s.length() >= ring.length() {
+        ring.copy_from_slice!(s: s.suffix(up_to: ring.length()))
+        this.ring_index = 0
+        this.ring_full = true
+        return ok
+    }
+    if (this.ring_index as base.u64) >= ring.length() {
+        return "#internal error: inconsistent ring buffer"
+    }
+    n_copied = ring[this.ring_index as base.u64 ..].copy_from_slice!(s: s)
+    if n_copied < s.length() {
+        n = ring.copy_from_slice!(s: s[n_copied ..])
+        this.ring_full = true
+    } else {
+        n = (this.ring_index as base.u64) ~mod+ n_copied
+        if n >= ring.length() {
+            this.ring_full = true
+            n = 0
+        }
+    }
+    // n is the new write index, below ring_size (at most 0x100_0000).
+    if n >= (this.ring_size as base.u64) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    this.ring_index = (n & 0xFF_FFFF) as base.u32
+    return ok
+}
+
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var n     : base.u32[..= 7]
+    var wbits : base.u32
+    var want  : base.u32[..= 0x100_0000]
+    var whole : base.bool
+
+    // Stream header: WBITS, as per RFC 7932 section 9.1.
+    this.read_bits?(src: args.src, n: 1)
+    if this.rb_value == 0 {
+        wbits = 16
+    } else {
+        this.read_bits?(src: args.src, n: 3)
+        n = this.rb_value & 7
+        if n <> 0 {
+            wbits = 17 + n
+        } else {
+            this.read_bits?(src: args.src, n: 3)
+            n = this.rb_value & 7
+            if n == 1 {
+                // 0010001 is the Large Window Brotli marker, which RFC 7932
+                // does not allow.
+                return "#bad window size"
+            } else if n <> 0 {
+                wbits = 8 + n
+            } else {
+                wbits = 17
+            }
+        }
+    }
+    if (wbits < 10) or (24 < wbits) {
+        return "#bad window size"
+    }
+    this.wbits = wbits
+    this.max_backward = ((1 as base.u32) << this.wbits) - 16
+    this.ring_size = 0
+    this.ring_index = 0
+    this.ring_full = false
+    this.wb_len = 0
+    this.wb_want = 0
+    this.ovf_on = false
+    this.ring_mode = false
+    this.pend_pos = 0
+    this.pend_len = 0
+    this.ring_k = RING_K_INIT
+    this.ring_rc = 0
+    this.total_out = 0
+    this.p1 = 0
+    this.p2 = 0
+    this.dist_rb[0] = 16
+    this.dist_rb[1] = 15
+    this.dist_rb[2] = 11
+    this.dist_rb[3] = 4
+    this.dist_rb_index = 0
+
+    while true {
+        this.decode_metablock_header?(src: args.src)
+        if this.cmd_state < 0xFE {
+            // A compressed or uncompressed meta-block, which has output
+            // (ISLASTEMPTY and metadata meta-blocks have none): make sure that
+            // the ring buffer can hold its history (see size_ring). Not for a
+            // stream whose output is all in this meta-block (the last, and
+            // the first with output), decoded whole by this call (src closed,
+            // dst with room for all of it): no call suspends after its first
+            // output, so no output ever needs the ring buffer, and one call
+            // with all of the input needs no workbuf. (Before that output, a
+            // "$short workbuf" for the overflow tables can let the caller
+            // change src or dst: place_fused then asks for the ring buffer
+            // too.)
+            want = this.size_ring().min(no_more_than: 0x100_0000)
+            if (want > this.ring_size) and (this.total_out > 0) and args.src.is_closed() {
+                // A growth after output, with all of the input in src: see
+                // estimate_ring.
+                want = this.estimate_ring(rest: args.src.length(),
+                        consumed: this.in_count ~sat+ args.src.count_since(mark: this.src_mark), want: want)
+            }
+            whole = (this.ring_size == 0) and this.is_last and args.src.is_closed() and
+                    ((this.mlen as base.u64) <= args.dst.length())
+            if (want > this.ring_size) and (not whole) {
+                this.grow_workbuf?(workbuf: args.workbuf, ring: want, ovf: this.ovf_on)
+            }
+        }
+        if this.cmd_state == 0xFF {
+            // ISLAST and ISLASTEMPTY.
+            break
+        } else if this.cmd_state == 0xFE {
+            // Metadata.
+            this.skip_metadata?(src: args.src)
+        } else if this.cmd_state == 0xFD {
+            this.decode_uncompressed?(dst: args.dst, src: args.src)
+        } else {
+            this.decode_compressed?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        }
+        if this.is_last {
+            break
+        }
+    }
+
+    // RFC 7932 section 9.2 and 9.3: the unused bits of the last byte must be
+    // zeros.
+    if (this.n_bits >= 8) or (this.bits <> 0) {
+        return "#bad padding"
+    }
+    this.n_bits = 0
+}
+
+// read_bits sets rb_value to the next args.n bits of src.
+pri func decoder.read_bits?(src: base.io_reader, n: base.u32[..= 24]) {
+    var bits   : base.u64
+    var n_bits : base.u32
+    var n      : base.u32[..= 24]
+    var c      : base.u64[..= 255]
+
+    n = args.n
+    bits = this.bits
+    n_bits = this.n_bits
+    if n_bits >= 8 {
+        return "#internal error: inconsistent bit reader"
+    }
+    while n_bits < n,
+            inv n <= 24,
+            post n_bits >= n,
+    {
+        assert n_bits < 24 via "a < b: a < c; c <= b"(c: n)
+        c = args.src.read_u8_as_u64?()
+        bits |= c << n_bits
+        n_bits += 8
+    }
+    this.rb_value = (bits & (((1 as base.u64) << n) - 1)) as base.u32
+    this.bits = bits >> n
+    this.n_bits = n_bits - n
+}
+
+// jump_to_byte_boundary drops the bits up to the next byte boundary, which
+// must be zeros.
+pri func decoder.jump_to_byte_boundary!() base.status {
+    if (this.n_bits >= 8) or (this.bits <> 0) {
+        return "#bad padding"
+    }
+    this.n_bits = 0
+    return ok
+}
+
+// decode_metablock_header decodes a meta-block header up to (but excluding)
+// the compressed meta-block's block type information, as per RFC 7932
+// section 9.2. It sets cmd_state to 0xFF for an ISLASTEMPTY meta-block, 0xFE
+// for metadata, 0xFD for an uncompressed meta-block and 0 otherwise.
+pri func decoder.decode_metablock_header?(src: base.io_reader) {
+    var n_nibbles : base.u32[..= 7]
+    var n_bytes   : base.u32[..= 3]
+    var i         : base.u32
+    var v         : base.u32
+    var mlen      : base.u32
+
+    this.read_bits?(src: args.src, n: 1)
+    this.is_last = this.rb_value <> 0
+    if this.is_last {
+        this.read_bits?(src: args.src, n: 1)
+        if this.rb_value <> 0 {
+            this.cmd_state = 0xFF
+            return ok
+        }
+    }
+
+    this.read_bits?(src: args.src, n: 2)
+    if this.rb_value == 3 {
+        // MNIBBLES is 0: metadata.
+        this.read_bits?(src: args.src, n: 1)
+        if this.rb_value <> 0 {
+            return "#bad reserved bit"
+        }
+        this.read_bits?(src: args.src, n: 2)
+        n_bytes = this.rb_value & 3
+        mlen = 0
+        i = 0
+        while i < n_bytes,
+                inv n_bytes <= 3,
+        {
+            assert i < 3 via "a < b: a < c; c <= b"(c: n_bytes)
+            this.read_bits?(src: args.src, n: 8)
+            v = this.rb_value & 0xFF
+            if ((i + 1) == n_bytes) and (n_bytes > 1) and (v == 0) {
+                return "#bad metadata length"
+            }
+            mlen |= v << (8 * i)
+            i += 1
+        }
+        if n_bytes > 0 {
+            mlen = (mlen & 0xFF_FFFF) + 1
+        }
+        this.mlen = mlen.min(no_more_than: 0x100_0000)
+        this.cmd_state = 0xFE
+        return ok
+    }
+
+    n_nibbles = (this.rb_value & 3) + 4
+    mlen = 0
+    i = 0
+    while i < n_nibbles,
+            inv n_nibbles <= 7,
+    {
+        assert i < 7 via "a < b: a < c; c <= b"(c: n_nibbles)
+        this.read_bits?(src: args.src, n: 4)
+        v = this.rb_value & 15
+        if ((i + 1) == n_nibbles) and (n_nibbles > 4) and (v == 0) {
+            return "#bad metablock length"
+        }
+        mlen |= v << (4 * i)
+        i += 1
+    }
+    this.mlen = (mlen & 0xFF_FFFF) + 1
+
+    this.cmd_state = 0
+    if not this.is_last {
+        this.read_bits?(src: args.src, n: 1)
+        if this.rb_value <> 0 {
+            this.cmd_state = 0xFD
+        }
+    }
+}
+
+// skip_metadata skips a metadata meta-block's MSKIPLEN bytes.
+pri func decoder.skip_metadata?(src: base.io_reader) {
+    var status : base.status
+
+    status = this.jump_to_byte_boundary!()
+    if status.is_error() {
+        return status
+    }
+    if this.mlen > 0 {
+        args.src.skip_u32?(n: this.mlen)
+        this.mlen = 0
+    }
+}
+
+// decode_uncompressed copies an uncompressed meta-block's MLEN bytes.
+pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) {
+    var status   : base.status
+    var mark     : base.u64
+    var n_copied : base.u32
+
+    status = this.jump_to_byte_boundary!()
+    if status.is_error() {
+        return status
+    }
+    while this.mlen > 0 {
+        mark = args.dst.mark()
+        n_copied = args.dst.limited_copy_u32_from_reader!(up_to: this.mlen, r: args.src)
+        this.update_context!(written: args.dst.since(mark: mark))
+        if this.mlen <= n_copied {
+            this.mlen = 0
+            break
+        }
+        this.mlen -= n_copied
+        // Checking args.src here also works around a wuffs-c bug: an
+        // io_reader used only as the r argument of
+        // limited_copy_u32_from_reader gets no C variable declarations.
+        if args.dst.length() == 0 {
+            yield? base."$short write"
+        } else if args.src.length() == 0 {
+            yield? base."$short read"
+        } else {
+            return "#internal error: inconsistent I/O"
+        }
+    }
+}
+
+// size_ring returns the ring buffer size that a compressed or uncompressed
+// meta-block, whose header has just been read, needs. The ring buffer holds
+// the history that back-references may need beyond the current transform_io
+// call: at most the window, (1 << wbits) - 16 bytes, and at most everything
+// output so far.
+//
+// As google/brotli does (its canny_ringbuffer_allocation, on by default),
+// that is the smallest power of two (at least 16, at most the window) that
+// holds the output so far and this meta-block's: while the ring buffer is
+// smaller than the window, it holds everything output so far and has never
+// wrapped, and a meta-block whose output would not fit in the rest of it
+// makes it grow (grow_workbuf), by as many powers of two at once as that
+// takes. Until it reaches the window, the ring buffer is so at most twice
+// the output at the end of the current meta-block (once that is 8 bytes or
+// more: the ring is at least 16). Each growth costs the
+// caller a "$short workbuf" and a copy of the workbuf's contents (as a
+// realloc makes), rather than taking the whole window at once (16 MiB for
+// 120 KiB of output at WBITS 24).
+pri func decoder.size_ring() base.u32 {
+    var need : base.u64
+    var b    : base.u32[..= 24]
+
+    if this.ring_size >= ((1 as base.u32) << this.wbits) {
+        return this.ring_size
+    }
+    need = (this.total_out as base.u64) + (this.mlen as base.u64)
+    if need <= (this.ring_size as base.u64) {
+        return this.ring_size
+    }
+    b = 4
+    while (b < 24) and (b < this.wbits) and (((1 as base.u64) << b) < need) {
+        b += 1
+    }
+    return (1 as base.u32) << b
+}
+
+// estimate_ring is the ring buffer size for a meta-block whose header has
+// just been read, when the ring buffer must grow after output (args.want,
+// size_ring's size, is more than ring_size) and src holds all of the
+// stream's remaining input (args.rest bytes; args.consumed is the input so
+// far): the smallest power of two, from args.want to the window, that holds
+// the output so far, this meta-block's and what the rest of src would give
+// at the stream's ratio of output to input so far. A decode that has all of
+// its input, one call above all, so grows about once, to about the size
+// google/brotli's ring buffer reaches in the end, rather than at each
+// meta-block that outgrows the ring buffer: each growth after output is a
+// "$short workbuf", at which the call's output so far goes into the ring
+// buffer and the caller copies the workbuf, and after which back-references
+// into that output are ring copies, not copies within dst. A wrong ratio
+// costs memory (at most the window) or another growth, never correctness.
+pri func decoder.estimate_ring(rest: base.u64, consumed: base.u64, want: base.u32[..= 0x100_0000]) base.u32[..= 0x100_0000] {
+    var est : base.u64
+    var b   : base.u32[..= 24]
+    var r   : base.u32[..= 0x100_0000]
+
+    // (rest is capped so that the product fits: total_out is below 1 << 24
+    // here, since the ring is smaller than the window.)
+    est = (args.rest.min(no_more_than: 0xFFFF_FFFF) * ((this.total_out & 0xFF_FFFF) as base.u64)) /
+            args.consumed.max(no_less_than: 1)
+    est = (est ~sat+ (this.total_out as base.u64)) ~sat+ (this.mlen as base.u64)
+    b = 4
+    while (b < 24) and (b < this.wbits) and (((1 as base.u64) << b) < est) {
+        b += 1
+    }
+    r = (1 as base.u32) << b
+    if r < args.want {
+        return args.want
+    }
+    return r
+}
+
+// grow_workbuf makes decoding use a workbuf_len of args.ring bytes of ring
+// buffer (at least ring_size) and, if args.ovf, the overflow table area after
+// them: while args.workbuf is shorter, it reports that length in workbuf_len
+// and yields "$short workbuf".
+//
+// The ring buffer keeps its history: add_history saves this call's output
+// into it at that suspension, the caller then passes a workbuf that starts
+// with a copy of the previous one's first wb_len bytes (see the package
+// comment), and a ring buffer that grows has never wrapped, so its history
+// stays where it is. check_history catches most callers that do not copy.
+//
+// It runs at a meta-block's header, or in the middle of a compressed one's
+// (for the overflow area), never during a ring mode stint: decode_compressed
+// has given dst every byte that ring mode decoded (pend_len is 0), so the
+// ring buffer up to ring_index and dst since call_mark hold the whole output,
+// as add_history expects, and the next stint starts from the new ring_size.
+pri func decoder.grow_workbuf?(workbuf: slice base.u8, ring: base.u32[..= 0x100_0000], ovf: base.bool) {
+    var len    : base.u32[..= 0x116_F0E0]
+    var waited : base.bool
+    var status : base.status
+
+    len = args.ring
+    if args.ovf {
+        len = args.ring + OVERFLOW_BYTES
+    }
+    if (args.ring < this.ring_size) or (len < this.wb_len) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    if this.ring_mode or (this.pend_len > 0) {
+        return "#internal error: inconsistent ring buffer"
+    }
+    this.wb_want = len
+    waited = false
+    while args.workbuf.length() < (len as base.u64) {
+        waited = true
+        yield? base."$short workbuf"
+    }
+    if waited and (this.wb_len > 0) {
+        status = this.check_history!(workbuf: args.workbuf)
+        if status.is_error() {
+            return status
+        }
+    }
+    if args.ring > this.ring_size {
+        if this.ring_full {
+            // The ring buffer holds exactly ring_size bytes, in order from
+            // its start: it has never wrapped, or it would not be growing.
+            if this.ring_index <> 0 {
+                return "#internal error: inconsistent ring buffer"
+            }
+            if this.ring_size > 0xFF_FFFF {
+                return "#internal error: inconsistent ring buffer"
+            }
+            this.ring_index = this.ring_size
+            this.ring_full = false
+        }
+        this.ring_size = args.ring
+    }
+    this.ovf_on = args.ovf
+    this.wb_len = len
+}
+
+// check_history checks, after a "$short workbuf" that has saved the output so
+// far into the ring buffer, that the ring buffer in args.workbuf still ends
+// with the last two bytes of output, p2 and p1. A caller that passed a longer
+// workbuf without copying the previous one's contents would otherwise get
+// wrong output, from lost history, rather than an error.
+pri func decoder.check_history!(workbuf: slice base.u8) base.status {
+    var i : base.u64
+    var j : base.u64
+    var n : base.u32
+
+    if this.total_out == 0 {
+        return ok
+    }
+    if (this.ring_size as base.u64) > args.workbuf.length() {
+        return base."#bad workbuf length"
+    }
+    i = this.ring_index as base.u64
+    n = 0
+    while n < 2 {
+        if n >= this.total_out {
+            break
+        }
+        // The byte before position i, cyclically.
+        if i == 0 {
+            if not this.ring_full {
+                return "#internal error: inconsistent ring buffer"
+            }
+            i = this.ring_size as base.u64
+        }
+        if i < 1 {
+            return "#internal error: inconsistent ring buffer"
+        }
+        j = i - 1
+        if j >= args.workbuf.length() {
+            return "#internal error: inconsistent ring buffer"
+        }
+        if ((n == 0) and (args.workbuf[j] <> this.p1)) or
+                ((n == 1) and (args.workbuf[j] <> this.p2)) {
+            return "#bad workbuf contents"
+        }
+        i = j
+        n += 1
+    }
+    return ok
+}
+
+// update_context updates p1, p2 and total_out after writing args.written.
+pri func decoder.update_context!(written: roslice base.u8) {
+    var n : base.u64
+    var t : roslice base.u8
+    var v : base.u16
+
+    t = args.written.suffix(up_to: 2)
+    if t.length() >= 2 {
+        v = t.peek_u16le()
+        this.p2 = (v & 0xFF) as base.u8
+        this.p1 = (v >> 8) as base.u8
+    } else if t.length() >= 1 {
+        this.p2 = this.p1
+        this.p1 = t.peek_u8()
+    }
+    n = args.written.length()
+    if n >= 0xFFFF_FFFF {
+        this.total_out = 0xFFFF_FFFF
+    } else {
+        this.total_out ~sat+= n as base.u32
+    }
+}

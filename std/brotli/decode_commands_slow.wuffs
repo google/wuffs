@@ -1,0 +1,268 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// The slow path for a compressed meta-block's commands: see the comment at
+// the top of decode_commands.wuffs.
+
+// decode_command_slow decodes one command (RFC 7932 section 9.3), resuming
+// from cmd_state:
+//  - 0: at the start of a command,
+//  - 1: inserting literals, insert_remaining to go,
+//  - 2: at the distance,
+//  - 3: copying copy_remaining bytes from distance back,
+//  - 4: copying a static dictionary word, word_buf[word_pos .. word_len].
+// It returns with cmd_state 0 at the end of the command.
+//
+// When editing this function, consider making the equivalent change to
+// decode_commands_fast.
+pri func decoder.decode_command_slow?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var c      : base.u32
+    var cell   : base.u32[..= 10]
+    var ic     : base.u32[..= 23]
+    var cc     : base.u32[..= 23]
+    var insert : base.u32
+    var bt     : base.u32[..= 255]
+    var mode   : base.u32[..= 3]
+    var ctx    : base.u32[..= 63]
+    var lit    : base.u8
+    var dcode  : base.u32
+    var dist   : base.u32
+    var base_d : base.u32
+    var maxd   : base.u32
+    var status : base.status
+    var mark   : base.u64
+    var n      : base.u32
+    var wp     : base.u32[..= 40]
+    var wl     : base.u32[..= 40]
+    var nw     : base.u32[..= 40]
+
+    if this.cmd_state == 0 {
+        // The insert-and-copy length (section 5).
+        if this.block_count[1] == 0 {
+            this.block_switch?(src: args.src, k: 1)
+        }
+        if this.block_count[1] == 0 {
+            return "#internal error: inconsistent state"
+        }
+        this.block_count[1] -= 1
+        this.read_fused?(src: args.src, workbuf: args.workbuf, tree: this.cmd_trees[this.block_type[1]])
+        c = (this.rb_value >> 21) & 0x3FF
+        if c >= 704 {
+            return "#internal error: inconsistent huffman table"
+        }
+        cell = c >> 6
+        ic = (CMD_INSERT_CELL[cell] as base.u32) + ((c >> 3) & 7)
+        cc = (CMD_COPY_CELL[cell] as base.u32) + (c & 7)
+        this.implicit_dist = c < 128
+        if cc <= 2 {
+            this.dist_ctx = cc
+        } else {
+            this.dist_ctx = 3
+        }
+        this.read_bits?(src: args.src, n: INSERT_EXTRA[ic] as base.u32)
+        insert = INSERT_BASE[ic] + (this.rb_value & 0xFF_FFFF)
+        this.read_bits?(src: args.src, n: COPY_EXTRA[cc] as base.u32)
+        this.copy_length = COPY_BASE[cc] + (this.rb_value & 0xFF_FFFF)
+        if insert > this.mlen {
+            return "#bad insert length"
+        }
+        this.insert_remaining = insert
+        this.cmd_state = 1
+    }
+
+    if this.cmd_state == 1 {
+        // The literals (section 7.1 for their context). Once src and dst have
+        // room again (typically after a suspension), hand the rest back to
+        // decode_commands_fast: inserts can be long. 64 bytes each is more
+        // than it needs to make progress, so the two never ping-pong. (Not
+        // in a meta-block with tables in the workbuf's overflow area, which
+        // the fast path leaves to this one: see decode_compressed.)
+        while this.insert_remaining > 0 {
+            if (args.src.length() >= 64) and (args.dst.length() >= 64) and (this.ovf_next == 0) {
+                return ok
+            }
+            if this.block_count[0] == 0 {
+                this.block_switch?(src: args.src, k: 0)
+            }
+            if this.block_count[0] == 0 {
+                return "#internal error: inconsistent state"
+            }
+            this.block_count[0] -= 1
+            bt = this.block_type[0]
+            mode = this.context_modes[bt] as base.u32
+            ctx = (CONTEXT_LUT[(mode << 9) | (this.p1 as base.u32)] |
+                    CONTEXT_LUT[(mode << 9) | 256 | (this.p2 as base.u32)]) as base.u32
+            this.read_symbol?(src: args.src, tree: this.lit_trees[this.lit_cmap[(bt << 6) | ctx]])
+            lit = (this.rb_value & 0xFF) as base.u8
+            args.dst.write_u8?(a: lit)
+            this.p2 = this.p1
+            this.p1 = lit
+            this.total_out ~sat+= 1
+            if (this.mlen <= 0) or (this.insert_remaining <= 0) {
+                return "#internal error: inconsistent state"
+            }
+            this.mlen -= 1
+            this.insert_remaining -= 1
+        }
+        if this.mlen == 0 {
+            // The copy length of a meta-block's last command can be unused.
+            this.cmd_state = 0
+            return ok
+        }
+        this.cmd_state = 2
+    }
+
+    if this.cmd_state == 2 {
+        // The distance (section 4).
+        if this.implicit_dist {
+            dcode = 0
+            dist = this.dist_rb[(this.dist_rb_index ~mod- 1) & 3]
+        } else {
+            if this.block_count[2] == 0 {
+                this.block_switch?(src: args.src, k: 2)
+            }
+            if this.block_count[2] == 0 {
+                return "#internal error: inconsistent state"
+            }
+            this.block_count[2] -= 1
+            this.read_fused?(src: args.src, workbuf: args.workbuf, tree: this.dist_trees[
+                    this.dist_cmap[(this.block_type[2] << 2) | this.dist_ctx]])
+            dcode = (this.rb_value >> 21) & 0x3FF
+            if dcode >= 520 {
+                return "#internal error: inconsistent huffman table"
+            }
+            if dcode < 4 {
+                dist = this.dist_rb[(this.dist_rb_index ~mod- (1 + dcode)) & 3]
+            } else if dcode < 16 {
+                if dcode < 10 {
+                    base_d = this.dist_rb[(this.dist_rb_index ~mod- 1) & 3]
+                } else {
+                    base_d = this.dist_rb[(this.dist_rb_index ~mod- 2) & 3]
+                }
+                base_d = (base_d & 0x3FFF_FFFF) + DIST_SHORT_ADD[dcode]
+                if base_d <= DIST_SHORT_SUB[dcode] {
+                    return "#bad distance"
+                }
+                dist = base_d - DIST_SHORT_SUB[dcode]
+            } else {
+                this.read_bits?(src: args.src, n: this.dist_extra[dcode] as base.u32)
+                dist = this.dist_base[dcode] ~mod+ ((this.rb_value & 0xFF_FFFF) << this.npostfix)
+            }
+        }
+
+        maxd = this.total_out.min(no_more_than: this.max_backward)
+        if dist > maxd {
+            // A static dictionary reference (section 8). It is not pushed to
+            // the ring buffer of last distances.
+            status = this.prepare_dictionary_word!(distance: dist, max_distance: maxd)
+            if status.is_error() {
+                return status
+            }
+            this.word_pos = 0
+            this.cmd_state = 4
+        } else {
+            if this.copy_length > this.mlen {
+                return "#bad copy length"
+            }
+            if dcode <> 0 {
+                this.dist_rb[this.dist_rb_index & 3] = dist
+                this.dist_rb_index ~mod+= 1
+            }
+            this.distance = dist
+            this.copy_remaining = this.copy_length
+            this.cmd_state = 3
+        }
+    }
+
+    if this.cmd_state == 3 {
+        // Copy copy_remaining bytes from distance bytes back.
+        while true {
+            status = this.copy_ring!(dst: args.dst, workbuf: args.workbuf)
+            if status.is_error() {
+                return status
+            }
+            if this.copy_remaining == 0 {
+                break
+            }
+            if args.dst.length() > 0 {
+                return "#internal error: inconsistent I/O"
+            }
+            yield? base."$short write"
+        }
+    }
+
+    if this.cmd_state == 4 {
+        // Copy the transformed static dictionary word.
+        while true {
+            wp = this.word_pos
+            wl = this.word_len
+            if wl <= wp {
+                break
+            }
+            assert wp < wl via "a < b: b > a"()
+            mark = args.dst.mark()
+            n = args.dst.limited_copy_u32_from_slice!(up_to: 0xFF, s: this.word_buf[wp .. wl])
+            this.update_context!(written: args.dst.since(mark: mark))
+            nw = n.min(no_more_than: 40)
+            if (nw <> n) or (nw > (wl - wp)) {
+                return "#internal error: inconsistent state"
+            }
+            if this.mlen < nw {
+                return "#internal error: inconsistent state"
+            }
+            assert (nw + wp) <= wl via "(a + b) <= c: a <= (c - b)"()
+            assert (nw + wp) <= 40 via "a <= b: a <= c; c <= b"(c: wl)
+            this.word_pos = nw + wp
+            this.mlen -= nw
+            if (nw + wp) >= wl {
+                break
+            }
+            yield? base."$short write"
+        }
+    }
+
+    this.cmd_state = 0
+}
+
+// block_switch decodes a block switch command (RFC 7932 section 6) for block
+// category args.k, whose block count has run down.
+pri func decoder.block_switch?(src: base.io_reader, k: base.u32[..= 2]) {
+    var k   : base.u32[..= 2]
+    var n   : base.u32[..= 256]
+    var sym : base.u32
+    var t   : base.u32
+
+    k = args.k
+    n = this.num_block_types[k]
+    if n < 2 {
+        // As for google/brotli: with a single block type, the implicit
+        // (1 << 24) block count must not run down.
+        return "#bad block switch"
+    }
+    this.read_symbol?(src: args.src, tree: this.block_type_trees[k])
+    sym = this.rb_value
+    this.read_block_count?(src: args.src, k: k)
+    if sym == 0 {
+        t = this.prev_block_type[k]
+    } else if sym == 1 {
+        t = this.block_type[k] + 1
+    } else {
+        t = sym - 2
+    }
+    if t >= n {
+        t -= n
+    }
+    if t >= n {
+        return "#internal error: inconsistent huffman table"
+    }
+    assert t < 256 via "a < b: a < c; c <= b"(c: n)
+    this.prev_block_type[k] = this.block_type[k]
+    this.block_type[k] = t
+}
