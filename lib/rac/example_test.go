@@ -1,16 +1,12 @@
 // Copyright 2019 The Wuffs Authors.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 //
-//    https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 package rac_test
 
@@ -99,6 +95,9 @@ func Example_indexLocationAtEnd() {
 //
 // See the RAC specification for an explanation of the file format.
 func Example_indexLocationAtStart() {
+	// See "If printDetailedHexDumps was true..." below.
+	const printDetailedHexDumps = false
+
 	buf := &bytes.Buffer{}
 	w := &rac.ChunkWriter{
 		Writer:        buf,
@@ -124,7 +123,9 @@ func Example_indexLocationAtStart() {
 		uint8(checksum>>16),
 		uint8(checksum>>24),
 	)
-	fmt.Printf("Encoded dictionary resource:\n%s\n", hex.Dump(encodedDict))
+	if printDetailedHexDumps {
+		fmt.Printf("Encoded dictionary resource:\n%s\n", hex.Dump(encodedDict))
+	}
 
 	dictResource, err := w.AddResource(encodedDict)
 	if err != nil {
@@ -152,7 +153,9 @@ func Example_indexLocationAtStart() {
 			log.Fatalf("AddChunk: %v", err)
 		}
 
-		fmt.Printf("Encoded chunk #%d:\n%s\n", i, hex.Dump(encodedChunk))
+		if printDetailedHexDumps {
+			fmt.Printf("Encoded chunk #%d:\n%s\n", i, hex.Dump(encodedChunk))
+		}
 	}
 
 	if err := w.Close(); err != nil {
@@ -160,7 +163,9 @@ func Example_indexLocationAtStart() {
 	}
 
 	encoded := buf.Bytes()
-	fmt.Printf("RAC file:\n%s\n", hex.Dump(encoded))
+	if printDetailedHexDumps {
+		fmt.Printf("RAC file:\n%s\n", hex.Dump(encoded))
+	}
 
 	// Decode the encoded bytes (the RAC-formatted bytes) to recover the
 	// original "One sheep.\nTwo sheep\.Three sheep.\n" source.
@@ -221,13 +226,20 @@ func Example_indexLocationAtStart() {
 		}
 	}
 
-	// Note that these exact bytes depends on the zlib encoder's algorithm, but
-	// there is more than one valid zlib encoding of any given input. This
-	// "compare to golden output" test is admittedly brittle, as the standard
-	// library's zlib package's output isn't necessarily stable across Go
-	// releases.
+	// If printDetailedHexDumps was true then we'd also see this output below
+	// (between the ----) on Go 1.26, but slightly different output on Go 1.27
+	// (released August 19, 2026). The exact bytes depends on the compress/zlib
+	// (or compress/flate) encoder's algorithm and there is more than one valid
+	// zlib encoding of any given input.
+	//
+	// https://go.dev/doc/go1.27#compressflatepkgcompressflate
+	//
+	// https://github.com/golang/go/commit/2747d887eb683f4fca0ed1350b3cc1aec860cf70
+	//
+	// https://github.com/golang/go/commit/388145c51b0781594327b2646894dfaaaaaac0c6
 
-	// Output:
+	// ----
+
 	// Encoded dictionary resource:
 	// 00000000  08 00 00 00 20 73 68 65  65 70 2e 0a d0 8d 7a 47  |.... sheep....zG|
 	//
@@ -255,7 +267,10 @@ func Example_indexLocationAtStart() {
 	// 00000080  01 01 00 00 ff ff 18 0c  03 a8 78 f9 0b e0 02 6e  |..........x....n|
 	// 00000090  0a c9 28 4a 4d 85 71 00  01 00 00 ff ff 21 6e 04  |..(JM.q......!n.|
 	// 000000a0  66                                                |f|
-	//
+
+	// ----
+
+	// Output:
 	// Decoded:
 	// [ 0, 11): One sheep.
 	// [11, 22): Two sheep.
