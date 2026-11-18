@@ -642,6 +642,66 @@ func TestLongCodec(tt *testing.T) {
 	}
 }
 
+func TestCodecElementDRange(tt *testing.T) {
+	const codec = Codec(0x80000000326F646D) // "mdo2" backwards, with a high bit.
+
+	// makeRAC returns a RAC file that is just an arity 2 root node. The
+	// element at codecElementIndex is the Long Codec's Codec Element and the
+	// other element is a leaf.
+	makeRAC := func(codecElementIndex int, dPtr1 uint64, dPtrMax uint64) []byte {
+		const arity, size = 2, 48
+		node := rNode{}
+		node[0] = magic[0]
+		node[1] = magic[1]
+		node[2] = magic[2]
+		node[3] = arity
+		putU64LE(node[0x08:], dPtr1)
+		putU64LE(node[0x10:], dPtrMax|(uint64(0x80|codecElementIndex)<<56))
+		putU64LE(node[0x18:], size|(0xFF<<56))
+		putU64LE(node[0x20:], size|(0xFF<<56))
+		putU64LE(node[0x18+(8*codecElementIndex):], uint64(codec)&0x00FFFFFFFFFFFFFF)
+		putU64LE(node[0x28:], size|(0x01<<48)|(arity<<56))
+		node[(8*codecElementIndex)+7] = 0xFD
+		node[(8*(1-codecElementIndex))+7] = 0xFF
+
+		checksum := crc32.ChecksumIEEE(node[6:size])
+		checksum ^= checksum >> 16
+		node[4] = uint8(checksum >> 0)
+		node[5] = uint8(checksum >> 8)
+		return node[:size]
+	}
+
+	// A Codec Element's DRange must be empty. Here, it is [0, 5).
+	encoded := makeRAC(0, 5, 10)
+	r := &ChunkReader{
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
+	}
+	if c, err := r.NextChunk(); err == nil {
+		tt.Fatalf("non-empty Codec Element: got %v, want an error", c)
+	}
+
+	// A Codec Element with an empty DRange can follow a non-empty leaf.
+	encoded = makeRAC(1, 5, 5)
+	r = &ChunkReader{
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
+	}
+	c, err := r.NextChunk()
+	if err != nil {
+		tt.Fatalf("leaf then Codec Element: %v", err)
+	}
+	if got, want := c.DRange, (Range{0, 5}); got != want {
+		tt.Fatalf("leaf then Codec Element: DRange: got %v, want %v", got, want)
+	}
+	if got, want := c.Codec, codec; got != want {
+		tt.Fatalf("leaf then Codec Element: Codec: got 0x%X, want 0x%X", got, want)
+	}
+	if _, err := r.NextChunk(); err != io.EOF {
+		tt.Fatalf("leaf then Codec Element: got %v, want %v", err, io.EOF)
+	}
+}
+
 func TestFindChunkContaining(tt *testing.T) {
 	rng := rand.New(rand.NewSource(1))
 	arity, dptrs := 0, [256]int64{}

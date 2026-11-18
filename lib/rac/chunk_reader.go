@@ -241,14 +241,15 @@ func (b *rNode) valid() bool {
 	}
 
 	// Check that the DPtr values are non-decreasing. The first DPtr value is
-	// implicitly zero.
+	// implicitly zero. The (i-1)'th element's DRange is [DPtr[i-1], DPtr[i]),
+	// which must be empty for a Codec Element.
 	prev := int64(0)
 	for i := 1; i <= arity; i++ {
 		curr := u48LE(b[8*i:])
 		if curr < prev {
 			return false
 		} else if curr != prev {
-			if tTag := b[(8*i)+7]; tTag == 0xFD {
+			if tTag := b[(8*(i-1))+7]; tTag == 0xFD {
 				return false
 			}
 		}
