@@ -41274,7 +41274,7 @@ wuffs_cbor__decoder__decode_tokens(
                   (((uint64_t)(1u)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
             } else if (v_c_minor == 24u) {
-              if (v_string_length < 24u) {
+              if (v_string_length < 32u) {
                 if ( ! (iop_a_src > io1_a_src)) {
                   status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
                   goto exit;

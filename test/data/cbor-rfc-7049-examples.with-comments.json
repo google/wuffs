@@ -44,7 +44,6 @@
     null,
     /*cbor:undefined*/null,
     /*cbor:simple16*/null,
-    /*cbor:simple24*/null,
     /*cbor:simple255*/null,
     /*cbor:tag0*/"2013-03-21T20:04:00Z",
     /*cbor:tag1*/1363896240,
