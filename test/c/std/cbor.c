@@ -89,6 +89,62 @@ test_wuffs_cbor_decode_interface() {
 }
 
 const char*  //
+test_wuffs_cbor_decode_empty_containers() {
+  CHECK_FOCUS(__func__);
+
+  // A definite-length array or map may encode its zero length in more bytes
+  // than necessary (e.g. "\x98\x00" instead of "\x80"). That is well-formed
+  // and is still an empty container, not an indefinite-length one. Each test
+  // case holds an empty array or map followed by a sibling element, and
+  // should decode without error, consuming all of its input.
+  struct {
+    const char* str;
+    size_t len;
+  } test_cases[] = {
+      {.str = "\x82\x80\x01", .len = 3},
+      {.str = "\x82\x98\x00\x01", .len = 4},
+      {.str = "\x82\x99\x00\x00\x01", .len = 5},
+      {.str = "\x82\x9A\x00\x00\x00\x00\x01", .len = 7},
+      {.str = "\x82\x9B\x00\x00\x00\x00\x00\x00\x00\x00\x01", .len = 11},
+      {.str = "\x82\xA0\x01", .len = 3},
+      {.str = "\x82\xB8\x00\x01", .len = 4},
+      {.str = "\x82\xB9\x00\x00\x01", .len = 5},
+      {.str = "\x82\xBA\x00\x00\x00\x00\x01", .len = 7},
+      {.str = "\x82\xBB\x00\x00\x00\x00\x00\x00\x00\x00\x01", .len = 11},
+      {.str = "\x9F\x98\x00\x01\xFF", .len = 5},
+      {.str = "\xBF\x01\xB8\x00\xFF", .len = 5},
+  };
+
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
+    const bool closed = true;
+    wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
+        wuffs_base__make_slice_u8((uint8_t*)(void*)(test_cases[tc].str),
+                                  test_cases[tc].len),
+        closed);
+
+    wuffs_cbor__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_cbor__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
+        &dec, &tok_buf, &io_buf, g_work_slice_u8);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("tc=%zu: have \"%s\", want no error", tc, status.repr);
+    } else if (io_buf.meta.ri != test_cases[tc].len) {
+      RETURN_FAIL("tc=%zu: num_src: have %zu, want %zu", tc, io_buf.meta.ri,
+                  test_cases[tc].len);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_cbor_decode_empty_input() {
   CHECK_FOCUS(__func__);
 
@@ -243,6 +299,7 @@ test_wuffs_cbor_decode_valid() {
 
 proc g_tests[] = {
 
+    test_wuffs_cbor_decode_empty_containers,
     test_wuffs_cbor_decode_empty_input,
     test_wuffs_cbor_decode_interface,
     test_wuffs_cbor_decode_invalid,
