@@ -41186,7 +41186,7 @@ wuffs_cbor__decoder__decode_tokens(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            if (v_c_minor == 0u) {
+            if ((v_c_minor < 28u) && (v_string_length == 0u)) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(0u)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -41227,7 +41227,7 @@ wuffs_cbor__decoder__decode_tokens(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            if (v_c_minor == 0u) {
+            if ((v_c_minor < 28u) && (v_string_length == 0u)) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(0u)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
