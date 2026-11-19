@@ -620,17 +620,19 @@ type Reader struct {
 // Next advances to the next entry in the SUITAR archive, preparing to read the
 // file's contents (as r is also an io.Reader).
 func (r *Reader) Next() (Header, error) {
-	r.numBytesRead = 0
 	if r.err != nil {
+		r.numBytesRead = 0
 		return Header{}, r.err
 	} else if r.sparse {
 		r.remaining = 0
 	} else if (r.remaining == 0) && !r.sizeIsImplicit {
 		// No-op.
 	} else if _, err := io.Copy(io.Discard, r); err != nil {
+		r.numBytesRead = 0
 		r.err = err
 		return Header{}, r.err
 	}
+	r.numBytesRead = 0
 
 	if _, err := readFullNoEOF(r.r, r.block[:]); err != nil {
 		r.err = err

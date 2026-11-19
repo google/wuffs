@@ -601,6 +601,50 @@ func TestNextSkipsImplicitChunks(tt *testing.T) {
 	}
 }
 
+func TestNextResetsNumBytesRead(tt *testing.T) {
+	buf := bytes.Buffer{}
+	sWriter := NewWriter(&buf)
+	for _, size := range []int64{1000, SizeIsImplicit} {
+		if err := sWriter.WriteHeader(&Header{
+			Typeflag: TypeReg,
+			Name:     fmt.Sprintf("%d.dat", size),
+			Size:     size,
+			Mode:     Mode644,
+			ModTime:  time.Unix(0, 0),
+		}); err != nil {
+			tt.Fatalf("WriteHeader: %v", err)
+		}
+		n := int(size)
+		if size == SizeIsImplicit {
+			n = 3000
+		}
+		if _, err := sWriter.Write(make([]byte, n)); err != nil {
+			tt.Fatalf("Write: %v", err)
+		}
+	}
+	if err := sWriter.Close(); err != nil {
+		tt.Fatalf("Close: %v", err)
+	}
+
+	// Skip the first entry's contents (by not reading them) before calling
+	// Next. The skipped bytes should not count towards the second entry's
+	// NumBytesRead, which is how a SizeIsImplicit entry reports its size.
+	sReader := NewReader(&buf)
+	if _, err := sReader.Next(); err != nil {
+		tt.Fatalf("Next #0: %v", err)
+	} else if _, err := sReader.Next(); err != nil {
+		tt.Fatalf("Next #1: %v", err)
+	} else if n := sReader.NumBytesRead(); n != 0 {
+		tt.Fatalf("NumBytesRead after Next: got %d, want 0", n)
+	} else if data, err := io.ReadAll(sReader); err != nil {
+		tt.Fatalf("ReadAll: %v", err)
+	} else if len(data) != 3000 {
+		tt.Fatalf("len(data): got %d, want 3000", len(data))
+	} else if n := sReader.NumBytesRead(); n != 3000 {
+		tt.Fatalf("NumBytesRead after ReadAll: got %d, want 3000", n)
+	}
+}
+
 func TestReaderRejectsOutOfRangeIntegers(tt *testing.T) {
 	const maxExcl = 1 << 53
 
