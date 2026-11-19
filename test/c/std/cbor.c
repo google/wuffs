@@ -120,6 +120,57 @@ test_wuffs_cbor_decode_empty_input() {
 }
 
 const char*  //
+test_wuffs_cbor_decode_indefinite_strings() {
+  CHECK_FOCUS(__func__);
+
+  // An indefinite-length byte string or text string may contain zero-length
+  // chunks. Such a chunk does not end the string: only the 0xFF break code
+  // does. Each test case holds an indefinite-length string (with an empty
+  // chunk) followed by a sibling element, and should decode without error,
+  // consuming all of its input.
+  struct {
+    const char* str;
+    size_t len;
+  } test_cases[] = {
+      {.str = "\x82\x5F\x40\x41\x61\xFF\x01", .len = 7},
+      {.str = "\x82\x5F\x41\x61\x40\xFF\x01", .len = 7},
+      {.str = "\x82\x5F\x58\x00\x41\x61\xFF\x01", .len = 8},
+      {.str = "\x82\x7F\x60\x61\x61\xFF\x01", .len = 7},
+      {.str = "\x82\x7F\x61\x61\x60\xFF\x01", .len = 7},
+      {.str = "\x82\x7F\x78\x00\x61\x61\xFF\x01", .len = 8},
+      {.str = "\xA1\x7F\x60\x61\x61\xFF\x01", .len = 7},
+  };
+
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
+    const bool closed = true;
+    wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
+        wuffs_base__make_slice_u8((uint8_t*)(void*)(test_cases[tc].str),
+                                  test_cases[tc].len),
+        closed);
+
+    wuffs_cbor__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_cbor__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
+        &dec, &tok_buf, &io_buf, g_work_slice_u8);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("tc=%zu: have \"%s\", want no error", tc, status.repr);
+    } else if (io_buf.meta.ri != test_cases[tc].len) {
+      RETURN_FAIL("tc=%zu: num_src: have %zu, want %zu", tc, io_buf.meta.ri,
+                  test_cases[tc].len);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_cbor_decode_invalid() {
   CHECK_FOCUS(__func__);
 
@@ -244,6 +295,7 @@ test_wuffs_cbor_decode_valid() {
 proc g_tests[] = {
 
     test_wuffs_cbor_decode_empty_input,
+    test_wuffs_cbor_decode_indefinite_strings,
     test_wuffs_cbor_decode_interface,
     test_wuffs_cbor_decode_invalid,
     test_wuffs_cbor_decode_valid,
