@@ -70180,7 +70180,7 @@ WUFFS_PNG__NUM_CHANNELS[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
 static const uint16_t
 WUFFS_PNG__LATIN_1[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
-  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 10u, 0u, 0u, 0u, 0u, 0u,
   0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
   0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
   32u, 33u, 34u, 35u, 36u, 37u, 38u, 39u,
@@ -76219,7 +76219,7 @@ wuffs_png__decoder__do_tell_me_more(
               goto label__loop__break;
             }
             v_c16 = WUFFS_PNG__LATIN_1[v_c8];
-            if (v_c16 == 0u) {
+            if ((v_c16 == 0u) || ((v_c8 == 10u) && (self->private_impl.f_metadata_fourcc == 1263947851u))) {
               status = wuffs_base__make_status(wuffs_png__error__bad_text_chunk_not_latin_1);
               goto exit;
             } else if (v_c16 <= 127u) {

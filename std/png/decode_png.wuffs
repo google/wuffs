@@ -1656,7 +1656,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     break.loop
                 }
                 c16 = LATIN_1[c8]
-                if c16 == 0 {
+                if (c16 == 0) or ((c8 == 0x0A) and (this.metadata_fourcc == 'KVPK'be)) {
                     return "#bad text chunk (not Latin-1)"
                 } else if c16 <= 0x7F {
                     if args.dst.length() <= 0 {

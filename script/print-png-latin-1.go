@@ -30,13 +30,10 @@ func main() {
 }
 
 func main1() error {
-	// The PNG spec (https://www.w3.org/TR/PNG/) says "*printable* [emphasis
-	// added] Latin-1 characters and spaces (only character codes 32-126 and
-	// 161-255 decimal are allowed)".
-	//
-	// See also https://www.w3.org/TR/2003/REC-PNG-20031110/iso_8859-1.txt
+	// PNG keywords allow printable Latin-1 characters and spaces. Text values
+	// also allow line feed; the decoder checks it separately for keywords.
 	for r := rune(0); r <= 0xFF; r++ {
-		if (r < 32) || ((126 < r) && (r < 161)) {
+		if ((r < 32) && (r != '\n')) || ((126 < r) && (r < 161)) {
 			fmt.Printf(" 0x0000,")
 		} else if r < 128 {
 			fmt.Printf(" 0x%04X,", r)
