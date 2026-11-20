@@ -841,9 +841,9 @@ test_wuffs_png_decode_metadata_kvp() {
       "Key",         //
       "English",     //
       "Clé",         //
-      "Français",    //
+      "Fran\nçais",  //
       "zlïbK",       //
-      "zlïbV",       //
+      "zlïbV\n",     //
       "U-Key",       //
       "U-значение",  //
       "Z-Këy",       //
@@ -911,6 +911,39 @@ test_wuffs_png_decode_metadata_kvp() {
 
   if (i != WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
     RETURN_FAIL("i: have %zu, want %zu", i, WUFFS_TESTLIB_ARRAY_SIZE(wants));
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_png_reject_line_feed_in_keyword() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  // Replace the first character of the first tEXt keyword with a line feed.
+  CHECK_STRING(read_file(
+      &src, "@29=4B=0A;test/data/artificial-png/key-value-pairs.png"));
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  wuffs_png__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__KVP, true);
+  wuffs_base__status status =
+      wuffs_png__decoder__decode_frame_config(&dec, NULL, &src);
+  if (status.repr != wuffs_base__note__metadata_reported) {
+    RETURN_FAIL("decode_frame_config: have %s", status.repr);
+  }
+  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+      .data = g_have_slice_u8,
+  });
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+  status = wuffs_png__decoder__tell_me_more(&dec, &dst, &minfo, &src);
+  if (status.repr != wuffs_png__error__bad_text_chunk_not_latin_1) {
+    RETURN_FAIL("tell_me_more: have %s, want %s", status.repr,
+                wuffs_png__error__bad_text_chunk_not_latin_1);
   }
   return NULL;
 }
@@ -1311,6 +1344,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_metadata_exif,
     test_wuffs_png_decode_metadata_iccp,
     test_wuffs_png_decode_metadata_kvp,
+    test_wuffs_png_reject_line_feed_in_keyword,
     test_wuffs_png_decode_multiple_idats,
     test_wuffs_png_decode_restart_frame,
     test_wuffs_png_decode_truncated_input,
