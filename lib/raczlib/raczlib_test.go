@@ -101,6 +101,56 @@ func TestReaderSansDictionary(tt *testing.T) { testReader(tt, decodedMore, encod
 func TestReaderWithDictionary(tt *testing.T) { testReader(tt, decodedSheep, encodedSheep, 0) }
 func TestConcurrentReader(tt *testing.T)     { testReader(tt, decodedSheep, encodedSheep, 2) }
 
+func TestSeekRangeAfterRead(tt *testing.T) {
+	original := make([]byte, 1000)
+	for i := range original {
+		original[i] = uint8(i * 7)
+	}
+	// Use many chunks, so that the concurrent Reader still has work in
+	// progress when SeekRange is called.
+	compressed, err := racCompress(original, 0, 100, nil)
+	if err != nil {
+		tt.Fatalf("racCompress: %v", err)
+	}
+
+	// Each step calls SeekRange(low, high) and then reads up to n bytes.
+	// Some steps keep low the same as the current position, so that only the
+	// high limit changes.
+	steps := []struct{ low, high, n int }{
+		{0, 1000, 5},
+		{5, 8, 100},
+		{8, 1000, 100},
+		{500, 520, 100},
+		{520, 1000, 1000},
+		{0, 1000, 1000},
+	}
+
+	for _, concurrency := range []int{0, 2} {
+		r := &rac.Reader{
+			ReadSeeker:     bytes.NewReader(compressed),
+			CompressedSize: int64(len(compressed)),
+			CodecReaders:   []rac.CodecReader{&CodecReader{}},
+			Concurrency:    concurrency,
+		}
+		defer r.Close()
+
+		for i, s := range steps {
+			if err := r.SeekRange(int64(s.low), int64(s.high)); err != nil {
+				tt.Fatalf("concurrency=%d, i=%d: SeekRange: %v", concurrency, i, err)
+			}
+			got, err := io.ReadAll(io.LimitReader(r, int64(s.n)))
+			if err != nil {
+				tt.Fatalf("concurrency=%d, i=%d: ReadAll: %v", concurrency, i, err)
+			}
+			want := original[s.low:min(s.low+s.n, s.high)]
+			if !bytes.Equal(got, want) {
+				tt.Fatalf("concurrency=%d, i=%d: got\n% 02x\nwant\n% 02x",
+					concurrency, i, got, want)
+			}
+		}
+	}
+}
+
 func TestReaderConcatenation(tt *testing.T) {
 	// Create a RAC file whose decoding is the concatenation of two other RAC
 	// file's decoding. The resultant RAC file's contents (the encoded form) is

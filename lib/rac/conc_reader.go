@@ -200,7 +200,12 @@ func (c *concReader) seek(offset int64, whence int, limit int64) (int64, error) 
 	if limit > c.decompressedSize {
 		limit = c.decompressedSize
 	}
-	c.posLimit = limit
+	if c.posLimit != limit {
+		// Any work in progress was requested for the old posLimit, so a new
+		// limit (lower or higher) also needs a new region of interest.
+		c.posLimit = limit
+		c.seekResolved = false
+	}
 
 	return pos, nil
 }
@@ -324,6 +329,11 @@ loop:
 			if !stop.keepWorking {
 				return
 			}
+			// Drop any work in progress, as it was for the previous region of
+			// interest. recyclec has room for outWork's buffer (if any), as
+			// this worker owns at most numRBuffersPerWorker buffers.
+			outWork.recycle()
+			input, output, outWork, dRange = reqc, nil, rWork{}, Range{}
 			continue loop
 
 		case inWork := <-input:
@@ -429,6 +439,9 @@ loop:
 			if !stop.keepWorking {
 				return
 			}
+			// Drop any work in progress, as it was for the previous region of
+			// interest. The concReader will send the next one on roic.
+			input, output, work = roic, nil, rWork{}
 			continue loop
 
 		case roi = <-input:
