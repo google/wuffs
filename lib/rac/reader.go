@@ -209,7 +209,11 @@ func (r *Reader) Read(p []byte) (int, error) {
 	}
 	if r.concReader.ready() {
 		n, err := r.concReader.Read(p)
-		r.err = err
+		// Like the non-concurrent code path below, io.EOF only means that we
+		// have reached posLimit. It is not sticky: Seek can still move pos.
+		if err != io.EOF {
+			r.err = err
+		}
 		return n, err
 	}
 
